@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
 ]
 
+# Custom User Model
+AUTH_USER_MODEL = 'accounts.User'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
 
