@@ -4,5 +4,5 @@ from .views import ResourceListView
 app_name = 'resources'
 
 urlpatterns = [
-    path('', ResourceListView.as_view(), name='list'),
+    path('', ResourceListView.as_view(), name='resource_list'),
 ]

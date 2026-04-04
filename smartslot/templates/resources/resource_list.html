@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Available Resources</h1>
+
+{% if object_list %}
+    <ul style="list-style: none; padding: 0;">
+    {% for resource in object_list %}
+        <li style="background: #1e2937; margin: 10px 0; padding: 15px; border-radius: 8px;">
+            <strong>{{ resource.name }}</strong> — {{ resource.category }}<br>
+            Price: <strong>{{ resource.price }} MWK</strong><br>
+            {% if resource.description %}
+                <small>{{ resource.description|truncatewords:40 }}</small>
+            {% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No resources have been added yet.</p>
+{% endif %}
+
+<a href="/">← Back to Home</a>
+{% endblock %}
