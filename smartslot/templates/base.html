@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSlot - Resource Booking System</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background-color: #0f172a;
@@ -41,7 +37,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 4rem 2rem;
+            padding: 3rem 2rem;
             text-align: center;
         }
         h1 {
@@ -97,29 +93,33 @@
     </nav>
 
     <div class="container">
-        <h1>Welcome to SmartSlot</h1>
-        <p>
-            The smart way to book and manage office resources.<br>
-            Real-time availability • PayChangu payments • QR code verification
-        </p>
-        
-        <a href="/resources/" class="btn">Browse Available Resources</a>
-        <a href="/admin/" class="btn" style="background-color: #64748b;">Go to Admin Panel</a>
+        {% block content %}
+            {% if show_welcome %}
+                <h1>Welcome to SmartSlot</h1>
+                <p>
+                    The smart way to book and manage office resources.<br>
+                    Real-time availability • PayChangu payments • QR code verification
+                </p>
+                
+                <a href="/resources/" class="btn">Browse Available Resources</a>
+                <a href="/admin/" class="btn" style="background-color: #64748b;">Go to Admin Panel</a>
 
-        <div class="features">
-            <div class="card">
-                <h3>📅 Real-time Calendar</h3>
-                <p>See what's available instantly and avoid double bookings.</p>
-            </div>
-            <div class="card">
-                <h3>💰 Secure Payments</h3>
-                <p>Pay with PayChangu or book free resources instantly.</p>
-            </div>
-            <div class="card">
-                <h3>📱 QR Verification</h3>
-                <p>Scan QR code on arrival for automatic check-in.</p>
-            </div>
-        </div>
+                <div class="features">
+                    <div class="card">
+                        <h3>📅 Real-time Calendar</h3>
+                        <p>See what's available instantly and avoid double bookings.</p>
+                    </div>
+                    <div class="card">
+                        <h3>💰 Secure Payments</h3>
+                        <p>Pay with PayChangu or book free resources instantly.</p>
+                    </div>
+                    <div class="card">
+                        <h3>📱 QR Verification</h3>
+                        <p>Scan QR code on arrival for automatic check-in.</p>
+                    </div>
+                </div>
+            {% endif %}
+        {% endblock %}
     </div>
 </body>
 </html>
