@@ -53,7 +53,7 @@ class Command(BaseCommand):
         ]
 
         for u in users:
-            org = u.pop('org')  # not a User field — kept for future profile linking
+            org = u.pop('org')  
             if not User.objects.filter(username=u['username']).exists():
                 User.objects.create_user(**u)
                 self.stdout.write(self.style.SUCCESS(
@@ -64,9 +64,7 @@ class Command(BaseCommand):
                     f"  User '{u['username']}' already exists."
                 ))
 
-    # ------------------------------------------------------------------ #
-    #  Organisations
-    # ------------------------------------------------------------------ #
+    
 
     def _create_organisations(self):
         equip, created = Organisation.objects.get_or_create(name='Equip Group')
@@ -83,16 +81,14 @@ class Command(BaseCommand):
 
         return {'equip': equip, 'blantyre': blantyre}
 
-    # ------------------------------------------------------------------ #
-    #  Resources
-    # ------------------------------------------------------------------ #
+
 
     def _create_resources(self, orgs):
         equip    = orgs['equip']
         blantyre = orgs['blantyre']
 
         resources = [
-            # ── Equip Group ──────────────────────────────────────────────
+            # Equip Group
             {
                 "organisation": equip,
                 "name": "Main Boardroom A",
@@ -161,7 +157,7 @@ class Command(BaseCommand):
                 "custom_fields": {"megapixels": 24, "includes_tripod": True, "lens": "18-45mm"}
             },
 
-            # ── Blantyre Consulting Ltd ───────────────────────────────────
+            # Blantyre Consulting Ltd 
             {
                 "organisation": blantyre,
                 "name": "Conference Room 1",
