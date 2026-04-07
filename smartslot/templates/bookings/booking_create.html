@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width:600px; margin:0 auto; text-align:left;">
+
+    <!-- Back link -->
+    <a href="/resources/" style="color:#64748b; text-decoration:none; font-size:0.88rem; display:inline-flex; align-items:center; gap:0.4rem; margin-bottom:1.5rem;">
+        ← Back to Resources
+    </a>
+
+    <!-- Resource summary card -->
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:12px;
+                padding:1.25rem; display:flex; gap:1rem; align-items:center; margin-bottom:2rem;">
+        <div style="font-size:2.5rem; width:56px; height:56px; background:#0f172a;
+                    border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            {% if resource.category == 'Boardroom' %}🏢
+            {% elif resource.category == 'Vehicle' %}🚗
+            {% elif resource.category == 'Equipment' %}🖥️
+            {% else %}📦{% endif %}
+        </div>
+        <div style="flex:1;">
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:#14b8a6; margin-bottom:0.2rem;">
+                {{ resource.category }}
+            </div>
+            <div style="font-size:1.05rem; font-weight:700; color:#f1f5f9;">{{ resource.name }}</div>
+            <div style="font-size:0.8rem; color:#64748b;">{{ resource.organisation.name }}</div>
+        </div>
+        <div style="text-align:right; flex-shrink:0;">
+            {% if resource.price == 0 %}
+                <span style="font-size:1.1rem; font-weight:800; color:#22c55e;">Free</span>
+            {% else %}
+                <span style="font-size:1.1rem; font-weight:800; color:#f59e0b;">
+                    MWK {{ resource.price|floatformat:0 }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Form card -->
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:2rem;">
+
+        <h2 style="font-size:1.3rem; font-weight:700; color:#f1f5f9; margin-bottom:0.4rem;">
+            Create Booking
+        </h2>
+        <p style="color:#64748b; font-size:0.88rem; margin-bottom:1.75rem;">
+            Select your start and end time for <strong style="color:#94a3b8;">{{ resource.name }}</strong>.
+        </p>
+
+        {% if form.non_field_errors %}
+        <div style="background:#450a0a; border:1px solid #7f1d1d; border-radius:8px;
+                    padding:0.85rem 1rem; margin-bottom:1.25rem; color:#fca5a5; font-size:0.88rem;">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Start Time -->
+            <div style="margin-bottom:1.25rem;">
+                <label style="display:block; font-size:0.85rem; font-weight:600;
+                              color:#94a3b8; margin-bottom:0.5rem;">
+                    Start Time
+                </label>
+                <input type="datetime-local" name="start_time"
+                       value="{{ form.start_time.value|default:'' }}"
+                       style="width:100%; padding:11px 14px; border-radius:8px;
+                              background:#0f172a; border:1px solid {% if form.start_time.errors %}#ef4444{% else %}#334155{% endif %};
+                              color:#e2e8f0; font-size:0.92rem; outline:none;
+                              color-scheme:dark;" />
+                {% if form.start_time.errors %}
+                <p style="color:#f87171; font-size:0.8rem; margin-top:0.35rem;">{{ form.start_time.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- End Time -->
+            <div style="margin-bottom:1.75rem;">
+                <label style="display:block; font-size:0.85rem; font-weight:600;
+                              color:#94a3b8; margin-bottom:0.5rem;">
+                    End Time
+                </label>
+                <input type="datetime-local" name="end_time"
+                       value="{{ form.end_time.value|default:'' }}"
+                       style="width:100%; padding:11px 14px; border-radius:8px;
+                              background:#0f172a; border:1px solid {% if form.end_time.errors %}#ef4444{% else %}#334155{% endif %};
+                              color:#e2e8f0; font-size:0.92rem; outline:none;
+                              color-scheme:dark;" />
+                {% if form.end_time.errors %}
+                <p style="color:#f87171; font-size:0.8rem; margin-top:0.35rem;">{{ form.end_time.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Price note -->
+            {% if resource.price > 0 %}
+            <div style="background:#1c1a0a; border:1px solid #713f12; border-radius:8px;
+                        padding:0.85rem 1rem; margin-bottom:1.5rem; font-size:0.85rem; color:#fcd34d;">
+                💳 Payment of <strong>MWK {{ resource.price|floatformat:0 }}</strong> will be processed via PayChangu after confirmation.
+            </div>
+            {% else %}
+            <div style="background:#052e16; border:1px solid #14532d; border-radius:8px;
+                        padding:0.85rem 1rem; margin-bottom:1.5rem; font-size:0.85rem; color:#86efac;">
+                ✅ This resource is free — your booking will be confirmed instantly.
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div style="display:flex; gap:0.75rem;">
+                <button type="submit"
+                    style="flex:1; padding:12px; background:#14b8a6; color:#fff;
+                           border:none; border-radius:8px; font-size:0.95rem;
+                           font-weight:700; cursor:pointer; letter-spacing:0.02em;">
+                    Confirm Booking
+                </button>
+                <a href="/resources/"
+                   style="padding:12px 20px; background:#334155; color:#94a3b8;
+                          border-radius:8px; text-decoration:none; font-size:0.95rem;
+                          font-weight:600; display:flex; align-items:center;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
