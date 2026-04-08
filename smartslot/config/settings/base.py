@@ -46,13 +46,13 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_tailwind',
     
-    # Local apps
+    # Local apps — core MUST be first (BaseModel / Organisation FK dependency)
+    'apps.core.apps.CoreConfig',
     'apps.accounts.apps.AccountsConfig',
     'apps.resources.apps.ResourcesConfig',
     'apps.bookings.apps.BookingsConfig',
     'apps.payments.apps.PaymentsConfig',
     'apps.verification.apps.VerificationConfig',
-    'apps.core.apps.CoreConfig',
 ]
 
 # Custom User Model
