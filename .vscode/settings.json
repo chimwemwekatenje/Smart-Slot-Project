@@ -1,7 +1,12 @@
 {
+<<<<<<< HEAD
     "python.defaultInterpreterPath": "${workspaceFolder}\\smartslot\\venv\\Scripts\\python.exe",
     "python.analysis.extraPaths": [
         "${workspaceFolder}\\smartslot"
     ],
     "python.venvPath": "${workspaceFolder}\\smartslot"
 }
+=======
+    "kiroAgent.configureMCP": "Disabled"
+}
+>>>>>>> 3866a6e38bb550f841754e8170fe0abcc3448923
