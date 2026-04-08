@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load static crispy_forms_tags %}
+
+{% block content %}
+<div class="font-sans min-h-screen flex items-center justify-center bg-[#0d1117] text-gray-200 p-4">
+  
+  <!-- Centered Card Container -->
+  <div class="w-full max-w-md bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl overflow-hidden">
+    
+    <!-- Header (Teal Django Admin Style) -->
+    <div class="bg-[#2dbb95] text-gray-900 px-6 py-4 flex justify-between items-center">
+      <h2 class="text-lg font-bold tracking-wide">Login to SmartSlot</h2>
+      <!-- Card Tabs -->
+      <div class="flex space-x-4 text-sm font-semibold">
+        <span class="text-gray-900 border-b-[3px] border-gray-900 pb-0.5 cursor-default leading-none">Login</span>
+        <a href="{% url 'signup' %}" class="text-gray-800 hover:text-gray-900 opacity-70 hover:opacity-100 transition-opacity pb-0.5 leading-none">Sign Up</a>
+      </div>
+    </div>
+
+    <!-- Form Body -->
+    <div class="p-6 sm:p-8">
+      <form action="{% url 'login' %}" method="POST" class="space-y-5">
+        {% csrf_token %}
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}" />
+        {% endif %}
+
+        {% if form.non_field_errors %}
+          <div class="text-red-400 text-sm mb-4 bg-red-900/10 p-3 rounded border border-red-500/20">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <!-- Username Field -->
+        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
+          <label for="{{ form.username.id_for_label }}" class="text-sm font-semibold text-gray-300">Username:</label>
+          <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}" 
+                 required autofocus
+                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
+          {% if form.username.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password Field -->
+        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
+          <label for="{{ form.password.id_for_label }}" class="text-sm font-semibold text-gray-300">Password:</label>
+          <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}" 
+                 required
+                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
+          {% if form.password.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.password.errors.0 }}</p>
+          {% endif %}
+          
+          <!-- Forgot Password below password -->
+          <div class="pt-0.5">
+            <a href="{% url 'password_reset' %}" class="text-xs text-[#2dbb95] hover:text-[#28a784] font-medium transition-colors hover:underline">Forgot password?</a>
+          </div>
+        </div>
+
+        <!-- Keep me logged in -->
+        <div class="flex items-center pt-2">
+          <label for="remember-me" class="flex items-center cursor-pointer group">
+            <input id="remember-me" name="remember-me" type="checkbox" 
+                   class="w-4 h-4 text-[#2dbb95] bg-[#0b1016] border-[#30363d] rounded focus:ring-1 focus:ring-[#2dbb95] focus:ring-offset-0 focus:ring-offset-[#161b22] cursor-pointer">
+            <span class="ml-2 text-sm text-gray-300 group-hover:text-gray-100 transition-colors">Keep me logged in</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-4">
+          <button type="submit" 
+                  class="w-full flex justify-center items-center h-[42px] rounded text-sm font-bold text-gray-900 bg-[#2dbb95] hover:bg-[#28a784] transition-colors hover:shadow-[0_0_15px_rgba(45,187,149,0.2)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#161b22] focus:ring-[#2dbb95]">
+            Login
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock content %}
