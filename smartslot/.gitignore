@@ -39,3 +39,7 @@ ENV/
 # OS setup
 .DS_Store
 Thumbs.db
+
+# Firebase / Secrets
+firebase-service-account.json
+*.json
