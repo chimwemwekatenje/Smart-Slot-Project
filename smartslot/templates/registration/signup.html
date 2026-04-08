@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static crispy_forms_tags %}
+
+{% block content %}
+<div class="font-sans min-h-screen flex items-center justify-center bg-[#0d1117] text-gray-200 p-4">
+  
+  <!-- Centered Card Container -->
+  <div class="w-full max-w-md bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl overflow-hidden">
+    
+    <!-- Header (Teal Django Admin Style) -->
+    <div class="bg-[#2dbb95] text-gray-900 px-6 py-4 flex justify-between items-center">
+      <h2 class="text-lg font-bold tracking-wide">Join SmartSlot</h2>
+      <!-- Card Tabs -->
+      <div class="flex space-x-4 text-sm font-semibold">
+        <a href="{% url 'login' %}" class="text-gray-800 hover:text-gray-900 opacity-70 hover:opacity-100 transition-opacity pb-0.5 leading-none">Login</a>
+        <span class="text-gray-900 border-b-[3px] border-gray-900 pb-0.5 cursor-default leading-none">Sign Up</span>
+      </div>
+    </div>
+
+    <!-- Form Body -->
+    <div class="p-6 sm:p-8">
+      <form action="{% url 'signup' %}" method="POST" class="space-y-4">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="text-red-400 text-sm mb-4 bg-red-900/10 p-3 rounded border border-red-500/20">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <!-- Full Name -->
+        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
+          <label for="{{ form.full_name.id_for_label }}" class="text-sm font-semibold text-gray-300">Full Name:</label>
+          <input type="text" name="{{ form.full_name.html_name }}" id="{{ form.full_name.id_for_label }}" 
+                 required value="{{ form.full_name.value|default:'' }}"
+                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
+          {% if form.full_name.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.full_name.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Username -->
+        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
+          <label for="{{ form.username.id_for_label }}" class="text-sm font-semibold text-gray-300">Username:</label>
+          <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}" 
+                 required value="{{ form.username.value|default:'' }}"
+                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
+          {% if form.username.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Email -->
+        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
+          <label for="{{ form.email.id_for_label }}" class="text-sm font-semibold text-gray-300">Email Address:</label>
+          <input type="email" name="{{ form.email.html_name }}" id="{{ form.email.id_for_label }}" 
+                 required value="{{ form.email.value|default:'' }}"
+                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
+          {% if form.email.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.email.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
+          <label for="{{ form.password.id_for_label }}" class="text-sm font-semibold text-gray-300">Password:</label>
+          <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}" 
+                 required
+                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
+          {% if form.password.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.password.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
+          <label for="{{ form.password_confirm.id_for_label }}" class="text-sm font-semibold text-gray-300">Confirm Password:</label>
+          <input type="password" name="{{ form.password_confirm.html_name }}" id="{{ form.password_confirm.id_for_label }}" 
+                 required
+                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
+          {% if form.password_confirm.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.password_confirm.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-4">
+          <button type="submit" 
+                  class="w-full flex justify-center items-center h-[42px] rounded text-sm font-bold text-gray-900 bg-[#2dbb95] hover:bg-[#28a784] transition-colors hover:shadow-[0_0_15px_rgba(45,187,149,0.2)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#161b22] focus:ring-[#2dbb95]">
+            Create Account
+          </button>
+        </div>
+        
+        <!-- Back Link -->
+        <div class="text-center mt-3">
+          <a href="{% url 'login' %}" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Back to Login</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -11,9 +11,8 @@ env = environ.Env(
 environ.Env.read_env(BASE_DIR / '.env')
 
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
-DEBUG = env('DEBUG')
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+DEBUG = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -22,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
     
     # Third-party apps
     'crispy_forms',
@@ -35,6 +35,9 @@ INSTALLED_APPS = [
     'apps.verification.apps.VerificationConfig',
     'apps.core.apps.CoreConfig',
 ]
+LOGIN_URL = '/accounts/login/'           # Where to redirect if not logged in
+LOGIN_REDIRECT_URL = '/'                 # Where to go after successful login (change to your home name if you prefer)
+LOGOUT_REDIRECT_URL = '/accounts/login/' # Where to go after logout
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
@@ -69,6 +72,8 @@ TEMPLATES = [
         },
     },
 ]
+# Login template location
+LOGIN_TEMPLATE = 'registration/login.html'
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -104,3 +109,8 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication Routing
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'
