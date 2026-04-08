@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div style="text-align:center; max-width:900px; margin:0 auto; padding:4rem 2rem;">
+
+  {% if user.is_authenticated %}
+  <!-- ── Authenticated Welcome ── -->
+  <div style="margin-bottom:1rem;">
+    <span style="display:inline-block; background:#0f2a27; color:#14b8a6; font-size:0.8rem; font-weight:700;
+                 text-transform:uppercase; letter-spacing:0.1em; padding:4px 14px; border-radius:20px;">
+      Welcome back
+    </span>
+  </div>
+  <h1 style="font-size:3rem; font-weight:800; color:#f1f5f9; margin-bottom:0.75rem; line-height:1.15;">
+    Hello, {{ user.first_name|default:user.username }} 👋
+  </h1>
+  <p style="font-size:1.05rem; color:#94a3b8; max-width:560px; margin:0 auto 2.5rem; line-height:1.7;">
+    The smart way to book and manage shared office resources.
+    Find a boardroom, vehicle, or equipment in seconds.
+  </p>
+  <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+    <a href="/resources/" style="display:inline-block; background:#14b8a6; color:#fff; padding:13px 28px;
+       border-radius:10px; text-decoration:none; font-size:0.95rem; font-weight:700;
+       transition:background 0.2s, transform 0.15s;"
+       onmouseover="this.style.background='#0f766e'; this.style.transform='translateY(-2px)'"
+       onmouseout="this.style.background='#14b8a6'; this.style.transform='translateY(0)'">
+      Browse Resources →
+    </a>
+    <a href="/bookings/" style="display:inline-block; background:#1e2937; color:#94a3b8; padding:13px 28px;
+       border-radius:10px; text-decoration:none; font-size:0.95rem; font-weight:700; border:1px solid #334155;
+       transition:border-color 0.2s, color 0.2s;"
+       onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#e2e8f0'"
+       onmouseout="this.style.borderColor='#334155'; this.style.color='#94a3b8'">
+      My Bookings
+    </a>
+  </div>
+
+  <!-- Feature Cards -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.25rem; margin-top:4rem; text-align:left;">
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:1.5rem;">
+      <div style="font-size:1.75rem; margin-bottom:0.75rem;">📅</div>
+      <h3 style="font-size:1rem; font-weight:700; color:#f1f5f9; margin-bottom:0.35rem;">Real-time Calendar</h3>
+      <p style="font-size:0.875rem; color:#64748b; line-height:1.6; margin:0;">See what's available instantly and avoid double bookings with live availability.</p>
+    </div>
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:1.5rem;">
+      <div style="font-size:1.75rem; margin-bottom:0.75rem;">💳</div>
+      <h3 style="font-size:1rem; font-weight:700; color:#f1f5f9; margin-bottom:0.35rem;">Secure Payments</h3>
+      <p style="font-size:0.875rem; color:#64748b; line-height:1.6; margin:0;">Pay for resources via PayChangu or book free resources instantly with one click.</p>
+    </div>
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:1.5rem;">
+      <div style="font-size:1.75rem; margin-bottom:0.75rem;">📱</div>
+      <h3 style="font-size:1rem; font-weight:700; color:#f1f5f9; margin-bottom:0.35rem;">QR Verification</h3>
+      <p style="font-size:0.875rem; color:#64748b; line-height:1.6; margin:0;">Scan your unique QR code on arrival for automatic and instant check-in.</p>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- ── Public Landing ── -->
+  <div style="margin-bottom:1rem;">
+    <span style="display:inline-block; background:#0f2a27; color:#14b8a6; font-size:0.8rem; font-weight:700;
+                 text-transform:uppercase; letter-spacing:0.1em; padding:4px 14px; border-radius:20px;">
+      Resource Booking System
+    </span>
+  </div>
+  <h1 style="font-size:3.2rem; font-weight:800; color:#f1f5f9; margin-bottom:0.75rem; line-height:1.15;">
+    Book Smart.<br>Work Smarter.
+  </h1>
+  <p style="font-size:1.05rem; color:#94a3b8; max-width:560px; margin:0 auto 2.5rem; line-height:1.7;">
+    SmartSlot makes it easy to find and book shared resources across your organisation —
+    boardrooms, vehicles, equipment, and more.
+  </p>
+  <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+    <a href="/accounts/login/" style="display:inline-block; background:#14b8a6; color:#fff; padding:13px 28px;
+       border-radius:10px; text-decoration:none; font-size:0.95rem; font-weight:700;
+       transition:background 0.2s, transform 0.15s;"
+       onmouseover="this.style.background='#0f766e'; this.style.transform='translateY(-2px)'"
+       onmouseout="this.style.background='#14b8a6'; this.style.transform='translateY(0)'">
+      Sign In
+    </a>
+    <a href="/accounts/signup/" style="display:inline-block; background:#1e2937; color:#e2e8f0; padding:13px 28px;
+       border-radius:10px; text-decoration:none; font-size:0.95rem; font-weight:700; border:1px solid #334155;
+       transition:border-color 0.2s;"
+       onmouseover="this.style.borderColor='#14b8a6'"
+       onmouseout="this.style.borderColor='#334155'">
+      Create Account
+    </a>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.25rem; margin-top:4rem; text-align:left;">
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:1.5rem;">
+      <div style="font-size:1.75rem; margin-bottom:0.75rem;">📅</div>
+      <h3 style="font-size:1rem; font-weight:700; color:#f1f5f9; margin-bottom:0.35rem;">Real-time Availability</h3>
+      <p style="font-size:0.875rem; color:#64748b; line-height:1.6; margin:0;">See live availability and book the resources your team needs without clashes.</p>
+    </div>
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:1.5rem;">
+      <div style="font-size:1.75rem; margin-bottom:0.75rem;">🏢</div>
+      <h3 style="font-size:1rem; font-weight:700; color:#f1f5f9; margin-bottom:0.35rem;">Multi-Organisation</h3>
+      <p style="font-size:0.875rem; color:#64748b; line-height:1.6; margin:0;">Internal staff, external guests, and admins — everyone gets the right access level.</p>
+    </div>
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:1.5rem;">
+      <div style="font-size:1.75rem; margin-bottom:0.75rem;">📱</div>
+      <h3 style="font-size:1rem; font-weight:700; color:#f1f5f9; margin-bottom:0.35rem;">QR Check-In</h3>
+      <p style="font-size:0.875rem; color:#64748b; line-height:1.6; margin:0;">Every booking generates a QR code — scan it on arrival for frictionless access.</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

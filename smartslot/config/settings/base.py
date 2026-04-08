@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import environ
+import firebase_admin
+from firebase_admin import credentials
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -10,9 +12,27 @@ env = environ.Env(
 
 environ.Env.read_env(BASE_DIR / '.env')
 
+# ========================
+# Firebase Configuration
+# ========================
+FIREBASE_CREDENTIALS = BASE_DIR / 'firebase-service-account.json'
+
+if os.path.exists(FIREBASE_CREDENTIALS):
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        cred = credentials.Certificate(str(FIREBASE_CREDENTIALS))
+        firebase_admin.initialize_app(cred)
+        print("✅ Firebase initialized successfully")
+else:
+    print("⚠️  Warning: Firebase service account file not found at", FIREBASE_CREDENTIALS)
+
+# ========================
+# Django Settings
+# ========================
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 DEBUG = True
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -22,8 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    
-    # Third-party apps
+    # Third-party
     'crispy_forms',
     'crispy_tailwind',
     
@@ -35,12 +54,10 @@ INSTALLED_APPS = [
     'apps.verification.apps.VerificationConfig',
     'apps.core.apps.CoreConfig',
 ]
-LOGIN_URL = '/accounts/login/'           # Where to redirect if not logged in
-LOGIN_REDIRECT_URL = '/'                 # Where to go after successful login (change to your home name if you prefer)
-LOGOUT_REDIRECT_URL = '/accounts/login/' # Where to go after logout
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
+
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
 
@@ -72,8 +89,6 @@ TEMPLATES = [
         },
     },
 ]
-# Login template location
-LOGIN_TEMPLATE = 'registration/login.html'
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -82,18 +97,10 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -110,7 +117,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Authentication Routing
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
+# Authentication settings
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/resources/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'

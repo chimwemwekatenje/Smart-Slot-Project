@@ -12,45 +12,123 @@
             color: #e2e8f0;
             min-height: 100vh;
         }
+
+        /* ── Navbar ── */
         .navbar {
             background-color: #1e2937;
-            padding: 1rem 2rem;
+            padding: 0 2rem;
+            height: 60px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #334155;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         .logo {
-            font-size: 1.8rem;
-            font-weight: bold;
+            font-size: 1.4rem;
+            font-weight: 800;
             color: #14b8a6;
+            text-decoration: none;
+            letter-spacing: -0.3px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
         .nav-links a {
-            color: #e2e8f0;
+            color: #94a3b8;
             text-decoration: none;
-            margin-left: 2rem;
+            font-size: 0.875rem;
             font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: color 0.15s, background 0.15s;
         }
         .nav-links a:hover {
+            color: #e2e8f0;
+            background: #0f172a;
+        }
+        .nav-links a.active {
             color: #14b8a6;
         }
+        .nav-divider {
+            width: 1px;
+            height: 20px;
+            background: #334155;
+            margin: 0 0.5rem;
+        }
+        /* Logout button — styled as a subtle danger link */
+        .nav-logout-form { display: inline; }
+        .nav-logout-btn {
+            background: none;
+            border: 1px solid #ef4444;
+            color: #f87171;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 5px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            font-family: inherit;
+        }
+        .nav-logout-btn:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+        /* Login / Signup button */
+        .nav-login-btn {
+            background: #14b8a6;
+            color: #fff !important;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .nav-login-btn:hover {
+            background: #0f766e !important;
+            color: #fff !important;
+        }
+        /* Admin Panel button — always visible, amber accent */
+        .nav-admin-btn {
+            color: #fbbf24 !important;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid #78350f;
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+        }
+        .nav-admin-btn:hover {
+            background: #78350f !important;
+            color: #fde68a !important;
+        }
+        /* Username pill */
+        .nav-user {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+            padding: 4px 10px;
+            background: #0f172a;
+            border-radius: 20px;
+            letter-spacing: 0.02em;
+        }
+
+        /* ── Page container ── */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 3rem 2rem;
-            text-align: center;
         }
-        h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            color: #14b8a6;
-        }
-        p {
-            font-size: 1.3rem;
-            max-width: 700px;
-            margin: 0 auto 3rem;
-            line-height: 1.6;
-        }
+
+        /* ── Legacy homepage styles (used by base block default) ── */
+        h1 { font-size: 3.5rem; margin-bottom: 1rem; color: #14b8a6; }
+        p  { font-size: 1.3rem; max-width: 700px; margin: 0 auto 3rem; line-height: 1.6; }
         .btn {
             display: inline-block;
             background-color: #14b8a6;
@@ -63,10 +141,7 @@
             margin: 10px;
             transition: all 0.3s;
         }
-        .btn:hover {
-            background-color: #0f766e;
-            transform: translateY(-3px);
-        }
+        .btn:hover { background-color: #0f766e; transform: translateY(-3px); }
         .features {
             margin-top: 4rem;
             display: grid;
@@ -79,47 +154,66 @@
             border-radius: 12px;
             border: 1px solid #334155;
         }
+
+        /* ── Flash messages ── */
+        .messages { list-style: none; padding: 0.75rem 2rem; }
+        .messages li {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .messages .success { background: #052e16; color: #86efac; border: 1px solid #166534; }
+        .messages .error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+        .messages .info    { background: #0c1a2e; color: #93c5fd; border: 1px solid #1e40af; }
+        .messages .warning { background: #1c1400; color: #fcd34d; border: 1px solid #92400e; }
     </style>
 </head>
 <body>
+
+    <!-- ───────────── Navigation ───────────── -->
     <nav class="navbar">
-        <div class="logo">SmartSlot</div>
+        <a href="/" class="logo">SmartSlot</a>
+
         <div class="nav-links">
             <a href="/">Home</a>
             <a href="/resources/">Resources</a>
             <a href="/bookings/">My Bookings</a>
-            <a href="/admin/">Admin Panel</a>
+
+            <div class="nav-divider"></div>
+
+            <!-- Admin Panel — always visible -->
+            <a href="/admin/" class="nav-admin-btn">Admin Panel</a>
+
+            <div class="nav-divider"></div>
+
+            {% if user.is_authenticated %}
+                <span class="nav-user">{{ user.username }}</span>
+                <form class="nav-logout-form" action="/accounts/logout/" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-logout-btn">Log Out</button>
+                </form>
+            {% else %}
+                <a href="/accounts/signup/">Sign Up</a>
+                <a href="/accounts/login/" class="nav-login-btn">Login</a>
+            {% endif %}
         </div>
     </nav>
 
-    <div class="container">
-        {% block content %}
-            {% if show_welcome %}
-                <h1>Welcome to SmartSlot</h1>
-                <p>
-                    The smart way to book and manage office resources.<br>
-                    Real-time availability • PayChangu payments • QR code verification
-                </p>
-                
-                <a href="/resources/" class="btn">Browse Available Resources</a>
-                <a href="/admin/" class="btn" style="background-color: #64748b;">Go to Admin Panel</a>
+    <!-- ───────────── Flash Messages ───────────── -->
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
-                <div class="features">
-                    <div class="card">
-                        <h3>📅 Real-time Calendar</h3>
-                        <p>See what's available instantly and avoid double bookings.</p>
-                    </div>
-                    <div class="card">
-                        <h3>💰 Secure Payments</h3>
-                        <p>Pay with PayChangu or book free resources instantly.</p>
-                    </div>
-                    <div class="card">
-                        <h3>📱 QR Verification</h3>
-                        <p>Scan QR code on arrival for automatic check-in.</p>
-                    </div>
-                </div>
-            {% endif %}
-        {% endblock %}
+    <!-- ───────────── Page Content ───────────── -->
+    <div class="container">
+        {% block content %}{% endblock %}
     </div>
+
 </body>
 </html>

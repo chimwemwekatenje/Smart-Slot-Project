@@ -1,81 +1,102 @@
 {% extends "base.html" %}
-{% load static crispy_forms_tags %}
+{% load static %}
 
 {% block content %}
-<div class="font-sans min-h-screen flex items-center justify-center bg-[#0d1117] text-gray-200 p-4">
-  
-  <!-- Centered Card Container -->
-  <div class="w-full max-w-md bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl overflow-hidden">
-    
-    <!-- Header (Teal Django Admin Style) -->
-    <div class="bg-[#2dbb95] text-gray-900 px-6 py-4 flex justify-between items-center">
-      <h2 class="text-lg font-bold tracking-wide">Login to SmartSlot</h2>
-      <!-- Card Tabs -->
-      <div class="flex space-x-4 text-sm font-semibold">
-        <span class="text-gray-900 border-b-[3px] border-gray-900 pb-0.5 cursor-default leading-none">Login</span>
-        <a href="{% url 'signup' %}" class="text-gray-800 hover:text-gray-900 opacity-70 hover:opacity-100 transition-opacity pb-0.5 leading-none">Sign Up</a>
-      </div>
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem 1rem; background:#0f172a;">
+  <div style="width:100%; max-width:400px;">
+
+    <!-- Logo / Brand -->
+    <div style="text-align:center; margin-bottom:2.5rem;">
+      <div style="font-size:2rem; font-weight:800; color:#14b8a6; letter-spacing:-0.5px;">SmartSlot</div>
+      <h1 style="font-size:1.4rem; font-weight:700; color:#f1f5f9; margin-top:0.5rem;">Welcome back</h1>
+      <p style="font-size:0.9rem; color:#64748b; margin-top:0.25rem;">Sign in to your account to continue</p>
     </div>
 
-    <!-- Form Body -->
-    <div class="p-6 sm:p-8">
-      <form action="{% url 'login' %}" method="POST" class="space-y-5">
+    <!-- Card -->
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:16px; padding:2rem; box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+      <form action="{% url 'login' %}" method="POST" style="display:flex; flex-direction:column; gap:1.25rem;">
         {% csrf_token %}
-        {% if next %}
-          <input type="hidden" name="next" value="{{ next }}" />
-        {% endif %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
         {% if form.non_field_errors %}
-          <div class="text-red-400 text-sm mb-4 bg-red-900/10 p-3 rounded border border-red-500/20">
-            {{ form.non_field_errors }}
-          </div>
+        <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:0.75rem 1rem; font-size:0.85rem; color:#fca5a5;">
+          {{ form.non_field_errors }}
+        </div>
         {% endif %}
 
-        <!-- Username Field -->
-        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
-          <label for="{{ form.username.id_for_label }}" class="text-sm font-semibold text-gray-300">Username:</label>
-          <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}" 
-                 required autofocus
-                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
-          {% if form.username.errors %}
-            <p class="mt-1 text-xs text-red-500">{{ form.username.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Password Field -->
-        <div class="flex flex-col space-y-1.5 focus-within:text-gray-200 transition-colors">
-          <label for="{{ form.password.id_for_label }}" class="text-sm font-semibold text-gray-300">Password:</label>
-          <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}" 
-                 required
-                 class="w-full h-[42px] bg-[#0b1016] border border-[#30363d] text-gray-200 text-sm rounded focus:ring-1 focus:ring-[#2dbb95] focus:border-[#2dbb95] block px-3 transition-colors placeholder-gray-600">
-          {% if form.password.errors %}
-            <p class="mt-1 text-xs text-red-500">{{ form.password.errors.0 }}</p>
-          {% endif %}
-          
-          <!-- Forgot Password below password -->
-          <div class="pt-0.5">
-            <a href="{% url 'password_reset' %}" class="text-xs text-[#2dbb95] hover:text-[#28a784] font-medium transition-colors hover:underline">Forgot password?</a>
+        <!-- Username -->
+        <div>
+          <label for="{{ form.username.id_for_label }}" style="display:block; font-size:0.8rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem;">Username</label>
+          <div style="position:relative;">
+            <span style="position:absolute; left:0.875rem; top:50%; transform:translateY(-50%); color:#475569; display:flex; align-items:center;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              name="{{ form.username.html_name }}"
+              id="{{ form.username.id_for_label }}"
+              required autofocus
+              placeholder="Enter your username"
+              style="width:100%; padding:0.75rem 0.875rem 0.75rem 2.5rem; background:#0f172a; border:1.5px solid #334155; border-radius:10px; color:#f1f5f9; font-size:0.95rem; outline:none; box-sizing:border-box; transition:border-color 0.2s;"
+              onfocus="this.style.borderColor='#14b8a6'"
+              onblur="this.style.borderColor='#334155'"
+            >
           </div>
+          {% if form.username.errors %}<p style="color:#f87171; font-size:0.78rem; margin-top:0.3rem;">{{ form.username.errors.0 }}</p>{% endif %}
         </div>
 
-        <!-- Keep me logged in -->
-        <div class="flex items-center pt-2">
-          <label for="remember-me" class="flex items-center cursor-pointer group">
-            <input id="remember-me" name="remember-me" type="checkbox" 
-                   class="w-4 h-4 text-[#2dbb95] bg-[#0b1016] border-[#30363d] rounded focus:ring-1 focus:ring-[#2dbb95] focus:ring-offset-0 focus:ring-offset-[#161b22] cursor-pointer">
-            <span class="ml-2 text-sm text-gray-300 group-hover:text-gray-100 transition-colors">Keep me logged in</span>
-          </label>
+        <!-- Password -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+            <label for="{{ form.password.id_for_label }}" style="font-size:0.8rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Password</label>
+            <a href="{% url 'password_reset' %}" style="font-size:0.8rem; color:#14b8a6; text-decoration:none; font-weight:500;" onmouseover="this.style.color='#0f766e'" onmouseout="this.style.color='#14b8a6'">Forgot password?</a>
+          </div>
+          <div style="position:relative;">
+            <span style="position:absolute; left:0.875rem; top:50%; transform:translateY(-50%); color:#475569; display:flex; align-items:center;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10a4 4 0 00-8 0v4h8V7z"/>
+              </svg>
+            </span>
+            <input
+              type="password"
+              name="{{ form.password.html_name }}"
+              id="{{ form.password.id_for_label }}"
+              required
+              placeholder="Enter your password"
+              style="width:100%; padding:0.75rem 0.875rem 0.75rem 2.5rem; background:#0f172a; border:1.5px solid #334155; border-radius:10px; color:#f1f5f9; font-size:0.95rem; outline:none; box-sizing:border-box; transition:border-color 0.2s;"
+              onfocus="this.style.borderColor='#14b8a6'"
+              onblur="this.style.borderColor='#334155'"
+            >
+          </div>
+          {% if form.password.errors %}<p style="color:#f87171; font-size:0.78rem; margin-top:0.3rem;">{{ form.password.errors.0 }}</p>{% endif %}
         </div>
 
-        <!-- Submit Button -->
-        <div class="pt-4">
-          <button type="submit" 
-                  class="w-full flex justify-center items-center h-[42px] rounded text-sm font-bold text-gray-900 bg-[#2dbb95] hover:bg-[#28a784] transition-colors hover:shadow-[0_0_15px_rgba(45,187,149,0.2)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#161b22] focus:ring-[#2dbb95]">
-            Login
-          </button>
-        </div>
+        <!-- Remember Me -->
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+          <input type="checkbox" name="remember-me" id="remember-me" style="width:15px; height:15px; accent-color:#14b8a6; cursor:pointer;">
+          <span style="font-size:0.875rem; color:#94a3b8;">Remember me</span>
+        </label>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          style="width:100%; padding:0.825rem; background:#14b8a6; color:#fff; font-size:0.95rem; font-weight:700; border:none; border-radius:10px; cursor:pointer; transition:background 0.2s, transform 0.1s; letter-spacing:0.02em; margin-top:0.25rem;"
+          onmouseover="this.style.background='#0f766e'; this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.background='#14b8a6'; this.style.transform='translateY(0)'"
+        >
+          Sign In
+        </button>
       </form>
     </div>
+
+    <!-- Footer link -->
+    <p style="text-align:center; margin-top:1.5rem; font-size:0.875rem; color:#64748b;">
+      Don't have an account?
+      <a href="{% url 'signup' %}" style="color:#14b8a6; font-weight:600; text-decoration:none; margin-left:0.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Create one</a>
+    </p>
+
   </div>
 </div>
-{% endblock content %}
+{% endblock %}

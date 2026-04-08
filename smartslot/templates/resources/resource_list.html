@@ -1,154 +1,329 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<div style="text-align:left; max-width:1200px; margin:0 auto;">
+<div style="max-width:1200px; margin:0 auto;">
 
+    <!-- ── Page Header ── -->
     <div style="margin-bottom:2rem;">
-        <h1 style="font-size:2rem; font-weight:700; color:#f1f5f9; margin-bottom:0.3rem;">Available Resources</h1>
-        <p style="color:#64748b; font-size:0.95rem;">Browse and book shared office resources across your organisation.</p>
+        <h1 style="font-size:1.9rem; font-weight:800; color:#f1f5f9; margin-bottom:0.3rem;">Available Resources</h1>
+        <p style="color:#64748b; font-size:0.9rem;">Browse and book shared resources across your organisation.</p>
     </div>
 
-    <!-- Search & Filter -->
-    <form method="get" style="display:flex; gap:0.75rem; margin-bottom:2rem; flex-wrap:wrap; align-items:center;">
-        <div style="position:relative; flex:1; min-width:200px;">
-            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#64748b; font-size:1rem;">🔍</span>
-            <input type="text" name="q" value="{{ request.GET.q }}"
-                placeholder="Search resources..."
-                style="width:100%; padding:10px 14px 10px 36px; border-radius:8px;
-                       background:#1e2937; border:1px solid #334155; color:#e2e8f0;
-                       font-size:0.9rem; outline:none;" />
+    <!-- ── Search Bar ── -->
+    <form method="get" id="filter-form">
+        <div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
+            <div style="position:relative; flex:1; min-width:220px;">
+                <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%);
+                             color:#475569; display:flex; align-items:center; pointer-events:none;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                    </svg>
+                </span>
+                <input type="text" name="q" value="{{ active_q }}"
+                    placeholder="Search by name or category…"
+                    style="width:100%; padding:10px 14px 10px 38px; background:#1e2937;
+                           border:1.5px solid #334155; border-radius:10px; color:#e2e8f0;
+                           font-size:0.9rem; outline:none; box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#14b8a6'"
+                    onblur="this.style.borderColor='#334155'" />
+            </div>
+            <button type="submit"
+                style="padding:10px 22px; background:#14b8a6; color:#fff; border:none;
+                       border-radius:10px; font-size:0.9rem; font-weight:700; cursor:pointer;
+                       transition:background 0.2s;"
+                onmouseover="this.style.background='#0f766e'"
+                onmouseout="this.style.background='#14b8a6'">
+                Search
+            </button>
+            {% if active_q or active_category or active_price %}
+            <a href="/resources/"
+               style="padding:10px 16px; background:#1e2937; border:1.5px solid #334155;
+                      color:#94a3b8; border-radius:10px; text-decoration:none; font-size:0.9rem;
+                      font-weight:500; display:flex; align-items:center; gap:0.4rem;">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Clear
+            </a>
+            {% endif %}
         </div>
-        <select name="category"
-            style="padding:10px 14px; border-radius:8px; background:#1e2937;
-                   border:1px solid #334155; color:#e2e8f0; font-size:0.9rem; outline:none; cursor:pointer;">
-            <option value="">All Categories</option>
-            <option value="Boardroom" {% if request.GET.category == 'Boardroom' %}selected{% endif %}>🏢 Boardroom</option>
-            <option value="Vehicle"   {% if request.GET.category == 'Vehicle'   %}selected{% endif %}>🚗 Vehicle</option>
-            <option value="Equipment" {% if request.GET.category == 'Equipment' %}selected{% endif %}>🖥️ Equipment</option>
-        </select>
-        <button type="submit"
-            style="padding:10px 22px; border-radius:8px; background:#14b8a6;
-                   color:#fff; border:none; font-weight:600; cursor:pointer; font-size:0.9rem;">
-            Search
-        </button>
-        {% if request.GET.q or request.GET.category %}
-        <a href="/resources/"
-            style="padding:10px 16px; border-radius:8px; background:#334155;
-                   color:#94a3b8; text-decoration:none; font-size:0.9rem;">
-            ✕ Clear
-        </a>
-        {% endif %}
+
+        <!-- ── Filter Pills ── -->
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.75rem; align-items:center;">
+
+            <!-- All -->
+            {% if not active_category and not active_price %}
+            <a href="?q={{ active_q }}"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                All
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                All
+            </a>
+            {% endif %}
+
+            <!-- Free -->
+            {% if active_price == 'free' %}
+            <a href="?q={{ active_q }}&price=free"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                Free
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}&price=free"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                Free
+            </a>
+            {% endif %}
+
+            <!-- Paid -->
+            {% if active_price == 'paid' %}
+            <a href="?q={{ active_q }}&price=paid"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                Paid
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}&price=paid"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                Paid
+            </a>
+            {% endif %}
+
+            <!-- Divider -->
+            <div style="width:1px; height:22px; background:#334155; margin:0 0.2rem;"></div>
+
+            <!-- Boardroom -->
+            {% if active_category == 'Boardroom' %}
+            <a href="?q={{ active_q }}&category=Boardroom"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                🏢 Boardroom
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}&category=Boardroom"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                🏢 Boardroom
+            </a>
+            {% endif %}
+
+            <!-- Vehicle -->
+            {% if active_category == 'Vehicle' %}
+            <a href="?q={{ active_q }}&category=Vehicle"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                🚗 Vehicle
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}&category=Vehicle"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                🚗 Vehicle
+            </a>
+            {% endif %}
+
+            <!-- Equipment -->
+            {% if active_category == 'Equipment' %}
+            <a href="?q={{ active_q }}&category=Equipment"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                🖥️ Equipment
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}&category=Equipment"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                🖥️ Equipment
+            </a>
+            {% endif %}
+
+            <!-- Lab -->
+            {% if active_category == 'Lab' %}
+            <a href="?q={{ active_q }}&category=Lab"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                🔬 Lab
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}&category=Lab"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                🔬 Lab
+            </a>
+            {% endif %}
+
+            <!-- Sports -->
+            {% if active_category == 'Sports' %}
+            <a href="?q={{ active_q }}&category=Sports"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:#14b8a6; color:#fff; border:1.5px solid #14b8a6; text-decoration:none;">
+                ⚽ Sports
+            </a>
+            {% else %}
+            <a href="?q={{ active_q }}&category=Sports"
+               style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:600;
+                      background:transparent; color:#64748b; border:1.5px solid #334155; text-decoration:none;"
+               onmouseover="this.style.borderColor='#14b8a6'; this.style.color='#14b8a6'"
+               onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                ⚽ Sports
+            </a>
+            {% endif %}
+
+        </div>
     </form>
 
-    <!-- Results count -->
+    <!-- ── Result Count ── -->
     {% if resources %}
-    <p style="color:#64748b; font-size:0.85rem; margin-bottom:1.25rem;">
-        Showing {{ resources|length }} resource{{ resources|length|pluralize }}
+    <p style="font-size:0.82rem; color:#475569; margin-bottom:1.25rem;">
+        Showing <strong style="color:#94a3b8;">{{ resources|length }}</strong>
+        resource{{ resources|length|pluralize }}
     </p>
 
-    <!-- Resource Grid -->
+    <!-- ── Resource Grid ── -->
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:1.5rem;">
-        {% for resource in resources %}
-        <div style="background:#1e2937; border-radius:14px; border:1px solid #334155;
-                    overflow:hidden; display:flex; flex-direction:column;
-                    transition:transform 0.2s, box-shadow 0.2s;"
-             onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.4)';"
-             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 
-            <!-- Image / Placeholder -->
+        {% for resource in resources %}
+        <div style="background:#1e2937; border:1px solid #334155; border-radius:14px;
+                    overflow:hidden; display:flex; flex-direction:column;
+                    transition:transform 0.18s, box-shadow 0.18s, border-color 0.18s;"
+             onmouseover="this.style.transform='translateY(-4px)';
+                          this.style.boxShadow='0 12px 40px rgba(0,0,0,0.45)';
+                          this.style.borderColor='#475569';"
+             onmouseout="this.style.transform='translateY(0)';
+                         this.style.boxShadow='none';
+                         this.style.borderColor='#334155';">
+
+            <!-- Photo -->
             {% if resource.photo %}
-                <img src="{{ resource.photo.url }}" alt="{{ resource.name }}"
-                     style="width:100%; height:175px; object-fit:cover;" />
+            <img src="{{ resource.photo.url }}" alt="{{ resource.name }}"
+                 style="width:100%; height:170px; object-fit:cover;" />
             {% else %}
-                <div style="width:100%; height:175px; background:linear-gradient(135deg,#0f172a,#1e2937);
-                            display:flex; align-items:center; justify-content:center; font-size:3.5rem;">
+            <div style="width:100%; height:170px;
+                        background:linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
+                        display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:3.5rem; opacity:0.55;">
                     {% if resource.category == 'Boardroom' %}🏢
                     {% elif resource.category == 'Vehicle' %}🚗
                     {% elif resource.category == 'Equipment' %}🖥️
-                    {% else %}📦{% endif %}
-                </div>
+                    {% elif resource.category == 'Lab' %}🔬
+                    {% elif resource.category == 'Sports' %}⚽
+                    {% else %}📦
+                    {% endif %}
+                </span>
+            </div>
             {% endif %}
 
             <!-- Card Body -->
-            <div style="padding:1.25rem; flex:1; display:flex; flex-direction:column; gap:0.6rem;">
+            <div style="padding:1.25rem 1.25rem 1rem; display:flex; flex-direction:column;
+                        gap:0.65rem; flex:1;">
 
-                <!-- Category + Status row -->
+                <!-- Category + Price badges -->
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.72rem; font-weight:700; text-transform:uppercase;
-                                 letter-spacing:0.08em; color:#14b8a6; background:#0f2a27;
-                                 padding:3px 10px; border-radius:20px;">
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                                 letter-spacing:0.08em; color:#14b8a6;
+                                 background:rgba(20,184,166,0.1); padding:3px 10px; border-radius:20px;">
                         {{ resource.category }}
                     </span>
-                    <span style="font-size:0.72rem; font-weight:600; color:#22c55e;
-                                 background:#052e16; padding:3px 10px; border-radius:20px;">
-                        ● Available
+                    {% if resource.price == 0 %}
+                    <span style="font-size:0.75rem; font-weight:700; color:#22c55e;
+                                 background:rgba(34,197,94,0.1); padding:3px 10px; border-radius:20px;">
+                        Free
                     </span>
+                    {% else %}
+                    <span style="font-size:0.75rem; font-weight:700; color:#f59e0b;
+                                 background:rgba(245,158,11,0.1); padding:3px 10px; border-radius:20px;">
+                        MWK {{ resource.price|floatformat:0 }}
+                    </span>
+                    {% endif %}
                 </div>
 
                 <!-- Name -->
-                <h3 style="font-size:1.05rem; font-weight:700; color:#f1f5f9; margin:0; line-height:1.3;">
+                <h3 style="font-size:1.05rem; font-weight:700; color:#f1f5f9;
+                           margin:0; line-height:1.3;">
                     {{ resource.name }}
                 </h3>
 
-                <!-- Org -->
-                <div style="display:flex; align-items:center; gap:0.5rem;">
+                <!-- Organisation -->
+                <div style="display:flex; align-items:center; gap:0.45rem;">
                     {% if resource.organisation.logo %}
-                        <img src="{{ resource.organisation.logo.url }}"
-                             style="height:18px; width:18px; border-radius:3px; object-fit:cover;" />
+                    <img src="{{ resource.organisation.logo.url }}"
+                         style="height:16px; width:16px; border-radius:3px; object-fit:cover;" />
                     {% else %}
-                        <span style="font-size:0.8rem;">🏛️</span>
+                    <span style="font-size:0.8rem; opacity:0.7;">🏛️</span>
                     {% endif %}
-                    <span style="font-size:0.8rem; color:#64748b;">{{ resource.organisation.name }}</span>
+                    <span style="font-size:0.8rem; color:#475569; font-weight:500;">
+                        {{ resource.organisation.name }}
+                    </span>
                 </div>
 
                 <!-- Description -->
                 {% if resource.description %}
-                <p style="font-size:0.85rem; color:#94a3b8; line-height:1.55; margin:0;
-                          display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                <p style="font-size:0.85rem; color:#64748b; line-height:1.55; margin:0;
+                          overflow:hidden; display:-webkit-box;
+                          -webkit-line-clamp:2; -webkit-box-orient:vertical;">
                     {{ resource.description }}
                 </p>
                 {% endif %}
 
-                <!-- Divider -->
-                <div style="border-top:1px solid #334155; margin-top:0.4rem;"></div>
+                <!-- Spacer -->
+                <div style="flex:1;"></div>
 
-                <!-- Price + Book -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.2rem;">
-                    {% if resource.price == 0 %}
-                        <div>
-                            <span style="font-size:1.1rem; font-weight:800; color:#22c55e;">Free</span>
-                            <span style="font-size:0.75rem; color:#64748b; display:block;">No charge</span>
-                        </div>
-                    {% else %}
-                        <div>
-                            <span style="font-size:1.1rem; font-weight:800; color:#f59e0b;">
-                                MWK {{ resource.price|floatformat:0 }}
-                            </span>
-                            <span style="font-size:0.75rem; color:#64748b; display:block;">per booking</span>
-                        </div>
-                    {% endif %}
-                    <a href="{% url 'booking_create' resource.pk %}"
-                       style="padding:9px 20px; background:#14b8a6; color:#fff;
-                              border-radius:8px; text-decoration:none; font-size:0.85rem;
-                              font-weight:700; letter-spacing:0.02em;
-                              transition:background 0.2s;"
-                       onmouseover="this.style.background='#0f766e'"
-                       onmouseout="this.style.background='#14b8a6'">
-                        Book Now →
-                    </a>
-                </div>
+                <!-- Divider -->
+                <div style="border-top:1px solid #334155; margin:0.25rem 0;"></div>
+
+                <!-- Book Now -->
+                <a href="{% url 'booking_create' resource.pk %}"
+                   style="display:block; text-align:center; padding:10px; background:#14b8a6;
+                          color:#fff; border-radius:8px; text-decoration:none; font-size:0.875rem;
+                          font-weight:700; transition:background 0.18s;"
+                   onmouseover="this.style.background='#0f766e'"
+                   onmouseout="this.style.background='#14b8a6'">
+                    Book Now →
+                </a>
 
             </div>
         </div>
         {% endfor %}
+
     </div>
 
     {% else %}
-    <div style="text-align:center; padding:5rem 0; color:#64748b;">
-        <div style="font-size:3.5rem; margin-bottom:1rem;">🔍</div>
-        <p style="font-size:1.05rem; color:#94a3b8;">No resources found matching your search.</p>
-        <a href="/resources/" style="color:#14b8a6; text-decoration:none; font-size:0.9rem; margin-top:0.75rem; display:inline-block;">
-            ← Clear filters
+    <!-- ── Empty State ── -->
+    <div style="text-align:center; padding:5rem 2rem;">
+        <div style="font-size:4rem; margin-bottom:1rem; opacity:0.4;">🔍</div>
+        <h3 style="font-size:1.1rem; font-weight:700; color:#94a3b8; margin-bottom:0.5rem;">
+            No resources found
+        </h3>
+        <p style="font-size:0.875rem; color:#475569; margin-bottom:1.5rem;">
+            Try a different search term or remove the active filters.
+        </p>
+        <a href="/resources/"
+           style="display:inline-block; padding:10px 24px; background:#14b8a6; color:#fff;
+                  border-radius:10px; text-decoration:none; font-size:0.875rem; font-weight:700;">
+            Clear Filters
         </a>
     </div>
     {% endif %}

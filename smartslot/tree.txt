@@ -1,0 +1,163 @@
+﻿Folder PATH listing
+Volume serial number is 9AC2-9F4B
+C:\USERS\SIFIS\DOCUMENTS\UNIMA\4TH YEAR\SEMESTER 2\COM 422 ICT PROJECT\SMART-SLOT-PROJECT\SMARTSLOT\APPS
++---accounts
+|   |   admin.py
+|   |   apps.py
+|   |   forms.py
+|   |   models.py
+|   |   services.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-313.pyc
+|   |           __init__.cpython-313.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-313.pyc
+|           apps.cpython-313.pyc
+|           forms.cpython-313.pyc
+|           models.cpython-313.pyc
+|           urls.cpython-313.pyc
+|           views.cpython-313.pyc
+|           __init__.cpython-313.pyc
+|           
++---bookings
+|   |   admin.py
+|   |   apps.py
+|   |   forms.py
+|   |   models.py
+|   |   services.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-313.pyc
+|   |           __init__.cpython-313.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-313.pyc
+|           apps.cpython-313.pyc
+|           forms.cpython-313.pyc
+|           models.cpython-313.pyc
+|           urls.cpython-313.pyc
+|           views.cpython-313.pyc
+|           __init__.cpython-313.pyc
+|           
++---core
+|   |   admin.py
+|   |   apps.py
+|   |   forms.py
+|   |   models.py
+|   |   services.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---management
+|   |   |   __init__.py
+|   |   |   
+|   |   +---commands
+|   |   |       seed_db.py
+|   |   |       __init__.py
+|   |   |       
+|   |   \---__pycache__
+|   |           __init__.cpython-313.pyc
+|   |           
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-313.pyc
+|   |           __init__.cpython-313.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-313.pyc
+|           apps.cpython-313.pyc
+|           models.cpython-313.pyc
+|           __init__.cpython-313.pyc
+|           
++---payments
+|   |   admin.py
+|   |   apps.py
+|   |   forms.py
+|   |   models.py
+|   |   services.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-313.pyc
+|   |           __init__.cpython-313.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-313.pyc
+|           apps.cpython-313.pyc
+|           models.cpython-313.pyc
+|           __init__.cpython-313.pyc
+|           
++---resources
+|   |   admin.py
+|   |   apps.py
+|   |   forms.py
+|   |   models.py
+|   |   services.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-313.pyc
+|   |           __init__.cpython-313.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-313.pyc
+|           apps.cpython-313.pyc
+|           models.cpython-313.pyc
+|           urls.cpython-313.pyc
+|           views.cpython-313.pyc
+|           __init__.cpython-313.pyc
+|           
+\---verification
+    |   admin.py
+    |   apps.py
+    |   forms.py
+    |   models.py
+    |   services.py
+    |   urls.py
+    |   views.py
+    |   __init__.py
+    |   
+    +---migrations
+    |   |   __init__.py
+    |   |   
+    |   \---__pycache__
+    |           __init__.cpython-313.pyc
+    |           
+    \---__pycache__
+            admin.cpython-313.pyc
+            apps.cpython-313.pyc
+            models.cpython-313.pyc
+            __init__.cpython-313.pyc
+            

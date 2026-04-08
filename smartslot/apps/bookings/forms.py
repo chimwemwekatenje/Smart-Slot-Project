@@ -12,9 +12,15 @@ class BookingForm(forms.ModelForm):
         input_formats=['%Y-%m-%dT%H:%M'],
     )
 
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Any special requests or notes (optional)…'}),
+        label='Notes',
+    )
+
     class Meta:
         model = Booking
-        fields = ['start_time', 'end_time']
+        fields = ['start_time', 'end_time', 'notes']
 
     def clean(self):
         cleaned_data = super().clean()

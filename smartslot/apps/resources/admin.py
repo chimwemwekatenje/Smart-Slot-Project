@@ -37,12 +37,15 @@ class ResourceAdmin(admin.ModelAdmin):
         )
     photo_preview.short_description = 'Photo'
 
+    @admin.display(description='Price', ordering='price')
     def price_display(self, obj):
-        if obj.price == 0:
-            return format_html('<span style="color:#14b8a6;font-weight:600;">Free</span>')
+        # Convert Decimal → int first; format_html cannot apply {:,.0f} to a SafeString
+        price_int = int(obj.price)
+        if price_int == 0:
+            return format_html(
+                '<span style="color:#22c55e;font-weight:600;">Free</span>'
+            )
         return format_html(
-            '<span style="color:#f59e0b;font-weight:600;">MWK {:,.0f}</span>',
-            obj.price
+            '<span style="color:#f59e0b;font-weight:600;">MWK {:,}</span>',
+            price_int
         )
-    price_display.short_description = 'Price'
-    price_display.admin_order_field = 'price'

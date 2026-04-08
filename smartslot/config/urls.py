@@ -1,30 +1,25 @@
 from django.contrib import admin
 from django.urls import path, include
-<<<<<<< HEAD
-from apps.accounts.views import HomeView
-=======
 from django.conf import settings
 from django.conf.urls.static import static
->>>>>>> 3866a6e38bb550f841754e8170fe0abcc3448923
+
+from apps.accounts.views import HomeView
 
 urlpatterns = [
     # Admin Interface
     path('admin/', admin.site.urls),
 
-    # 1. Built-in Authentication URLs (must come first!)
-    path('accounts/', include('django.contrib.auth.urls')),
-
-    # 2. Custom Account URLs (registration, profile, dashboard)
+    # All auth URLs (login, logout, signup, password-reset) handled in accounts app
     path('accounts/', include('apps.accounts.urls')),
 
-    # 3. Other Apps
+    # Other Apps
     path('resources/', include('apps.resources.urls')),
     path('bookings/', include('apps.bookings.urls')),
-<<<<<<< HEAD
 
-    # 4. Homepage
+    # Homepage (must be last to avoid catching other URLs)
     path('', HomeView.as_view(), name='home'),
 ]
-=======
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
->>>>>>> 3866a6e38bb550f841754e8170fe0abcc3448923
+
+# Serve media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

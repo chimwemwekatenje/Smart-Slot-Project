@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div style="max-width:680px; margin:0 auto;">
+
+    <!-- Breadcrumb -->
+    <nav style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; color:#475569; margin-bottom:2rem;">
+        <a href="/resources/" style="color:#64748b; text-decoration:none;"
+           onmouseover="this.style.color='#14b8a6'" onmouseout="this.style.color='#64748b'">Resources</a>
+        <span>›</span>
+        <span style="color:#94a3b8;">Book Resource</span>
+    </nav>
+
+    <!-- Resource summary banner -->
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:12px;
+                display:flex; align-items:center; gap:1.25rem; padding:1.25rem; margin-bottom:2rem;">
+        {% if resource.photo %}
+            <img src="{{ resource.photo.url }}" alt="{{ resource.name }}"
+                 style="width:72px; height:72px; object-fit:cover; border-radius:8px; flex-shrink:0;" />
+        {% else %}
+            <div style="width:72px; height:72px; background:#0f172a; border-radius:8px; flex-shrink:0;
+                        display:flex; align-items:center; justify-content:center; font-size:2rem;">
+                {% if resource.category == 'Boardroom' %}🏢
+                {% elif resource.category == 'Vehicle' %}🚗
+                {% elif resource.category == 'Equipment' %}🖥️
+                {% else %}📦{% endif %}
+            </div>
+        {% endif %}
+        <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+                <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+                             color:#14b8a6; background:rgba(20,184,166,0.1); padding:2px 9px; border-radius:20px;">
+                    {{ resource.category }}
+                </span>
+                {% if resource.price == 0 %}
+                <span style="font-size:0.7rem; font-weight:700; color:#22c55e;
+                             background:rgba(34,197,94,0.1); padding:2px 9px; border-radius:20px;">Free</span>
+                {% else %}
+                <span style="font-size:0.7rem; font-weight:700; color:#f59e0b;
+                             background:rgba(245,158,11,0.1); padding:2px 9px; border-radius:20px;">
+                    MWK {{ resource.price|floatformat:0 }}
+                </span>
+                {% endif %}
+            </div>
+            <h2 style="font-size:1.1rem; font-weight:700; color:#f1f5f9; margin:0.35rem 0 0.2rem;">
+                {{ resource.name }}
+            </h2>
+            <p style="font-size:0.82rem; color:#475569; margin:0;">{{ resource.organisation.name }}</p>
+        </div>
+    </div>
+
+    <!-- Booking Form card -->
+    <div style="background:#1e2937; border:1px solid #334155; border-radius:16px; overflow:hidden;">
+        <!-- Card header -->
+        <div style="padding:1.25rem 1.5rem; border-bottom:1px solid #334155;">
+            <h1 style="font-size:1.15rem; font-weight:700; color:#f1f5f9; margin:0;">Make a Booking</h1>
+            <p style="font-size:0.82rem; color:#64748b; margin:0.2rem 0 0;">
+                You are booking as <strong style="color:#94a3b8;">{{ user.username }}</strong>
+            </p>
+        </div>
+
+        <!-- Form body -->
+        <div style="padding:1.5rem;">
+            <form action="" method="POST" style="display:flex; flex-direction:column; gap:1.25rem;">
+                {% csrf_token %}
+
+                <!-- Non-field errors -->
+                {% if form.non_field_errors %}
+                <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3);
+                            border-radius:8px; padding:0.75rem 1rem; font-size:0.85rem; color:#fca5a5;">
+                    {% for error in form.non_field_errors %}
+                    <p style="margin:0;">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Start Time -->
+                <div>
+                    <label for="{{ form.start_time.id_for_label }}"
+                           style="display:block; font-size:0.8rem; font-weight:600; color:#94a3b8;
+                                  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem;">
+                        Start Date &amp; Time
+                    </label>
+                    <input type="datetime-local"
+                           name="{{ form.start_time.html_name }}"
+                           id="{{ form.start_time.id_for_label }}"
+                           value="{{ form.start_time.value|default:'' }}"
+                           required
+                           style="width:100%; padding:0.75rem 1rem; background:#0f172a; border:1.5px solid #334155;
+                                  border-radius:10px; color:#e2e8f0; font-size:0.9rem; outline:none;
+                                  box-sizing:border-box; transition:border-color 0.2s;
+                                  color-scheme:dark;"
+                           onfocus="this.style.borderColor='#14b8a6'"
+                           onblur="this.style.borderColor='#334155'">
+                    {% if form.start_time.errors %}
+                    <p style="color:#f87171; font-size:0.78rem; margin-top:0.3rem;">{{ form.start_time.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- End Time -->
+                <div>
+                    <label for="{{ form.end_time.id_for_label }}"
+                           style="display:block; font-size:0.8rem; font-weight:600; color:#94a3b8;
+                                  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem;">
+                        End Date &amp; Time
+                    </label>
+                    <input type="datetime-local"
+                           name="{{ form.end_time.html_name }}"
+                           id="{{ form.end_time.id_for_label }}"
+                           value="{{ form.end_time.value|default:'' }}"
+                           required
+                           style="width:100%; padding:0.75rem 1rem; background:#0f172a; border:1.5px solid #334155;
+                                  border-radius:10px; color:#e2e8f0; font-size:0.9rem; outline:none;
+                                  box-sizing:border-box; transition:border-color 0.2s;
+                                  color-scheme:dark;"
+                           onfocus="this.style.borderColor='#14b8a6'"
+                           onblur="this.style.borderColor='#334155'">
+                    {% if form.end_time.errors %}
+                    <p style="color:#f87171; font-size:0.78rem; margin-top:0.3rem;">{{ form.end_time.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label for="{{ form.notes.id_for_label }}"
+                           style="display:block; font-size:0.8rem; font-weight:600; color:#94a3b8;
+                                  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem;">
+                        Notes
+                        <span style="font-weight:400; text-transform:none; letter-spacing:0; font-size:0.78rem;
+                                     color:#475569; margin-left:0.3rem;">(optional)</span>
+                    </label>
+                    <textarea name="{{ form.notes.html_name }}"
+                              id="{{ form.notes.id_for_label }}"
+                              rows="3"
+                              placeholder="Any special requests or setup requirements…"
+                              style="width:100%; padding:0.75rem 1rem; background:#0f172a; border:1.5px solid #334155;
+                                     border-radius:10px; color:#e2e8f0; font-size:0.9rem; outline:none;
+                                     box-sizing:border-box; resize:vertical; font-family:inherit;
+                                     transition:border-color 0.2s;"
+                              onfocus="this.style.borderColor='#14b8a6'"
+                              onblur="this.style.borderColor='#334155'">{{ form.notes.value|default:'' }}</textarea>
+                </div>
+
+                <!-- Divider -->
+                <div style="border-top:1px solid #334155;"></div>
+
+                <!-- Actions -->
+                <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                    <button type="submit"
+                        style="flex:1; min-width:140px; padding:0.85rem; background:#14b8a6; color:#fff;
+                               font-size:0.95rem; font-weight:700; border:none; border-radius:10px;
+                               cursor:pointer; transition:background 0.2s, transform 0.1s; letter-spacing:0.02em;"
+                        onmouseover="this.style.background='#0f766e'; this.style.transform='translateY(-1px)'"
+                        onmouseout="this.style.background='#14b8a6'; this.style.transform='translateY(0)'">
+                        Confirm Booking →
+                    </button>
+                    <a href="/resources/"
+                       style="padding:0.85rem 1.25rem; background:#0f172a; border:1.5px solid #334155;
+                              color:#64748b; border-radius:10px; text-decoration:none; font-size:0.9rem;
+                              font-weight:600; transition:border-color 0.2s, color 0.2s; white-space:nowrap;"
+                       onmouseover="this.style.borderColor='#475569'; this.style.color='#94a3b8'"
+                       onmouseout="this.style.borderColor='#334155'; this.style.color='#64748b'">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
