@@ -68,11 +68,19 @@ class BookingSerializer(serializers.ModelSerializer):
     resource_category = serializers.CharField(source='resource.category', read_only=True)
     resource_price = serializers.DecimalField(
         source='resource.price', max_digits=10, decimal_places=2, read_only=True)
+    organisation_name = serializers.CharField(source='organisation.name', read_only=True)
+    booked_by = serializers.SerializerMethodField()
+
+    def get_booked_by(self, obj):
+        u = obj.user
+        full = f"{u.first_name} {u.last_name}".strip()
+        return full if full else u.username
 
     class Meta:
         model = Booking
         fields = ('id', 'resource', 'resource_name', 'resource_category',
-                  'resource_price', 'start_time', 'end_time', 'status',
+                  'resource_price', 'organisation_name', 'booked_by',
+                  'start_time', 'end_time', 'status',
                   'qr_token', 'custom_data', 'issued_at', 'verified_at',
                   'created_at', 'updated_at')
         read_only_fields = ('id', 'status', 'qr_token', 'issued_at',
@@ -101,5 +109,8 @@ class BookingCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['qr_token'] = str(uuid.uuid4())
-        validated_data['user'] = self.context['request'].user
+        user = self.context['request'].user
+        validated_data['user'] = user
+        # BaseModel requires organisation — pull it from the resource
+        validated_data['organisation'] = validated_data['resource'].organisation
         return super().create(validated_data)

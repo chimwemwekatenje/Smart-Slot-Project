@@ -146,3 +146,34 @@ class OrgBookingListView(generics.ListAPIView):
                 resource__organisation=user.organisation
             ).select_related('resource').order_by('-created_at')
         return Booking.objects.none()
+
+
+class ResourceScheduleView(APIView):
+    """Returns active bookings for a resource within a date range for the timetable."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        from datetime import datetime, timedelta
+        # Default: current week (Mon–Sun)
+        week_start_str = request.query_params.get('week_start')
+        if week_start_str:
+            try:
+                week_start = datetime.strptime(week_start_str, '%Y-%m-%d')
+            except ValueError:
+                week_start = datetime.now().replace(
+                    hour=0, minute=0, second=0, microsecond=0)
+        else:
+            today = datetime.now()
+            week_start = today - timedelta(days=today.weekday())
+            week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        week_end = week_start + timedelta(days=7)
+
+        bookings = Booking.objects.filter(
+            resource_id=pk,
+            status__in=['Pending', 'Issued', 'Verified'],
+            start_time__lt=week_end,
+            end_time__gt=week_start,
+        ).values('id', 'start_time', 'end_time', 'status')
+
+        return Response(list(bookings))

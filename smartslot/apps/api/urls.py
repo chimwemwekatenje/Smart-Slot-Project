@@ -5,6 +5,7 @@ from .views import (
     ResourceListView,
     MyBookingListView, BookingCreateView, BookingUpdateView,
     OrgResourceListView, OrgBookingListView,
+    ResourceScheduleView,
 )
 
 urlpatterns = [
@@ -12,6 +13,7 @@ urlpatterns = [
     path('auth/login/', LoginView.as_view(), name='api-login'),
     path('organisations/', OrganisationListView.as_view(), name='api-organisations'),
     path('resources/', ResourceListView.as_view(), name='api-resources'),
+    path('resources/<int:pk>/schedule/', ResourceScheduleView.as_view(), name='api-resource-schedule'),
     path('bookings/', BookingCreateView.as_view(), name='api-booking-create'),
     path('bookings/my/', MyBookingListView.as_view(), name='api-my-bookings'),
     path('bookings/<int:pk>/', BookingUpdateView.as_view(), name='api-booking-update'),
