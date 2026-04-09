@@ -7,19 +7,30 @@ class User(AbstractUser):
         ORGANISATION_ADMIN = 'OrganisationAdmin', 'Organisation Admin'
         RECEPTIONIST = 'Receptionist', 'Receptionist'
         EMPLOYEE = 'Employee', 'Employee'
+        EXTERNAL = 'External', 'External'
 
     role = models.CharField(
         max_length=20,
         choices=RoleChoices.choices,
-        default=RoleChoices.EMPLOYEE,
+        default=RoleChoices.EXTERNAL,
     )
+
+    # Link to an organisation (null for external users)
+    organisation = models.ForeignKey(
+        'core.Organisation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members',
+    )
+
+    phone = models.CharField(max_length=20, blank=True)
 
     # Resolve related_name clashes with auth.User
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name='groups',
         blank=True,
-        help_text='The groups this user belongs to.',
         related_name="custom_user_set",
         related_query_name="user",
     )
@@ -27,7 +38,6 @@ class User(AbstractUser):
         'auth.Permission',
         verbose_name='user permissions',
         blank=True,
-        help_text='Specific permissions for this user.',
         related_name="custom_user_set",
         related_query_name="user",
     )

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from datetime import timedelta
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -26,6 +27,9 @@ INSTALLED_APPS = [
     # Third-party apps
     'crispy_forms',
     'crispy_tailwind',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
     
     # Local apps
     'apps.accounts.apps.AccountsConfig',
@@ -42,6 +46,7 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -104,3 +109,22 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+ALLOWED_HOSTS = ['*']
