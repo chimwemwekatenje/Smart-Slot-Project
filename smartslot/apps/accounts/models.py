@@ -3,10 +3,11 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     class RoleChoices(models.TextChoices):
-        PLATFORM_ADMIN = 'PlatformAdmin', 'Platform Admin'
-        ORGANISATION_ADMIN = 'OrganisationAdmin', 'Organisation Admin'
-        RECEPTIONIST = 'Receptionist', 'Receptionist'
-        EMPLOYEE = 'Employee', 'Employee'
+        PLATFORM_ADMIN      = 'PlatformAdmin',      'Platform Admin'
+        ORGANISATION_ADMIN  = 'OrganisationAdmin',  'Organisation Admin'
+        RECEPTIONIST        = 'Receptionist',        'Receptionist'
+        EMPLOYEE            = 'Employee',            'Employee'
+        EXTERNAL            = 'External',            'External'
 
     role = models.CharField(
         max_length=20,

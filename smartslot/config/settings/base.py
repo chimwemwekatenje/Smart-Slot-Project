@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 import environ
-import firebase_admin
-from firebase_admin import credentials
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -11,21 +9,6 @@ env = environ.Env(
 )
 
 environ.Env.read_env(BASE_DIR / '.env')
-
-# ========================
-# Firebase Configuration
-# ========================
-FIREBASE_CREDENTIALS = BASE_DIR / 'firebase-service-account.json'
-
-if os.path.exists(FIREBASE_CREDENTIALS):
-    try:
-        firebase_admin.get_app()
-    except ValueError:
-        cred = credentials.Certificate(str(FIREBASE_CREDENTIALS))
-        firebase_admin.initialize_app(cred)
-        print("✅ Firebase initialized successfully")
-else:
-    print("⚠️  Warning: Firebase service account file not found at", FIREBASE_CREDENTIALS)
 
 # ========================
 # Django Settings

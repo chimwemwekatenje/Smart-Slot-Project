@@ -1,104 +1,91 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div style="max-width:720px; margin:0 auto;">
 
-  <!-- Page Header -->
-  <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
-    <div>
-      <h1 class="text-3xl font-extrabold text-slate-100">My Bookings</h1>
-      <p class="text-sm text-slate-500 mt-1">
-        Showing bookings for <strong class="text-slate-300">{{ user.username }}</strong>
-      </p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <h1 style="font-size:1.6rem; font-weight:800; color:var(--text);">My Bookings</h1>
+            <p style="color:var(--muted-dim); font-size:0.875rem; margin-top:4px;">Your booking history and upcoming reservations.</p>
+        </div>
+        <a href="/resources/" class="btn btn-primary">+ New Booking</a>
     </div>
-    <a href="/resources/"
-       class="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm rounded-xl transition-colors no-underline whitespace-nowrap">
-      + New Booking
-    </a>
-  </div>
 
-  {% if bookings %}
-  <div class="flex flex-col gap-4">
-    {% for b in bookings %}
-    <div class="bg-slate-800 border border-slate-700 hover:border-slate-500 rounded-2xl p-5 flex items-center gap-4 flex-wrap transition-colors">
-
-      <!-- Category Icon -->
-      <div class="w-14 h-14 bg-slate-900 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-        {% if b.resource.category == 'Boardroom' %}🏢
-        {% elif b.resource.category == 'Vehicle' %}🚗
-        {% elif b.resource.category == 'Equipment' %}🖥️
-        {% elif b.resource.category == 'Lab' %}🔬
-        {% elif b.resource.category == 'Sports' %}⚽
-        {% else %}📦{% endif %}
-      </div>
-
-      <!-- Main Details -->
-      <div class="flex-1 min-w-48">
-        <p class="text-base font-bold text-slate-100 mb-1">{{ b.resource.name }}</p>
-        <p class="text-sm text-slate-500">
-          {{ b.start_time|date:"D, d M Y, H:i" }}
-          <span class="text-slate-700 mx-1">→</span>
-          {{ b.end_time|date:"H:i" }}
-        </p>
-        {% if b.custom_data.notes %}
-        <p class="text-xs text-slate-600 mt-1 truncate max-w-xs">
-          📝 {{ b.custom_data.notes }}
-        </p>
-        {% endif %}
-      </div>
-
-      <!-- Status Badge -->
-      <div class="flex-shrink-0">
-        {% if b.status == 'Pending' %}
-          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/25">
-            Pending
-          </span>
-        {% elif b.status == 'Issued' %}
-          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-blue-400/10 text-blue-400 border border-blue-400/25">
-            Issued
-          </span>
-        {% elif b.status == 'Verified' %}
-          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-green-400/10 text-green-400 border border-green-400/25">
-            Verified
-          </span>
-        {% elif b.status == 'Completed' %}
-          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-teal-400/10 text-teal-400 border border-teal-400/25">
-            Completed
-          </span>
-        {% elif b.status == 'Cancelled' %}
-          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-red-400/10 text-red-400 border border-red-400/25">
-            Cancelled
-          </span>
-        {% elif b.status == 'NoShow' %}
-          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-red-400/10 text-red-400 border border-red-400/25">
-            No Show
-          </span>
-        {% else %}
-          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-700 text-slate-400 border border-slate-600">
-            {{ b.get_status_display }}
-          </span>
-        {% endif %}
-      </div>
-
+    <!-- Status filter tabs — mirrors TabBar in MyBookingsScreen -->
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1.5rem;
+                border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+        {% for s in statuses %}
+        <a href="?status={{ s }}"
+           style="padding:6px 14px; border-radius:6px; font-size:0.82rem; font-weight:600;
+                  text-decoration:none; transition:all 0.15s;
+                  {% if current_status == s %}
+                      color:var(--primary); background:rgba(20,184,166,0.12); border-bottom:2px solid var(--primary);
+                  {% else %}
+                      color:var(--muted); background:transparent;
+                  {% endif %}">
+            {{ s }}
+        </a>
+        {% endfor %}
     </div>
-    {% endfor %}
-  </div>
 
-  {% else %}
-  <!-- Empty State -->
-  <div class="text-center py-24">
-    <div class="text-6xl mb-4 opacity-30">🗓️</div>
-    <h2 class="text-xl font-bold text-slate-400 mb-2">No bookings yet</h2>
-    <p class="text-sm text-slate-500 mb-6">
-      Head over to Resources and book your first slot.
-    </p>
-    <a href="/resources/"
-       class="inline-block px-8 py-3 bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm rounded-xl transition-colors no-underline">
-      Browse Resources →
-    </a>
-  </div>
-  {% endif %}
+    {% if bookings %}
+    <div style="display:flex; flex-direction:column; gap:12px;">
+        {% for booking in bookings %}
+
+        {% with status=booking.status %}
+        <div class="card" style="padding:16px; transition:transform 0.15s, box-shadow 0.15s;"
+             onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 24px rgba(0,0,0,0.3)';"
+             onmouseout="this.style.transform=''; this.style.boxShadow='';">
+
+            <!-- Name + status badge -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;">
+                <span style="font-size:1rem; font-weight:700; color:var(--text);">
+                    {{ booking.resource.name }}
+                </span>
+                <span class="badge
+                    {% if status == 'Pending' %}badge-warning
+                    {% elif status == 'Issued' %}badge-primary
+                    {% elif status == 'Verified' %}badge-success
+                    {% elif status == 'Completed' %}badge-muted
+                    {% else %}badge-error{% endif %}">
+                    {{ status }}
+                </span>
+            </div>
+
+            <!-- Category chip -->
+            <span style="background:var(--border); color:var(--text); font-size:0.75rem;
+                         font-weight:600; padding:3px 10px; border-radius:6px; display:inline-block; margin-bottom:10px;">
+                {{ booking.resource.category }}
+            </span>
+
+            <!-- Info rows — mirrors _InfoRow -->
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.82rem; color:var(--muted);">
+                    <i class="fa-regular fa-clock" style="width:14px;"></i> {{ booking.start_time|date:"D d M Y, H:i" }}
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.82rem; color:var(--muted);">
+                    <i class="fa-solid fa-flag-checkered" style="width:14px;"></i> {{ booking.end_time|date:"D d M Y, H:i" }}
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.82rem; color:var(--muted);">
+                    <i class="fa-solid fa-credit-card" style="width:14px;"></i>
+                    {% if booking.resource.price == 0 %}Free
+                    {% else %}MWK {{ booking.resource.price|floatformat:0 }}{% endif %}
+                </div>
+            </div>
+
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div style="text-align:center; padding:4rem 0; color:var(--muted-dim);">
+        <div style="font-size:3rem; margin-bottom:1rem; color:var(--muted-dim);"><i class="fa-regular fa-calendar-xmark"></i></div>
+        <p style="color:var(--muted); font-size:1rem;">No bookings found.</p>
+        <a href="/resources/" style="color:var(--primary); text-decoration:none; font-size:0.9rem;
+           margin-top:0.75rem; display:inline-block;">Browse resources →</a>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock %}

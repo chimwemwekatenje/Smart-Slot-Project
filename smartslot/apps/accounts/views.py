@@ -1,31 +1,32 @@
-from django.views.generic import TemplateView, CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
 from django.contrib.auth import login
-from django.urls import reverse_lazy
+from django.shortcuts import render, redirect
 from .forms import SignupForm
 
 
 class HomeView(TemplateView):
-    """
-    Public homepage shown to all visitors.
-    Authenticated users see the full welcome dashboard.
-    Unauthenticated users see a landing page with prompts to login/register.
-    """
     template_name = 'home.html'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['show_welcome'] = True
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx['show_welcome'] = True
+        return ctx
 
 
-class SignupView(CreateView):
-    form_class = SignupForm
-    template_name = 'registration/register.html'
-    success_url = reverse_lazy('resource_list')
+def signup_view(request):
+    from apps.core.models import Organisation
+    organisations = Organisation.objects.all()
 
-    def form_valid(self, form):
-        """Auto-login the user after successful registration."""
-        response = super().form_valid(form)
-        login(self.request, self.object)
-        return response
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('resource_list')
+    else:
+        form = SignupForm()
+
+    return render(request, 'registration/register.html', {
+        'form': form,
+        'organisations': organisations,
+    })
