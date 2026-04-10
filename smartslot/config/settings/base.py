@@ -104,3 +104,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/resources/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Session expires after 2 minutes of inactivity
+SESSION_COOKIE_AGE = 60 * 2
+# Reset the timer on every request (inactivity timeout)
+SESSION_SAVE_EVERY_REQUEST = True
+# Expire session when browser closes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# Store sessions in DB so they can be cleared on restart
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
