@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSlot</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
-        /* ── Design tokens — mirrors AppColors in theme.dart ── */
+        /* ── Dark mode (default) ── */
         :root {
             --bg:           #0F172A;
             --surface:      #1E2937;
@@ -21,87 +21,118 @@
             --warning:      #F59E0B;
             --r:            12px;
             --r-sm:         8px;
+            --shadow:       rgba(0,0,0,0.35);
         }
+
+        /* ── Light mode ── */
+        [data-theme="light"] {
+            --bg:        #F1F5F9;
+            --surface:   #FFFFFF;
+            --border:    #CBD5E1;
+            --text:      #0F172A;
+            --muted:     #475569;
+            --muted-dim: #64748B;
+            --shadow:    rgba(0,0,0,0.1);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
             background: var(--bg); color: var(--text);
-            min-height: 100vh; font-size: 16px;
+            min-height: 100vh; font-size: 17px;
+            transition: background 0.2s, color 0.2s;
         }
 
         /* ── Navbar ── */
         .navbar {
             background: var(--surface); border-bottom: 1px solid var(--border);
-            padding: 0 2rem; height: 60px;
+            padding: 0 2rem; height: 62px;
             display: flex; align-items: center; justify-content: space-between;
             position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 1px 8px var(--shadow);
         }
-        .logo { font-size: 1.35rem; font-weight: 800; color: var(--primary); text-decoration: none; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: var(--primary); text-decoration: none; }
         .nav-links { display: flex; align-items: center; gap: 0.2rem; }
         .nav-links a {
             color: var(--muted); text-decoration: none;
-            font-size: 0.875rem; font-weight: 500;
+            font-size: 0.925rem; font-weight: 500;
             padding: 6px 13px; border-radius: var(--r-sm);
             transition: color 0.15s, background 0.15s;
         }
-        .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-        .nav-links a.active { color: var(--primary); background: rgba(20,184,166,0.08); }
+        .nav-links a:hover { color: var(--text); background: rgba(20,184,166,0.08); }
+        .nav-links a.active { color: var(--primary); background: rgba(20,184,166,0.1); }
         .nav-divider { width: 1px; height: 20px; background: var(--border); margin: 0 0.4rem; }
         .nav-logout-form { display: inline; }
         .nav-logout-btn {
-            background: none; border: 1px solid var(--error); color: #f87171;
-            font-size: 0.875rem; font-weight: 500; padding: 5px 13px;
+            background: none; border: 1px solid var(--error); color: var(--error);
+            font-size: 0.9rem; font-weight: 500; padding: 5px 13px;
             border-radius: var(--r-sm); cursor: pointer; font-family: inherit;
             transition: background 0.15s, color 0.15s;
         }
         .nav-logout-btn:hover { background: var(--error); color: #fff; }
         .nav-login-btn {
             background: var(--primary); color: #fff !important;
-            font-size: 0.875rem; font-weight: 600; padding: 6px 16px;
+            font-size: 0.9rem; font-weight: 600; padding: 6px 16px;
             border-radius: var(--r-sm); text-decoration: none; transition: background 0.15s;
         }
         .nav-login-btn:hover { background: var(--primary-dark) !important; }
         .nav-admin-btn {
-            color: var(--warning) !important; font-size: 0.875rem; font-weight: 600;
+            color: var(--warning) !important; font-size: 0.9rem; font-weight: 600;
             padding: 5px 13px; border-radius: var(--r-sm);
-            border: 1px solid rgba(245,158,11,0.35); text-decoration: none;
+            border: 1px solid rgba(245,158,11,0.4); text-decoration: none;
             transition: background 0.15s;
         }
         .nav-admin-btn:hover { background: rgba(245,158,11,0.1) !important; }
         .nav-user {
-            font-size: 0.78rem; font-weight: 600; color: var(--muted-dim);
+            font-size: 0.82rem; font-weight: 600; color: var(--muted-dim);
             padding: 4px 10px; background: var(--bg); border-radius: 20px;
+            border: 1px solid var(--border);
         }
+
+        /* ── Theme toggle button ── */
+        .theme-toggle {
+            background: none; border: 1px solid var(--border);
+            color: var(--muted); width: 34px; height: 34px;
+            border-radius: var(--r-sm); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem; transition: all 0.15s; flex-shrink: 0;
+        }
+        .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
 
         /* ── Page container ── */
         .container { max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.5rem; }
 
         /* ── Card ── */
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); }
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--r);
+            box-shadow: 0 1px 4px var(--shadow);
+        }
 
         /* ── Buttons ── */
         .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             padding: 11px 24px; border-radius: var(--r-sm);
-            font-size: 0.95rem; font-weight: 600; cursor: pointer;
+            font-size: 0.975rem; font-weight: 600; cursor: pointer;
             border: none; text-decoration: none;
             transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
             font-family: inherit; letter-spacing: 0.01em;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px var(--shadow); }
         .btn:active { transform: scale(0.97); box-shadow: none; }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-primary:hover { background: var(--primary-dark); color: #fff; }
         .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
         .btn-outline:hover { background: rgba(20,184,166,0.08); }
         .btn-ghost { background: var(--border); color: var(--muted); }
-        .btn-ghost:hover { background: #3d4f66; }
+        .btn-ghost:hover { filter: brightness(1.1); }
 
         /* ── Badges ── */
         .badge {
             display: inline-flex; align-items: center; gap: 4px;
             padding: 3px 10px; border-radius: 20px;
-            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
         }
         .badge-primary { background: rgba(20,184,166,0.12); color: var(--primary);  border: 1px solid rgba(20,184,166,0.3); }
         .badge-success { background: rgba(34,197,94,0.12);  color: var(--success);  border: 1px solid rgba(34,197,94,0.3); }
@@ -111,41 +142,53 @@
 
         /* ── Form inputs ── */
         .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-label { font-size: 0.83rem; font-weight: 600; color: var(--muted); }
+        .form-label { font-size: 0.875rem; font-weight: 600; color: var(--muted); }
         .form-input {
             width: 100%; padding: 11px 14px;
             background: var(--bg); border: 1px solid var(--border);
             border-radius: var(--r-sm); color: var(--text);
-            font-size: 0.92rem; outline: none; font-family: inherit;
+            font-size: 0.975rem; outline: none; font-family: inherit;
             transition: border-color 0.15s, box-shadow 0.15s;
-            color-scheme: dark;
         }
         .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,0.12); }
         .form-input.is-error { border-color: var(--error); }
-        .form-error { font-size: 0.78rem; color: var(--error); }
+        .form-error { font-size: 0.8rem; color: var(--error); }
 
         /* ── Alerts ── */
         .alert {
             padding: 12px 16px; border-radius: var(--r-sm);
-            font-size: 0.875rem; display: flex; align-items: flex-start; gap: 10px;
+            font-size: 0.925rem; display: flex; align-items: flex-start; gap: 10px;
         }
-        .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
-        .alert-success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #86efac; }
-        .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+        .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #ef4444; }
+        .alert-success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #16a34a; }
+        .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #d97706; }
         .alert-info    { background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); color: var(--primary); }
+
+        [data-theme="dark"] .alert-error   { color: #fca5a5; }
+        [data-theme="dark"] .alert-success { color: #86efac; }
+        [data-theme="dark"] .alert-warning { color: #fcd34d; }
 
         /* ── Flash messages ── */
         .messages { list-style: none; padding: 0.75rem 1.5rem 0; }
         .messages li {
             padding: 10px 16px; border-radius: var(--r-sm);
-            font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;
+            font-size: 0.925rem; font-weight: 500; margin-bottom: 0.5rem;
         }
         .messages .success { background: #052e16; color: #86efac; border: 1px solid #166534; }
         .messages .error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
         .messages .info    { background: #0c1a2e; color: #93c5fd; border: 1px solid #1e40af; }
         .messages .warning { background: #1c1400; color: #fcd34d; border: 1px solid #92400e; }
 
+        [data-theme="light"] .messages .success { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        [data-theme="light"] .messages .error   { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        [data-theme="light"] .messages .info    { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        [data-theme="light"] .messages .warning { background: #fef9c3; color: #92400e; border-color: #fde68a; }
+
         hr.divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+        /* light mode color-scheme for date inputs */
+        [data-theme="light"] .form-input { color-scheme: light; }
+        [data-theme="dark"]  .form-input { color-scheme: dark; }
     </style>
 </head>
 <body>
@@ -168,6 +211,10 @@
                 <a href="/accounts/signup/">Sign Up</a>
                 <a href="/accounts/login/" class="nav-login-btn">Login</a>
             {% endif %}
+            <div class="nav-divider"></div>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+                <i class="fa-solid fa-moon" id="theme-icon"></i>
+            </button>
         </div>
     </nav>
 
@@ -182,7 +229,7 @@
         {% if show_welcome %}
         <div style="text-align:center; padding:4rem 0 2rem;">
             <h1 style="font-size:3.4rem; font-weight:800; color:var(--primary); margin-bottom:0.75rem;">SmartSlot</h1>
-            <p style="color:var(--muted); font-size:1.2rem; max-width:520px; margin:0 auto 2.5rem; line-height:1.8;">
+            <p style="color:var(--muted); font-size:1.25rem; max-width:520px; margin:0 auto 2.5rem; line-height:1.8;">
                 The smart way to book and manage office resources.<br>
                 Real-time availability &middot; PayChangu payments &middot; QR verification
             </p>
@@ -197,23 +244,44 @@
             <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.25rem; margin-top:3.5rem; text-align:left;">
                 <div class="card" style="padding:1.5rem;">
                     <div style="font-size:1.6rem; margin-bottom:0.75rem; color:var(--primary);"><i class="fa-regular fa-calendar-check"></i></div>
-                    <div style="font-weight:700; margin-bottom:0.4rem;">Real-time Calendar</div>
-                    <div style="color:var(--muted); font-size:0.875rem; line-height:1.6;">See what's available instantly and avoid double bookings.</div>
+                    <div style="font-weight:700; margin-bottom:0.4rem; font-size:1.05rem;">Real-time Calendar</div>
+                    <div style="color:var(--muted); font-size:0.95rem; line-height:1.6;">See what's available instantly and avoid double bookings.</div>
                 </div>
                 <div class="card" style="padding:1.5rem;">
                     <div style="font-size:1.6rem; margin-bottom:0.75rem; color:var(--primary);"><i class="fa-solid fa-shield-halved"></i></div>
-                    <div style="font-weight:700; margin-bottom:0.4rem;">Secure Payments</div>
-                    <div style="color:var(--muted); font-size:0.875rem; line-height:1.6;">Pay with PayChangu or book free resources instantly.</div>
+                    <div style="font-weight:700; margin-bottom:0.4rem; font-size:1.05rem;">Secure Payments</div>
+                    <div style="color:var(--muted); font-size:0.95rem; line-height:1.6;">Pay with PayChangu or book free resources instantly.</div>
                 </div>
                 <div class="card" style="padding:1.5rem;">
                     <div style="font-size:1.6rem; margin-bottom:0.75rem; color:var(--primary);"><i class="fa-solid fa-qrcode"></i></div>
-                    <div style="font-weight:700; margin-bottom:0.4rem;">QR Verification</div>
-                    <div style="color:var(--muted); font-size:0.875rem; line-height:1.6;">Scan QR code on arrival for automatic check-in.</div>
+                    <div style="font-weight:700; margin-bottom:0.4rem; font-size:1.05rem;">QR Verification</div>
+                    <div style="color:var(--muted); font-size:0.95rem; line-height:1.6;">Scan QR code on arrival for automatic check-in.</div>
                 </div>
             </div>
         </div>
         {% endif %}
         {% endblock %}
     </div>
+
+    <script>
+        // Load saved theme preference
+        const saved = localStorage.getItem('ss-theme') || 'dark';
+        applyTheme(saved);
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('ss-theme', next);
+            applyTheme(next);
+        }
+    </script>
 </body>
 </html>
