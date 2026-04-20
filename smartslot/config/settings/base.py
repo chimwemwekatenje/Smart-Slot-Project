@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import environ
+import firebase_admin
+from firebase_admin import credentials
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -24,11 +26,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third-party
     'crispy_forms',
     'crispy_tailwind',
-    
+
     # Local apps — core MUST be first (BaseModel / Organisation FK dependency)
     'apps.core.apps.CoreConfig',
     'apps.accounts.apps.AccountsConfig',
@@ -75,8 +77,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# ========================
+# Firebase / Firestore
+# ========================
+_FIREBASE_SERVICE_ACCOUNT = BASE_DIR / 'firebase-service-account.json'
+
+if not firebase_admin._apps:
+    _cred = credentials.Certificate(str(_FIREBASE_SERVICE_ACCOUNT))
+    firebase_admin.initialize_app(_cred)
+
+# Path to the service account file (accessible to apps/core/firebase.py)
+FIREBASE_SERVICE_ACCOUNT_PATH = str(_FIREBASE_SERVICE_ACCOUNT)
+
+# ========================
+# Database
+# ========================
+# All persistent data is stored in Cloud Firestore.
+# A minimal SQLite database is kept only for Django's internal session,
+# authentication, and admin tables (django.contrib.auth, sessions, etc.).
+# Do NOT store application domain data (resources, bookings, payments) here.
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 AUTH_PASSWORD_VALIDATORS = [
