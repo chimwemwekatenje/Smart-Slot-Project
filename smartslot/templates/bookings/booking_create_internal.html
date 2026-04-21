@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width:600px; margin:0 auto;">
+
+    <a href="/resources/" style="color:var(--muted-dim); text-decoration:none; font-size:0.875rem;
+       display:inline-flex; align-items:center; gap:6px; margin-bottom:1.5rem;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Resources
+    </a>
+
+    <!-- Resource summary -->
+    <div class="card" style="padding:14px 18px; display:flex; align-items:center; gap:14px; margin-bottom:1.5rem;">
+        <div style="width:52px; height:52px; background:var(--bg); border-radius:10px; flex-shrink:0;
+                    display:flex; align-items:center; justify-content:center; font-size:1.4rem;
+                    color:var(--primary); border:1px solid var(--border);">
+            {% if resource.category == 'Boardroom' %}<i class="fa-solid fa-building"></i>
+            {% elif resource.category == 'Vehicle' %}<i class="fa-solid fa-car"></i>
+            {% elif resource.category == 'Equipment' %}<i class="fa-solid fa-desktop"></i>
+            {% else %}<i class="fa-solid fa-box"></i>{% endif %}
+        </div>
+        <div style="flex:1;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--primary); margin-bottom:2px;">{{ resource.category }}</div>
+            <div style="font-size:1rem; font-weight:700; color:var(--text);">{{ resource.name }}</div>
+            <div style="font-size:0.8rem; color:var(--muted-dim);">{{ resource.organisation.name }}</div>
+        </div>
+        <span class="badge badge-success"><i class="fa-solid fa-tag"></i> Free</span>
+    </div>
+
+    <!-- Form -->
+    <div class="card" style="padding:2rem;">
+        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Book This Resource</div>
+        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.5rem;">
+            Select your time slot and fill in your details.
+        </p>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom:1.25rem;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{% for e in form.non_field_errors %}{{ e }}{% endfor %}</span>
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.1rem;">
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-regular fa-clock" style="margin-right:5px;"></i>Start Time</label>
+                    <input type="datetime-local" name="start_time"
+                           value="{{ form.start_time.value|default:'' }}"
+                           class="form-input {% if form.start_time.errors %}is-error{% endif %}" />
+                    {% if form.start_time.errors %}<span class="form-error">{{ form.start_time.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-flag-checkered" style="margin-right:5px;"></i>End Time</label>
+                    <input type="datetime-local" name="end_time"
+                           value="{{ form.end_time.value|default:'' }}"
+                           class="form-input {% if form.end_time.errors %}is-error{% endif %}" />
+                    {% if form.end_time.errors %}<span class="form-error">{{ form.end_time.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.1rem;">
+                <label class="form-label"><i class="fa-solid fa-building" style="margin-right:5px;"></i>Department</label>
+                <input type="text" name="department" value="{{ form.department.value|default:'' }}"
+                       placeholder="e.g. Finance, HR, IT"
+                       class="form-input {% if form.department.errors %}is-error{% endif %}" />
+                {% if form.department.errors %}<span class="form-error">{{ form.department.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.5rem;">
+                <label class="form-label"><i class="fa-solid fa-note-sticky" style="margin-right:5px;"></i>Reason for Booking</label>
+                <textarea name="reason" rows="3"
+                          placeholder="Briefly describe why you need this resource"
+                          class="form-input {% if form.reason.errors %}is-error{% endif %}"
+                          style="resize:vertical;">{{ form.reason.value|default:'' }}</textarea>
+                {% if form.reason.errors %}<span class="form-error">{{ form.reason.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="alert alert-success" style="margin-bottom:1.5rem;">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>This resource is free for employees — your booking will be confirmed instantly.</span>
+            </div>
+
+            <div style="display:flex; gap:0.75rem;">
+                <button type="submit" class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
+                    <i class="fa-regular fa-calendar-check"></i> Confirm Booking
+                </button>
+                <a href="/resources/" class="btn btn-ghost" style="padding:13px 20px;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

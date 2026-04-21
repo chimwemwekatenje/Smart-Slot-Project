@@ -1,10 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSlot - Resource Booking System</title>
     <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e2937;
+            --border: #334155;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --muted-dim: #475569;
+            --primary: #14b8a6;
+            --primary-dark: #0f766e;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --r-sm: 8px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,20 +29,20 @@
 
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #0f172a;
-            color: #e2e8f0;
+            background-color: var(--bg);
+            color: var(--text);
             min-height: 100vh;
         }
 
         /* Top Navigation */
         .navbar {
-            background-color: #1e2937;
+            background-color: var(--surface);
             padding: 0 2rem;
             height: 60px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -35,7 +51,7 @@
         .logo {
             font-size: 1.4rem;
             font-weight: 800;
-            color: #14b8a6;
+            color: var(--primary);
             text-decoration: none;
             letter-spacing: -0.3px;
         }
@@ -47,28 +63,28 @@
         }
 
         .nav-links a {
-            color: #94a3b8;
+            color: var(--muted);
             text-decoration: none;
             font-size: 0.875rem;
             font-weight: 500;
             padding: 6px 14px;
-            border-radius: 8px;
+            border-radius: var(--r-sm);
             transition: color 0.15s, background 0.15s;
         }
 
         .nav-links a:hover {
-            color: #e2e8f0;
-            background: #0f172a;
+            color: var(--text);
+            background: var(--bg);
         }
 
         .nav-links a.active {
-            color: #14b8a6;
+            color: var(--primary);
         }
 
         .nav-divider {
             width: 1px;
             height: 20px;
-            background: #334155;
+            background: var(--border);
             margin: 0 0.5rem;
         }
 
@@ -78,45 +94,45 @@
 
         .nav-logout-btn {
             background: none;
-            border: 1px solid #ef4444;
-            color: #f87171;
+            border: 1px solid var(--error);
+            color: var(--error);
             font-size: 0.875rem;
             font-weight: 500;
             padding: 5px 14px;
-            border-radius: 8px;
+            border-radius: var(--r-sm);
             cursor: pointer;
             transition: background 0.15s, color 0.15s;
             font-family: inherit;
         }
 
         .nav-logout-btn:hover {
-            background: #ef4444;
+            background: var(--error);
             color: #fff;
         }
 
         .nav-login-btn {
-            background: #14b8a6;
+            background: var(--primary);
             color: #fff !important;
             font-size: 0.875rem;
             font-weight: 600;
             padding: 6px 16px;
-            border-radius: 8px;
+            border-radius: var(--r-sm);
             text-decoration: none;
             transition: background 0.15s;
         }
 
         .nav-login-btn:hover {
-            background: #0f766e !important;
+            background: var(--primary-dark) !important;
             color: #fff !important;
         }
 
         .nav-admin-btn {
-            color: #fbbf24 !important;
+            color: var(--warning) !important;
             font-size: 0.875rem;
             font-weight: 600;
             padding: 6px 14px;
-            border-radius: 8px;
-            border: 1px solid #78350f;
+            border-radius: var(--r-sm);
+            border: 1px solid rgba(245, 158, 11, 0.4);
             text-decoration: none;
             transition: background 0.15s, color 0.15s;
         }
@@ -129,9 +145,9 @@
         .nav-user {
             font-size: 0.8rem;
             font-weight: 600;
-            color: #475569;
+            color: var(--muted-dim);
             padding: 4px 10px;
-            background: #0f172a;
+            background: var(--bg);
             border-radius: 20px;
             letter-spacing: 0.02em;
         }
@@ -145,8 +161,8 @@
         /* Sidebar for Organisation Admin */
         .sidebar {
             width: 256px;
-            background-color: #1e2937;
-            border-right: 1px solid #334155;
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
         }
@@ -160,7 +176,7 @@
         .sidebar-nav a {
             display: flex;
             padding: 0.6rem 1rem;
-            color: #94a3b8;
+            color: var(--muted);
             border-radius: 0.5rem;
             font-weight: 600;
             text-decoration: none;
@@ -169,18 +185,18 @@
         }
 
         .sidebar-nav a:hover {
-            color: #e2e8f0;
-            background: #334155;
+            color: var(--text);
+            background: var(--border);
         }
 
         .sidebar-nav a.active {
-            color: #14b8a6;
-            background: rgba(20,184,166,0.1);
+            color: var(--primary);
+            background: rgba(20, 184, 166, 0.1);
         }
 
         .sidebar-footer {
             padding: 1rem;
-            border-top: 1px solid #334155;
+            border-top: 1px solid var(--border);
         }
 
         .sidebar-user {
@@ -205,17 +221,17 @@
             text-align: left;
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
-            color: #ef4444;
+            color: var(--error);
             background: none;
             border: none;
             cursor: pointer;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: var(--r-sm);
             transition: all 0.15s;
         }
 
         .sidebar-logout-btn:hover {
-            background: rgba(239,68,68,0.1);
+            background: rgba(239, 68, 68, 0.1);
             color: #fca5a5;
         }
 
@@ -249,7 +265,7 @@
 
         .messages li {
             padding: 10px 16px;
-            border-radius: 8px;
+            border-radius: var(--r-sm);
             font-size: 0.875rem;
             font-weight: 500;
             margin-bottom: 0.5rem;
@@ -283,7 +299,7 @@
         h1 {
             font-size: 3.5rem;
             margin-bottom: 1rem;
-            color: #14b8a6;
+            color: var(--primary);
         }
 
         p {
@@ -295,10 +311,10 @@
 
         .btn {
             display: inline-block;
-            background-color: #14b8a6;
+            background-color: var(--primary);
             color: white;
             padding: 14px 32px;
-            border-radius: 8px;
+            border-radius: var(--r-sm);
             text-decoration: none;
             font-size: 1.1rem;
             font-weight: 600;
@@ -307,7 +323,7 @@
         }
 
         .btn:hover {
-            background-color: #0f766e;
+            background-color: var(--primary-dark);
             transform: translateY(-3px);
         }
 
@@ -319,38 +335,39 @@
         }
 
         .card {
-            background-color: #1e2937;
+            background-color: var(--surface);
             padding: 2rem;
             border-radius: 12px;
-            border: 1px solid #334155;
+            border: 1px solid var(--border);
         }
     </style>
 </head>
+
 <body>
     <!-- Top Navigation Bar -->
     <nav class="navbar">
         <a href="/" class="logo">SmartSlot</a>
-        
+
         <div class="nav-links">
             <a href="/">Home</a>
             <a href="/resources/">Resources</a>
             <a href="/bookings/">My Bookings</a>
-            
+
             <div class="nav-divider"></div>
-            
+
             <a href="/admin/" class="nav-admin-btn">Admin Panel</a>
-            
+
             <div class="nav-divider"></div>
-            
+
             {% if user.is_authenticated %}
-                <span class="nav-user">{{ user.username }}</span>
-                <form class="nav-logout-form" action="/accounts/logout/" method="post">
-                    {% csrf_token %}
-                    <button type="submit" class="nav-logout-btn">Log Out</button>
-                </form>
+            <span class="nav-user">{{ user.username }}</span>
+            <form class="nav-logout-form" action="/accounts/logout/" method="post">
+                {% csrf_token %}
+                <button type="submit" class="nav-logout-btn">Log Out</button>
+            </form>
             {% else %}
-                <a href="/accounts/signup/">Sign Up</a>
-                <a href="/accounts/login/" class="nav-login-btn">Login</a>
+            <a href="/accounts/signup/">Sign Up</a>
+            <a href="/accounts/login/" class="nav-login-btn">Login</a>
             {% endif %}
         </div>
     </nav>
@@ -363,35 +380,38 @@
     <!-- Main Layout Wrapper -->
     <div class="layout-wrapper">
         {% if user.is_authenticated and user.role == 'OrganisationAdmin' %}
-            <!-- Organisation Admin Sidebar -->
-            <aside class="sidebar">
-                <nav class="sidebar-nav">
-                    <a href="{% url 'org_admin_dashboard' %}" class="active">Dashboard</a>
-                    <a href="/resources/">Resources</a>
-                    <a href="#">Users</a>
-                    <a href="/bookings/">Bookings</a>
-                    <a href="#">Reports</a>
-                    <a href="#">QR Scanner</a>
-                </nav>
-                <div class="sidebar-footer">
-                    <div class="sidebar-user">
-                        <p class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="sidebar-user-role">{{ user.get_role_display }}</p>
-                    </div>
-                    <form action="/accounts/logout/" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="sidebar-logout-btn">Log Out</button>
-                    </form>
+        <!-- Organisation Admin Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="{% url 'org_admin_dashboard' %}" class="active">Dashboard</a>
+                <a href="/resources/">Resources</a>
+                <a href="#">Users</a>
+                <a href="/bookings/">Bookings</a>
+                <a href="#">Reports</a>
+                <a href="#">QR Scanner</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <p class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</p>
+                    <p class="sidebar-user-role">{{ user.get_role_display }}</p>
                 </div>
-            </aside>
+                <form action="/accounts/logout/" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="sidebar-logout-btn">Log Out</button>
+                </form>
+            </div>
+        </aside>
         {% endif %}
-        
+
         <!-- Single Main Content Area -->
-        <main class="main-content" {% if not user.is_authenticated or user.role != 'OrganisationAdmin' %}style="width: 100%;"{% endif %}>
-            <div class="{% if user.is_authenticated and user.role == 'OrganisationAdmin' %}content-area{% else %}container{% endif %}">
+        <main class="main-content" {% if not user.is_authenticated or user.role !='OrganisationAdmin'
+            %}style="width: 100%;" {% endif %}>
+            <div
+                class="{% if user.is_authenticated and user.role == 'OrganisationAdmin' %}content-area{% else %}container{% endif %}">
                 {% block content %}{% endblock %}
             </div>
         </main>
     </div>
 </body>
-</html>
+
+</html></button></form>p></div>a></a></ul>span>a></div></a>""

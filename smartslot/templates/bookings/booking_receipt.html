@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width:520px; margin:0 auto;">
+
+    <!-- Success banner — mirrors BookingReceiptScreen success container -->
+    <div class="alert alert-success" style="flex-direction:column; align-items:center;
+         text-align:center; padding:1.75rem; margin-bottom:1.5rem; border-radius:var(--r);">
+        <div style="font-size:2.5rem; margin-bottom:0.5rem; color:var(--success);"><i class="fa-solid fa-circle-check"></i></div>
+        <div style="font-size:1.1rem; font-weight:700; color:var(--success); margin-bottom:4px;">Booking Confirmed!</div>
+        <div style="font-size:0.875rem; color:var(--muted);">Show the QR code below at the entrance</div>
+    </div>
+
+    <!-- QR Code -->
+    <div style="background:#fff; border-radius:var(--r); padding:1.5rem;
+                display:flex; flex-direction:column; align-items:center; margin-bottom:1rem;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ booking.qr_token }}"
+             alt="QR Code" style="width:200px; height:200px;" />
+    </div>
+    <p style="text-align:center; color:var(--muted-dim); font-size:0.8rem; margin-bottom:1.5rem;">
+        Booking ID: #{{ booking.id }}
+    </p>
+
+    <!-- Receipt card — mirrors _ReceiptRow list -->
+    <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;">
+        <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                    letter-spacing:0.1em; color:var(--muted-dim); margin-bottom:0.75rem;">
+            Booking Receipt
+        </div>
+        <hr class="divider" style="margin-bottom:1rem;">
+
+        {% for label, value, color in receipt_rows %}
+        <div style="display:flex; padding:6px 0; border-bottom:1px solid rgba(51,65,85,0.5);">
+            <span style="width:130px; flex-shrink:0; font-size:0.83rem; color:var(--muted);">{{ label }}</span>
+            <span style="font-size:0.83rem; font-weight:500;
+                         color:{% if color %}{{ color }}{% else %}var(--text){% endif %};">
+                {{ value }}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="display:flex; gap:0.75rem;">
+        <a href="/bookings/" class="btn btn-outline" style="flex:1; padding:13px;">My Bookings</a>
+        <a href="/resources/" class="btn btn-ghost" style="flex:1; padding:13px;">Back to Resources</a>
+    </div>
+
+</div>
+{% endblock %}
