@@ -1,237 +1,269 @@
-    {% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
-<div style="max-width:620px; margin:0 auto;">
+<div class="max-w-2xl mx-auto">
 
-    <a href="/resources/" style="color:var(--muted-dim); text-decoration:none; font-size:0.875rem;
-       display:inline-flex; align-items:center; gap:6px; margin-bottom:1.5rem;">
+    <a href="/resources/" class="inline-flex items-center gap-2 text-slate-400 hover:text-teal-400 text-sm mb-6 transition-colors">
         <i class="fa-solid fa-arrow-left"></i> Back to Resources
     </a>
 
     <!-- Resource summary -->
-    <div class="card" style="padding:14px 18px; display:flex; align-items:center; gap:14px; margin-bottom:1.5rem;">
-        <div style="width:52px; height:52px; background:var(--bg); border-radius:10px; flex-shrink:0;
-                    display:flex; align-items:center; justify-content:center; font-size:1.4rem;
-                    color:var(--primary); border:1px solid var(--border);">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-4 mb-6">
+        <div class="w-14 h-14 bg-slate-900 border border-slate-600 rounded-lg flex-shrink-0 flex items-center justify-center text-xl text-teal-400">
             {% if resource.category == 'Boardroom' %}<i class="fa-solid fa-building"></i>
             {% elif resource.category == 'Vehicle' %}<i class="fa-solid fa-car"></i>
             {% elif resource.category == 'Equipment' %}<i class="fa-solid fa-desktop"></i>
             {% else %}<i class="fa-solid fa-box"></i>{% endif %}
         </div>
-        <div style="flex:1;">
-            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
-                        letter-spacing:0.08em; color:var(--primary); margin-bottom:2px;">{{ resource.category }}</div>
-            <div style="font-size:1rem; font-weight:700; color:var(--text);">{{ resource.name }}</div>
-            <div style="font-size:0.8rem; color:var(--muted-dim);">{{ resource.organisation.name }}</div>
+        <div class="flex-1">
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-400 mb-1">{{ resource.category }}</div>
+            <div class="text-base font-bold text-slate-100">{{ resource.name }}</div>
+            <div class="text-sm text-slate-400">{{ resource.organisation.name }}</div>
         </div>
-        <div style="text-align:right;">
+        <div class="text-right">
             {% if resource.price == 0 %}
-                <span class="badge badge-success">Free</span>
+                <span class="px-3 py-1 bg-green-500/10 text-green-400 border border-green-500/25 rounded-full text-xs font-bold uppercase tracking-wider">Free</span>
             {% else %}
-                <span style="font-size:1.05rem; font-weight:800; color:var(--primary);">MWK {{ resource.price|floatformat:0 }}</span>
+                <span class="text-lg font-extrabold text-teal-400">MWK {{ resource.price|floatformat:0 }}</span>
             {% endif %}
         </div>
     </div>
 
-    <!-- Step indicator — mirrors _StepIndicator -->
-    <div class="card" style="padding:1rem 1.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0;">
+    <!-- Step indicator -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6 flex items-center">
         {% for label, num in steps %}
-        <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
-            <div style="width:30px; height:30px; border-radius:50%; display:flex; align-items:center;
-                        justify-content:center; font-size:0.8rem; font-weight:700;
-                        background:{% if step > num %}var(--primary){% elif step == num %}var(--primary){% else %}var(--border){% endif %};
-                        color:#fff;">
-                {% if step > num %}<i class="fa-solid fa-check" style="font-size:0.7rem;"></i>
+        <div class="flex flex-col items-center flex-shrink-0">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white
+                        {% if step > num %}bg-teal-500{% elif step == num %}bg-teal-500{% else %}bg-slate-600{% endif %}"></div>
+                {% if step > num %}<i class="fa-solid fa-check text-xs"></i>
                 {% else %}{{ num }}{% endif %}
             </div>
-            <div style="font-size:0.72rem; margin-top:4px; font-weight:{% if step == num %}700{% else %}400{% endif %};
-                        color:{% if step == num %}var(--primary){% else %}var(--muted-dim){% endif %};">
+            <div class="text-xs mt-1 
+                        {% if step == num %}font-bold text-teal-400{% else %}font-normal text-slate-500{% endif %}">
                 {{ label }}
             </div>
         </div>
         {% if not forloop.last %}
-        <div style="flex:1; height:2px; margin:0 6px; margin-bottom:18px;
-                    background:{% if step > num %}var(--primary){% else %}var(--border){% endif %};"></div>
+        <div class="flex-1 h-0.5 mx-2 mb-4 
+                    {% if step > num %}bg-teal-500{% else %}bg-slate-600{% endif %}"></div>
         {% endif %}
         {% endfor %}
     </div>
 
     <!-- Step content card -->
-    <div class="card" style="padding:2rem;">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-8">
 
-        <!-- ── STEP 1: Your Details ── -->
+        <!-- STEP 1: Your Details -->
         {% if step == 1 %}
-        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Your Details</div>
-        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.5rem;">We need these to confirm your booking.</p>
+        <div class="text-xl font-bold text-slate-100 mb-1">Your Details</div>
+        <p class="text-slate-400 text-sm mb-6">We need these to confirm your booking.</p>
 
         {% if form1.errors %}
-        <div class="alert alert-error" style="margin-bottom:1.25rem;">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <div>{% for f in form1 %}{% for e in f.errors %}<div>{{ e }}</div>{% endfor %}{% endfor %}</div>
+        <div class="bg-red-500/10 border border-red-500/25 rounded-lg p-4 mb-5 flex items-start gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-red-400 mt-0.5"></i>
+            <div class="text-red-400 text-sm">
+                {% for f in form1 %}{% for e in f.errors %}<div>{{ e }}</div>{% endfor %}{% endfor %}
+            </div>
         </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="step" value="1" />
 
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-regular fa-user" style="margin-right:5px;"></i>Full Name</label>
+            <div>
+                <label class="block text-sm font-semibold text-slate-300 mb-2">
+                    <i class="fa-regular fa-user mr-2"></i>Full Name
+                </label>
                 <input type="text" name="full_name" value="{{ form1.full_name.value|default:'' }}"
-                       class="form-input {% if form1.full_name.errors %}is-error{% endif %}"
+                       class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors
+                              {% if form1.full_name.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
                        placeholder="Your full name" />
-                {% if form1.full_name.errors %}<span class="form-error">{{ form1.full_name.errors.0 }}</span>{% endif %}
+                {% if form1.full_name.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form1.full_name.errors.0 }}</span>{% endif %}
             </div>
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-solid fa-phone" style="margin-right:5px;"></i>Phone Number</label>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-300 mb-2">
+                    <i class="fa-solid fa-phone mr-2"></i>Phone Number
+                </label>
                 <input type="tel" name="phone" value="{{ form1.phone.value|default:'' }}"
-                       class="form-input {% if form1.phone.errors %}is-error{% endif %}"
+                       class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors
+                              {% if form1.phone.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
                        placeholder="+265 999 000 000" />
-                {% if form1.phone.errors %}<span class="form-error">{{ form1.phone.errors.0 }}</span>{% endif %}
+                {% if form1.phone.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form1.phone.errors.0 }}</span>{% endif %}
             </div>
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-regular fa-envelope" style="margin-right:5px;"></i>Email Address</label>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-300 mb-2">
+                    <i class="fa-regular fa-envelope mr-2"></i>Email Address
+                </label>
                 <input type="email" name="email" value="{{ form1.email.value|default:'' }}"
-                       class="form-input {% if form1.email.errors %}is-error{% endif %}"
+                       class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors
+                              {% if form1.email.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
                        placeholder="your@email.com" />
-                {% if form1.email.errors %}<span class="form-error">{{ form1.email.errors.0 }}</span>{% endif %}
+                {% if form1.email.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form1.email.errors.0 }}</span>{% endif %}
             </div>
-            <div class="form-group" style="margin-bottom:1.5rem;">
-                <label class="form-label"><i class="fa-solid fa-note-sticky" style="margin-right:5px;"></i>Reason for Booking</label>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-300 mb-2">
+                    <i class="fa-solid fa-note-sticky mr-2"></i>Reason for Booking
+                </label>
                 <textarea name="reason" rows="3"
-                          class="form-input {% if form1.reason.errors %}is-error{% endif %}"
-                          placeholder="e.g. Annual conference, product launch..."
-                          style="resize:vertical;">{{ form1.reason.value|default:'' }}</textarea>
-                {% if form1.reason.errors %}<span class="form-error">{{ form1.reason.errors.0 }}</span>{% endif %}
+                          class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors resize-y
+                                 {% if form1.reason.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
+                          placeholder="e.g. Annual conference, product launch...">{{ form1.reason.value|default:'' }}</textarea>
+                {% if form1.reason.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form1.reason.errors.0 }}</span>{% endif %}
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%; padding:13px; font-size:1rem;">
+
+            <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2">
                 Next <i class="fa-solid fa-arrow-right"></i>
             </button>
         </form>
 
-        <!-- ── STEP 2: Select Time ── -->
+        <!-- STEP 2: Select Time -->
         {% elif step == 2 %}
-        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Select Time Slot</div>
-        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">Choose your start and end time.</p>
+        <div class="text-xl font-bold text-slate-100 mb-1">Select Time Slot</div>
+        <p class="text-slate-400 text-sm mb-5">Choose your start and end time.</p>
 
         {% if time_error %}
-        <div class="alert alert-error" style="margin-bottom:1.25rem;">
-            <i class="fa-solid fa-triangle-exclamation"></i> {{ time_error }}
+        <div class="bg-red-500/10 border border-red-500/25 rounded-lg p-4 mb-5 flex items-start gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+            <span class="text-red-400 text-sm">{{ time_error }}</span>
         </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" class="space-y-6">
             {% csrf_token %}
             <input type="hidden" name="step" value="2" />
             {% for k, v in session_data.items %}
             <input type="hidden" name="{{ k }}" value="{{ v }}" />
             {% endfor %}
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-                <div class="form-group">
-                    <label class="form-label"><i class="fa-regular fa-clock" style="margin-right:5px;"></i>Start Time</label>
-                    <input type="datetime-local" name="start_time" class="form-input" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">
+                        <i class="fa-regular fa-clock mr-2"></i>Start Time
+                    </label>
+                    <input type="datetime-local" name="start_time" 
+                           class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors" />
                 </div>
-                <div class="form-group">
-                    <label class="form-label"><i class="fa-solid fa-flag-checkered" style="margin-right:5px;"></i>End Time</label>
-                    <input type="datetime-local" name="end_time" class="form-input" />
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">
+                        <i class="fa-solid fa-flag-checkered mr-2"></i>End Time
+                    </label>
+                    <input type="datetime-local" name="end_time" 
+                           class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors" />
                 </div>
             </div>
 
-            <div style="display:flex; gap:0.75rem;">
+            <div class="flex gap-3">
                 <a href="{% url 'booking_create_external' resource.pk %}?step=1"
-                   class="btn btn-ghost" style="padding:13px 20px;">
+                   class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-3 px-5 rounded-lg transition-colors flex items-center gap-2">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </a>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
+                <button type="submit" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2">
                     Next <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
         </form>
 
-        <!-- ── STEP 3: Payment ── -->
+        <!-- STEP 3: Payment -->
         {% elif step == 3 %}
         <!-- Order summary -->
-        <div style="background:rgba(20,184,166,0.08); border:1px solid rgba(20,184,166,0.25);
-                    border-radius:var(--r-sm); padding:1rem; margin-bottom:1.5rem;">
-            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
-                        letter-spacing:0.1em; color:var(--muted-dim); margin-bottom:0.75rem;">Order Summary</div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.875rem;">
-                    <span style="color:var(--muted);">Resource</span>
-                    <span style="color:var(--text); font-weight:500;">{{ resource.name }}</span>
+        <div class="bg-teal-500/5 border border-teal-500/20 rounded-lg p-4 mb-6">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Order Summary</div>
+            <div class="space-y-1">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-400">Resource</span>
+                    <span class="text-slate-100 font-medium">{{ resource.name }}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.875rem;">
-                    <span style="color:var(--muted);">From</span>
-                    <span style="color:var(--text); font-weight:500;">{{ session_data.start_time }}</span>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-400">From</span>
+                    <span class="text-slate-100 font-medium">{{ session_data.start_time }}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.875rem;">
-                    <span style="color:var(--muted);">To</span>
-                    <span style="color:var(--text); font-weight:500;">{{ session_data.end_time }}</span>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-400">To</span>
+                    <span class="text-slate-100 font-medium">{{ session_data.end_time }}</span>
                 </div>
-                <hr class="divider" style="margin:0.5rem 0;">
-                <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:700;">
-                    <span style="color:var(--text);">Total</span>
-                    <span style="color:var(--primary);">
+                <hr class="border-slate-600 my-2">
+                <div class="flex justify-between font-bold">
+                    <span class="text-slate-100">Total</span>
+                    <span class="text-teal-400">
                         {% if resource.price == 0 %}Free{% else %}MWK {{ resource.price|floatformat:0 }}{% endif %}
                     </span>
                 </div>
             </div>
         </div>
 
-        <div style="font-size:1.1rem; font-weight:700; color:var(--text); margin-bottom:4px;">Card Details</div>
-        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">
-            <i class="fa-solid fa-lock" style="margin-right:4px;"></i> Your payment is secured via PayChangu.
+        <div class="text-lg font-bold text-slate-100 mb-1">Card Details</div>
+        <p class="text-slate-400 text-sm mb-5">
+            <i class="fa-solid fa-lock mr-1"></i> Your payment is secured via PayChangu.
         </p>
 
         {% if form3.errors %}
-        <div class="alert alert-error" style="margin-bottom:1.25rem;">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <div>{% for f in form3 %}{% for e in f.errors %}<div>{{ e }}</div>{% endfor %}{% endfor %}</div>
+        <div class="bg-red-500/10 border border-red-500/25 rounded-lg p-4 mb-5 flex items-start gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-red-400 mt-0.5"></i>
+            <div class="text-red-400 text-sm">
+                {% for f in form3 %}{% for e in f.errors %}<div>{{ e }}</div>{% endfor %}{% endfor %}
+            </div>
         </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="step" value="3" />
 
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-regular fa-user" style="margin-right:5px;"></i>Name on Card</label>
+            <div>
+                <label class="block text-sm font-semibold text-slate-300 mb-2">
+                    <i class="fa-regular fa-user mr-2"></i>Name on Card
+                </label>
                 <input type="text" name="card_name" value="{{ form3.card_name.value|default:'' }}"
-                       class="form-input {% if form3.card_name.errors %}is-error{% endif %}"
+                       class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors
+                              {% if form3.card_name.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
                        placeholder="As it appears on your card" />
-                {% if form3.card_name.errors %}<span class="form-error">{{ form3.card_name.errors.0 }}</span>{% endif %}
+                {% if form3.card_name.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form3.card_name.errors.0 }}</span>{% endif %}
             </div>
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-solid fa-credit-card" style="margin-right:5px;"></i>Card Number</label>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-300 mb-2">
+                    <i class="fa-solid fa-credit-card mr-2"></i>Card Number
+                </label>
                 <input type="text" name="card_number" value="{{ form3.card_number.value|default:'' }}"
-                       class="form-input {% if form3.card_number.errors %}is-error{% endif %}"
+                       class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors
+                              {% if form3.card_number.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
                        placeholder="1234 5678 9012 3456" maxlength="19" />
-                {% if form3.card_number.errors %}<span class="form-error">{{ form3.card_number.errors.0 }}</span>{% endif %}
+                {% if form3.card_number.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form3.card_number.errors.0 }}</span>{% endif %}
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-                <div class="form-group">
-                    <label class="form-label"><i class="fa-regular fa-calendar" style="margin-right:5px;"></i>Expiry (MM/YY)</label>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">
+                        <i class="fa-regular fa-calendar mr-2"></i>Expiry (MM/YY)
+                    </label>
                     <input type="text" name="expiry" value="{{ form3.expiry.value|default:'' }}"
-                           class="form-input {% if form3.expiry.errors %}is-error{% endif %}"
+                           class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors
+                                  {% if form3.expiry.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
                            placeholder="12/27" maxlength="5" />
-                    {% if form3.expiry.errors %}<span class="form-error">{{ form3.expiry.errors.0 }}</span>{% endif %}
+                    {% if form3.expiry.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form3.expiry.errors.0 }}</span>{% endif %}
                 </div>
-                <div class="form-group">
-                    <label class="form-label"><i class="fa-solid fa-lock" style="margin-right:5px;"></i>CVV</label>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">
+                        <i class="fa-solid fa-lock mr-2"></i>CVV
+                    </label>
                     <input type="password" name="cvv"
-                           class="form-input {% if form3.cvv.errors %}is-error{% endif %}"
+                           class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-colors
+                                  {% if form3.cvv.errors %}border-red-500 focus:border-red-500 focus:ring-red-500{% endif %}"
                            placeholder="123" maxlength="3" />
-                    {% if form3.cvv.errors %}<span class="form-error">{{ form3.cvv.errors.0 }}</span>{% endif %}
+                    {% if form3.cvv.errors %}<span class="text-red-400 text-sm mt-1 block">{{ form3.cvv.errors.0 }}</span>{% endif %}
                 </div>
             </div>
 
-            <div style="display:flex; gap:0.75rem;">
+            <div class="flex gap-3 pt-2">
                 <a href="{% url 'booking_create_external' resource.pk %}?step=1"
-                   class="btn btn-ghost" style="padding:13px 20px;">
+                   class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-3 px-5 rounded-lg transition-colors flex items-center gap-2">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </a>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
+                <button type="submit" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <i class="fa-solid fa-lock"></i> Pay & Confirm
                 </button>
             </div>

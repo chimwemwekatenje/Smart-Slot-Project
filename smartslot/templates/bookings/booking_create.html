@@ -1,123 +1,123 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="max-width:600px; margin:0 auto; text-align:left;">
+<div style="max-width:640px; margin:0 auto;">
 
-    <!-- Back link -->
-    <a href="/resources/" style="color:#64748b; text-decoration:none; font-size:0.88rem; display:inline-flex; align-items:center; gap:0.4rem; margin-bottom:1.5rem;">
-        ← Back to Resources
+    <a href="/resources/" style="color:var(--muted-dim); text-decoration:none; font-size:0.875rem;
+       display:inline-flex; align-items:center; gap:6px; margin-bottom:1.5rem;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Resources
     </a>
 
     <!-- Resource summary card -->
-    <div style="background:#1e2937; border:1px solid #334155; border-radius:12px;
-                padding:1.25rem; display:flex; gap:1rem; align-items:center; margin-bottom:2rem;">
-        <div style="font-size:2.5rem; width:56px; height:56px; background:#0f172a;
-                    border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            {% if resource.category == 'Boardroom' %}🏢
-            {% elif resource.category == 'Vehicle' %}🚗
-            {% elif resource.category == 'Equipment' %}🖥️
-            {% else %}📦{% endif %}
+    <div class="card" style="padding:14px 18px; display:flex; align-items:center; gap:14px; margin-bottom:1.5rem;">
+        <div style="width:52px; height:52px; background:var(--bg); border-radius:10px; flex-shrink:0;
+                    display:flex; align-items:center; justify-content:center; font-size:1.4rem;
+                    color:var(--primary); border:1px solid var(--border);">
+            {% if resource.category == 'Boardroom' %}<i class="fa-solid fa-building"></i>
+            {% elif resource.category == 'Vehicle' %}<i class="fa-solid fa-car"></i>
+            {% elif resource.category == 'Equipment' %}<i class="fa-solid fa-desktop"></i>
+            {% else %}<i class="fa-solid fa-box"></i>{% endif %}
         </div>
         <div style="flex:1;">
-            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase;
-                        letter-spacing:0.08em; color:#14b8a6; margin-bottom:0.2rem;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--primary); margin-bottom:2px;">
                 {{ resource.category }}
             </div>
-            <div style="font-size:1.05rem; font-weight:700; color:#f1f5f9;">{{ resource.name }}</div>
-            <div style="font-size:0.8rem; color:#64748b;">{{ resource.organisation.name }}</div>
+            <div style="font-size:1rem; font-weight:700; color:var(--text);">{{ resource.name }}</div>
+            <div style="font-size:0.8rem; color:var(--muted-dim);">{{ resource.organisation.name }}</div>
         </div>
         <div style="text-align:right; flex-shrink:0;">
             {% if resource.price == 0 %}
-                <span style="font-size:1.1rem; font-weight:800; color:#22c55e;">Free</span>
+                <span style="font-size:1.05rem; font-weight:800; color:var(--success);">Free</span>
             {% else %}
-                <span style="font-size:1.1rem; font-weight:800; color:#f59e0b;">
+                <span style="font-size:1.05rem; font-weight:800; color:var(--primary);">
                     MWK {{ resource.price|floatformat:0 }}
                 </span>
             {% endif %}
         </div>
     </div>
 
-    <!-- Form card -->
-    <div style="background:#1e2937; border:1px solid #334155; border-radius:14px; padding:2rem;">
-
-        <h2 style="font-size:1.3rem; font-weight:700; color:#f1f5f9; margin-bottom:0.4rem;">
-            Create Booking
-        </h2>
-        <p style="color:#64748b; font-size:0.88rem; margin-bottom:1.75rem;">
-            Select your start and end time for <strong style="color:#94a3b8;">{{ resource.name }}</strong>.
+    <!-- Booking form card — mirrors _BookingDetailsSheet -->
+    <div class="card" style="padding:1.75rem;">
+        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Book This Resource</div>
+        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.5rem;">
+            Select your time slot and fill in the details below.
         </p>
 
         {% if form.non_field_errors %}
-        <div style="background:#450a0a; border:1px solid #7f1d1d; border-radius:8px;
-                    padding:0.85rem 1rem; margin-bottom:1.25rem; color:#fca5a5; font-size:0.88rem;">
-            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        <div class="alert alert-error" style="margin-bottom:1.25rem;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{% for e in form.non_field_errors %}{{ e }}{% endfor %}</span>
         </div>
         {% endif %}
 
         <form method="post">
             {% csrf_token %}
 
-            <!-- Start Time -->
-            <div style="margin-bottom:1.25rem;">
-                <label style="display:block; font-size:0.85rem; font-weight:600;
-                              color:#94a3b8; margin-bottom:0.5rem;">
-                    Start Time
-                </label>
-                <input type="datetime-local" name="start_time"
-                       value="{{ form.start_time.value|default:'' }}"
-                       style="width:100%; padding:11px 14px; border-radius:8px;
-                              background:#0f172a; border:1px solid {% if form.start_time.errors %}#ef4444{% else %}#334155{% endif %};
-                              color:#e2e8f0; font-size:0.92rem; outline:none;
-                              color-scheme:dark;" />
-                {% if form.start_time.errors %}
-                <p style="color:#f87171; font-size:0.8rem; margin-top:0.35rem;">{{ form.start_time.errors.0 }}</p>
+            <!-- Time selection — mirrors timetable bottom bar summary -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
+                <div class="form-group">
+                    <label class="form-label">Start Time</label>
+                    <input type="datetime-local" name="start_time"
+                           value="{{ form.start_time.value|default:'' }}"
+                           class="form-input {% if form.start_time.errors %}is-error{% endif %}" />
+                    {% if form.start_time.errors %}
+                    <span class="form-error">{{ form.start_time.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">End Time</label>
+                    <input type="datetime-local" name="end_time"
+                           value="{{ form.end_time.value|default:'' }}"
+                           class="form-input {% if form.end_time.errors %}is-error{% endif %}" />
+                    {% if form.end_time.errors %}
+                    <span class="form-error">{{ form.end_time.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Department — mirrors _deptCtrl TextFormField -->
+            <div class="form-group" style="margin-bottom:1.25rem;">
+                <label class="form-label">Department</label>
+                <input type="text" name="department"
+                       value="{{ form.department.value|default:'' }}"
+                       placeholder="e.g. Finance, HR, IT"
+                       class="form-input {% if form.department.errors %}is-error{% endif %}" />
+                {% if form.department.errors %}
+                <span class="form-error">{{ form.department.errors.0 }}</span>
                 {% endif %}
             </div>
 
-            <!-- End Time -->
-            <div style="margin-bottom:1.75rem;">
-                <label style="display:block; font-size:0.85rem; font-weight:600;
-                              color:#94a3b8; margin-bottom:0.5rem;">
-                    End Time
-                </label>
-                <input type="datetime-local" name="end_time"
-                       value="{{ form.end_time.value|default:'' }}"
-                       style="width:100%; padding:11px 14px; border-radius:8px;
-                              background:#0f172a; border:1px solid {% if form.end_time.errors %}#ef4444{% else %}#334155{% endif %};
-                              color:#e2e8f0; font-size:0.92rem; outline:none;
-                              color-scheme:dark;" />
-                {% if form.end_time.errors %}
-                <p style="color:#f87171; font-size:0.8rem; margin-top:0.35rem;">{{ form.end_time.errors.0 }}</p>
+            <!-- Reason — mirrors _reasonCtrl TextFormField -->
+            <div class="form-group" style="margin-bottom:1.5rem;">
+                <label class="form-label">Reason for Booking</label>
+                <textarea name="reason" rows="3"
+                          placeholder="Briefly describe why you need this resource"
+                          class="form-input {% if form.reason.errors %}is-error{% endif %}"
+                          style="resize:vertical;">{{ form.reason.value|default:'' }}</textarea>
+                {% if form.reason.errors %}
+                <span class="form-error">{{ form.reason.errors.0 }}</span>
                 {% endif %}
             </div>
 
-            <!-- Price note -->
+            <!-- Payment note — mirrors price note in BookingFormScreen -->
             {% if resource.price > 0 %}
-            <div style="background:#1c1a0a; border:1px solid #713f12; border-radius:8px;
-                        padding:0.85rem 1rem; margin-bottom:1.5rem; font-size:0.85rem; color:#fcd34d;">
-                💳 Payment of <strong>MWK {{ resource.price|floatformat:0 }}</strong> will be processed via PayChangu after confirmation.
+            <div class="alert alert-warning" style="margin-bottom:1.5rem;">
+                <i class="fa-solid fa-credit-card"></i>
+                <span>Payment of <strong>MWK {{ resource.price|floatformat:0 }}</strong> will be processed via PayChangu after confirmation.</span>
             </div>
             {% else %}
-            <div style="background:#052e16; border:1px solid #14532d; border-radius:8px;
-                        padding:0.85rem 1rem; margin-bottom:1.5rem; font-size:0.85rem; color:#86efac;">
-                ✅ This resource is free — your booking will be confirmed instantly.
+            <div class="alert alert-success" style="margin-bottom:1.5rem;">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>This resource is free — your booking will be confirmed instantly.</span>
             </div>
             {% endif %}
 
-            <!-- Actions -->
             <div style="display:flex; gap:0.75rem;">
-                <button type="submit"
-                    style="flex:1; padding:12px; background:#14b8a6; color:#fff;
-                           border:none; border-radius:8px; font-size:0.95rem;
-                           font-weight:700; cursor:pointer; letter-spacing:0.02em;">
+                <button type="submit" class="btn btn-primary" style="flex:1; padding:13px;">
                     Confirm Booking
                 </button>
-                <a href="/resources/"
-                   style="padding:12px 20px; background:#334155; color:#94a3b8;
-                          border-radius:8px; text-decoration:none; font-size:0.95rem;
-                          font-weight:600; display:flex; align-items:center;">
-                    Cancel
-                </a>
+                <a href="/resources/" class="btn btn-ghost" style="padding:13px 20px;">Cancel</a>
             </div>
         </form>
     </div>

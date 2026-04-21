@@ -1,58 +1,52 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from apps.core.models import Organisation
 
 User = get_user_model()
 
-class SignupForm(forms.ModelForm):
-    full_name = forms.CharField(max_length=150, required=True, label="Full Name")
-    username = forms.CharField(max_length=150, required=True, label="Username")
-    email = forms.EmailField(required=True, label="Email Address")
-    phone = forms.CharField(max_length=20, required=True, label="Phone Number")
-    organisation_name = forms.CharField(max_length=255, required=False, label="Organisation Name", help_text="Leave blank if you are an external user")
-    password = forms.CharField(widget=forms.PasswordInput, label="Password")
-    password_confirm = forms.CharField(widget=forms.PasswordInput, label="Confirm Password")
 
-    class Meta:
-        model = User
-        fields = ("username", "email")
+class SignupForm(forms.Form):
+    first_name    = forms.CharField(max_length=100)
+    last_name     = forms.CharField(max_length=100)
+    username      = forms.CharField(max_length=150)
+    email         = forms.EmailField()
+    phone         = forms.CharField(max_length=20, required=False)
+    password      = forms.CharField(widget=forms.PasswordInput)
+    password2     = forms.CharField(widget=forms.PasswordInput, label='Confirm Password')
+    role          = forms.ChoiceField(choices=[('Employee', 'Employee'), ('External', 'External')])
+    organisation  = forms.ModelChoiceField(
+        queryset=Organisation.objects.all(),
+        required=False,
+        empty_label='Select your organisation',
+    )
 
     def clean(self):
-        cleaned_data = super().clean()
-        password = cleaned_data.get("password")
-        password_confirm = cleaned_data.get("password_confirm")
+        cleaned = super().clean()
+        if cleaned.get('password') != cleaned.get('password2'):
+            self.add_error('password2', 'Passwords do not match.')
+        if User.objects.filter(username=cleaned.get('username')).exists():
+            self.add_error('username', 'Username already taken.')
+        if User.objects.filter(email=cleaned.get('email')).exists():
+            self.add_error('email', 'Email already registered.')
+        if cleaned.get('role') == 'Employee' and not cleaned.get('organisation'):
+            self.add_error('organisation', 'Please select your organisation.')
+        return cleaned
 
-        if password and password_confirm and password != password_confirm:
-            self.add_error('password_confirm', "Passwords do not match.")
-
-        email = cleaned_data.get("email")
-        if email and User.objects.filter(email=email).exists():
-            self.add_error('email', "A user with that email already exists.")
-            
-        username = cleaned_data.get("username")
-        if username and User.objects.filter(username=username).exists():
-            self.add_error('username', "A user with that username already exists.")
-
-        return cleaned_data
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        full_name = self.cleaned_data.get("full_name", "")
-        parts = full_name.split(" ", 1)
-        user.first_name = parts[0]
-        user.last_name = parts[1] if len(parts) > 1 else ""
-        user.email = self.cleaned_data.get("email")
-        user.username = self.cleaned_data.get("username")
-
-        user.set_password(self.cleaned_data["password"])
-        if commit:
-            user.save()
+    def save(self):
+        d = self.cleaned_data
+        user = User(
+            username=d['username'],
+            email=d['email'],
+            first_name=d['first_name'],
+            last_name=d['last_name'],
+            role=d['role'],
+        )
+        user.set_password(d['password'])
+        user.save()
         return user
 
-class CustomLoginForm(AuthenticationForm):
-    """
-    Standard Auth Form but ensuring the label is explicitly 'Username:'
-    """
-    username = forms.CharField(label="Username:")
-    password = forms.CharField(label="Password:", widget=forms.PasswordInput)
 
+class CustomLoginForm(AuthenticationForm):
+    username = forms.CharField(label='Username')
+    password = forms.CharField(label='Password', widget=forms.PasswordInput)

@@ -53,9 +53,46 @@ class Command(BaseCommand):
         ]
 
         for u in users:
-            org = u.pop('org')  
+            org = u.pop('org')
             if not User.objects.filter(username=u['username']).exists():
-                User.objects.create_user(**u)
+                user = User.objects.create_user(
+                    username=u['username'],
+                    email=u['email'],
+                    password=u['password'],
+                    first_name=u['first_name'],
+                    last_name=u['last_name'],
+                )
+                user.role = u['role']
+                user.save()
+                self.stdout.write(self.style.SUCCESS(
+                    f"  Created user  →  {u['username']} ({u['role']})"
+                ))
+            else:
+                self.stdout.write(self.style.WARNING(
+                    f"  User '{u['username']}' already exists."
+                ))
+
+        # External users
+        external_users = [
+            dict(username='john_external',  email='john@gmail.com',       password='pass1234',
+                 first_name='John',   last_name='Doe',      role='External'),
+            dict(username='mary_external',  email='mary@outlook.com',     password='pass1234',
+                 first_name='Mary',   last_name='Banda',    role='External'),
+            dict(username='peter_external', email='peter@yahoo.com',      password='pass1234',
+                 first_name='Peter',  last_name='Mwale',    role='External'),
+        ]
+
+        for u in external_users:
+            if not User.objects.filter(username=u['username']).exists():
+                user = User.objects.create_user(
+                    username=u['username'],
+                    email=u['email'],
+                    password=u['password'],
+                    first_name=u['first_name'],
+                    last_name=u['last_name'],
+                )
+                user.role = u['role']
+                user.save()
                 self.stdout.write(self.style.SUCCESS(
                     f"  Created user  →  {u['username']} ({u['role']})"
                 ))
