@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from apps.accounts.views import HomeView
+from apps.core.views import OrganisationAdminDashboardView
 
 urlpatterns = [
     # Admin Interface
@@ -15,6 +16,9 @@ urlpatterns = [
     # Other Apps
     path('resources/', include('apps.resources.urls')),
     path('bookings/', include('apps.bookings.urls')),
+    
+    # Dashboard
+    path('dashboard/', OrganisationAdminDashboardView.as_view(), name='org_admin_dashboard'),
 
     # Homepage (must be last to avoid catching other URLs)
     path('', HomeView.as_view(), name='home'),

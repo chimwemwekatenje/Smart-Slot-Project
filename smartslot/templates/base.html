@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSlot - Resource Booking System</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background-color: #0f172a;
@@ -13,7 +18,7 @@
             min-height: 100vh;
         }
 
-        /* ── Navbar ── */
+        /* Top Navigation */
         .navbar {
             background-color: #1e2937;
             padding: 0 2rem;
@@ -26,6 +31,7 @@
             top: 0;
             z-index: 100;
         }
+
         .logo {
             font-size: 1.4rem;
             font-weight: 800;
@@ -33,11 +39,13 @@
             text-decoration: none;
             letter-spacing: -0.3px;
         }
+
         .nav-links {
             display: flex;
             align-items: center;
             gap: 0.25rem;
         }
+
         .nav-links a {
             color: #94a3b8;
             text-decoration: none;
@@ -47,21 +55,27 @@
             border-radius: 8px;
             transition: color 0.15s, background 0.15s;
         }
+
         .nav-links a:hover {
             color: #e2e8f0;
             background: #0f172a;
         }
+
         .nav-links a.active {
             color: #14b8a6;
         }
+
         .nav-divider {
             width: 1px;
             height: 20px;
             background: #334155;
             margin: 0 0.5rem;
         }
-        /* Logout button — styled as a subtle danger link */
-        .nav-logout-form { display: inline; }
+
+        .nav-logout-form {
+            display: inline;
+        }
+
         .nav-logout-btn {
             background: none;
             border: 1px solid #ef4444;
@@ -74,11 +88,12 @@
             transition: background 0.15s, color 0.15s;
             font-family: inherit;
         }
+
         .nav-logout-btn:hover {
             background: #ef4444;
             color: #fff;
         }
-        /* Login / Signup button */
+
         .nav-login-btn {
             background: #14b8a6;
             color: #fff !important;
@@ -89,11 +104,12 @@
             text-decoration: none;
             transition: background 0.15s;
         }
+
         .nav-login-btn:hover {
             background: #0f766e !important;
             color: #fff !important;
         }
-        /* Admin Panel button — always visible, amber accent */
+
         .nav-admin-btn {
             color: #fbbf24 !important;
             font-size: 0.875rem;
@@ -104,11 +120,12 @@
             text-decoration: none;
             transition: background 0.15s, color 0.15s;
         }
+
         .nav-admin-btn:hover {
             background: #78350f !important;
             color: #fde68a !important;
         }
-        /* Username pill */
+
         .nav-user {
             font-size: 0.8rem;
             font-weight: 600;
@@ -119,16 +136,163 @@
             letter-spacing: 0.02em;
         }
 
-        /* ── Page container ── */
+        /* Layout Wrapper */
+        .layout-wrapper {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar for Organisation Admin */
+        .sidebar {
+            width: 256px;
+            background-color: #1e2937;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            padding: 0.6rem 1rem;
+            color: #94a3b8;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            transition: all 0.15s;
+        }
+
+        .sidebar-nav a:hover {
+            color: #e2e8f0;
+            background: #334155;
+        }
+
+        .sidebar-nav a.active {
+            color: #14b8a6;
+            background: rgba(20,184,166,0.1);
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid #334155;
+        }
+
+        .sidebar-user {
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-user-name {
+            margin: 0;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .sidebar-user-role {
+            margin: 0;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .sidebar-logout-btn {
+            width: 100%;
+            text-align: left;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: #ef4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.15s;
+        }
+
+        .sidebar-logout-btn:hover {
+            background: rgba(239,68,68,0.1);
+            color: #fca5a5;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .content-area {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* Regular Layout Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 3rem 2rem;
+            width: 100%;
         }
 
-        /* ── Legacy homepage styles (used by base block default) ── */
-        h1 { font-size: 3.5rem; margin-bottom: 1rem; color: #14b8a6; }
-        p  { font-size: 1.3rem; max-width: 700px; margin: 0 auto 3rem; line-height: 1.6; }
+        /* Flash Messages */
+        .messages {
+            list-style: none;
+            padding: 0.75rem 2rem;
+            margin: 0;
+        }
+
+        .messages li {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .messages .success {
+            background: #052e16;
+            color: #86efac;
+            border: 1px solid #166534;
+        }
+
+        .messages .error {
+            background: #450a0a;
+            color: #fca5a5;
+            border: 1px solid #991b1b;
+        }
+
+        .messages .info {
+            background: #0c1a2e;
+            color: #93c5fd;
+            border: 1px solid #1e40af;
+        }
+
+        .messages .warning {
+            background: #1c1400;
+            color: #fcd34d;
+            border: 1px solid #92400e;
+        }
+
+        /* Homepage Styles */
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: #14b8a6;
+        }
+
+        p {
+            font-size: 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            line-height: 1.6;
+        }
+
         .btn {
             display: inline-block;
             background-color: #14b8a6;
@@ -141,53 +305,43 @@
             margin: 10px;
             transition: all 0.3s;
         }
-        .btn:hover { background-color: #0f766e; transform: translateY(-3px); }
+
+        .btn:hover {
+            background-color: #0f766e;
+            transform: translateY(-3px);
+        }
+
         .features {
             margin-top: 4rem;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
         }
+
         .card {
             background-color: #1e2937;
             padding: 2rem;
             border-radius: 12px;
             border: 1px solid #334155;
         }
-
-        /* ── Flash messages ── */
-        .messages { list-style: none; padding: 0.75rem 2rem; }
-        .messages li {
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-        .messages .success { background: #052e16; color: #86efac; border: 1px solid #166534; }
-        .messages .error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
-        .messages .info    { background: #0c1a2e; color: #93c5fd; border: 1px solid #1e40af; }
-        .messages .warning { background: #1c1400; color: #fcd34d; border: 1px solid #92400e; }
     </style>
 </head>
 <body>
-
-    <!-- ───────────── Navigation ───────────── -->
+    <!-- Top Navigation Bar -->
     <nav class="navbar">
         <a href="/" class="logo">SmartSlot</a>
-
+        
         <div class="nav-links">
             <a href="/">Home</a>
             <a href="/resources/">Resources</a>
             <a href="/bookings/">My Bookings</a>
-
+            
             <div class="nav-divider"></div>
-
-            <!-- Admin Panel — always visible -->
+            
             <a href="/admin/" class="nav-admin-btn">Admin Panel</a>
-
+            
             <div class="nav-divider"></div>
-
+            
             {% if user.is_authenticated %}
                 <span class="nav-user">{{ user.username }}</span>
                 <form class="nav-logout-form" action="/accounts/logout/" method="post">
@@ -201,19 +355,43 @@
         </div>
     </nav>
 
-    <!-- ───────────── Flash Messages ───────────── -->
+    <!-- Flash Messages -->
     {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
-    </ul>
+    <ul class="messages">{% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}</ul>
     {% endif %}
 
-    <!-- ───────────── Page Content ───────────── -->
-    <div class="container">
-        {% block content %}{% endblock %}
+    <!-- Main Layout Wrapper -->
+    <div class="layout-wrapper">
+        {% if user.is_authenticated and user.role == 'OrganisationAdmin' %}
+            <!-- Organisation Admin Sidebar -->
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <a href="{% url 'org_admin_dashboard' %}" class="active">Dashboard</a>
+                    <a href="/resources/">Resources</a>
+                    <a href="#">Users</a>
+                    <a href="/bookings/">Bookings</a>
+                    <a href="#">Reports</a>
+                    <a href="#">QR Scanner</a>
+                </nav>
+                <div class="sidebar-footer">
+                    <div class="sidebar-user">
+                        <p class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="sidebar-user-role">{{ user.get_role_display }}</p>
+                    </div>
+                    <form action="/accounts/logout/" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-logout-btn">Log Out</button>
+                    </form>
+                </div>
+            </aside>
+        {% endif %}
+        
+        <!-- Single Main Content Area -->
+        <main class="main-content" {% if not user.is_authenticated or user.role != 'OrganisationAdmin' %}style="width: 100%;"{% endif %}>
+            <div class="{% if user.is_authenticated and user.role == 'OrganisationAdmin' %}content-area{% else %}container{% endif %}">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
     </div>
-
 </body>
 </html>
