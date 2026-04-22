@@ -95,12 +95,6 @@ class BookingCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        # External users cannot book directly — they contact the org
-        if request.user.role == 'External':
-            return Response(
-                {'detail': 'External users cannot book directly. Please contact the organisation.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         return super().create(request, *args, **kwargs)
 
 
