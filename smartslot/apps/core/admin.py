@@ -5,7 +5,7 @@ from .models import Organisation
 
 @admin.register(Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
-    list_display  = ('logo_preview', 'name', 'created_at', 'updated_at')
+    list_display  = ('logo_preview', 'name', 'created_at')
     search_fields = ('name',)
     list_filter   = ('created_at',)
     ordering      = ('-created_at',)

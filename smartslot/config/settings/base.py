@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 import environ
-import firebase_admin
-from firebase_admin import credentials
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -16,7 +14,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 # Django Settings
 # ========================
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
-DEBUG = True
+DEBUG = env('DEBUG', default=True)
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
@@ -30,6 +28,9 @@ INSTALLED_APPS = [
     # Third-party
     'crispy_forms',
     'crispy_tailwind',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
 
     # Local apps — core MUST be first (BaseModel / Organisation FK dependency)
     'apps.core.apps.CoreConfig',
@@ -49,6 +50,7 @@ CRISPY_TEMPLATE_PACK = "tailwind"
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',          # must be before CommonMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,30 +80,43 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ========================
-# Firebase / Firestore
+# Database — Supabase PostgreSQL
 # ========================
-_FIREBASE_SERVICE_ACCOUNT = BASE_DIR / 'firebase-service-account.json'
-
-if not firebase_admin._apps:
-    _cred = credentials.Certificate(str(_FIREBASE_SERVICE_ACCOUNT))
-    firebase_admin.initialize_app(_cred)
-
-# Path to the service account file (accessible to apps/core/firebase.py)
-FIREBASE_SERVICE_ACCOUNT_PATH = str(_FIREBASE_SERVICE_ACCOUNT)
-
-# ========================
-# Database
-# ========================
-# All persistent data is stored in Cloud Firestore.
-# A minimal SQLite database is kept only for Django's internal session,
-# authentication, and admin tables (django.contrib.auth, sessions, etc.).
-# Do NOT store application domain data (resources, bookings, payments) here.
+# DATABASE_URL in .env should be:
+#   postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+#
+# Falls back to SQLite for local development when DATABASE_URL is not set.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db('DATABASE_URL')
 }
+
+# ========================
+# Django REST Framework
+# ========================
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # Also allow session auth for the web interface
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME':  timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS':  True,
+}
+
+# ========================
+# CORS (allow Flutter app to call the API)
+# ========================
+# In development Flutter web runs on a different port; allow all origins locally.
+# Tighten this in production.py once you have a real hostname.
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

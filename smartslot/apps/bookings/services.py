@@ -1,260 +1,162 @@
 """
 apps/bookings/services.py
 -------------------------
-All Firestore operations for the Bookings domain.
-
-Every function is scoped to an organisation.  Views obtain the correct
-organisation_id from  apps.core.services.get_org_id_for_user(request.user)
-before calling these functions.
-
-Firestore path
---------------
-    organisations/{org_id}/bookings/{booking_id}
-
-Document schema
----------------
-    {
-        "resource_id":     str,     # Firestore resource doc ID
-        "resource_name":   str,     # denormalised for display without extra reads
-        "user_id":         int,     # Django user pk
-        "username":        str,     # denormalised
-        "organisation_id": str,     # denormalised safety field
-        "start_time":      str,     # ISO 8601 UTC string
-        "end_time":        str,     # ISO 8601 UTC string
-        "status":          str,     # Pending | Issued | Verified | Completed | Cancelled | NoShow
-        "qr_token":        str,     # unique token for QR code verification
-        "custom_data":     dict,    # extra fields (department, full_name, phone, etc.)
-        "issued_at":       str | None,
-        "verified_at":     str | None,
-    }
+All database operations for the Bookings domain.
 """
 
 import uuid
 import logging
-from datetime import datetime, timezone
+import base64
+import io
+import qrcode
+from datetime import datetime
+from django.utils import timezone as dj_timezone
 
-from apps.core.firebase import org_collection
+from apps.bookings.models import Booking
+from apps.resources.models import Resource
 
 logger = logging.getLogger(__name__)
 
 
-# ── Status constants (mirrors Django model choices) ──────────────────────────
 
 class BookingStatus:
-    PENDING   = 'Pending'
-    ISSUED    = 'Issued'
-    VERIFIED  = 'Verified'
-    COMPLETED = 'Completed'
-    CANCELLED = 'Cancelled'
-    NO_SHOW   = 'NoShow'
-    ALL       = [PENDING, ISSUED, VERIFIED, COMPLETED, CANCELLED, NO_SHOW]
+    PENDING = 'pending'
+    CONFIRMED = 'confirmed'
+    CANCELLED = 'cancelled'
+    COMPLETED = 'completed'
+    NO_SHOW = 'no_show'
+    ALL = [PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW]
 
 
-# ── Collection shortcut ──────────────────────────────────────────────────────
+# â”€â”€ Internal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-def _bookings_col(organisation_id: str):
-    return org_collection(organisation_id, 'bookings')
-
-
-# ── Read operations ──────────────────────────────────────────────────────────
-
-def get_bookings_for_organisation(organisation_id: str, status: str = '') -> list[dict]:
-    """
-    Return all bookings for *organisation_id*, optionally filtered by status.
-
-    Parameters
-    ----------
-    organisation_id : str
-    status : str
-        One of BookingStatus constants, or '' / 'All' to return everything.
-
-    Returns
-    -------
-    list of dict  (sorted newest-first by start_time)
-    """
-    col = _bookings_col(organisation_id)
-
-    if status and status != 'All':
-        query = col.where('status', '==', status)
-    else:
-        query = col
-
-    docs = query.stream()
-    bookings = []
-    for doc in docs:
-        data = doc.to_dict()
-        data['id'] = doc.id
-        bookings.append(data)
-
-    # Sort in Python (Firestore orderBy requires a composite index)
-    bookings.sort(key=lambda b: b.get('start_time', ''), reverse=True)
-    logger.debug(
-        "Fetched %d bookings for org %s (status=%r)",
-        len(bookings), organisation_id, status or 'All',
+def _generate_qr_base64(data: str) -> str:
+    """Generate a base64 encoded QR code PNG string from data."""
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
     )
-    return bookings
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return f"data:image/png;base64,{img_str}"
+
+def _booking_to_dict(b: Booking) -> dict:
+    """Convert a Booking ORM instance to a dict."""
+    return {
+        'id':              str(b.pk),
+        'resource_id':     str(b.resource_id),
+        'resource_name':   b.resource.name if hasattr(b, 'resource') and b.resource else '',
+        'user_id':         str(b.user_id),
+        'username':        b.user.username if hasattr(b, 'user') and b.user else '',
+        'organisation_id': str(b.organisation_id),
+        'title':           b.title,
+        'purpose':         b.purpose,
+        'start_time':      b.start_time.isoformat() if b.start_time else None,
+        'end_time':        b.end_time.isoformat() if b.end_time else None,
+        'status':          b.status,
+        'qr_code':         b.qr_code,
+        'total_price':     str(b.total_price),
+        'notes':           b.notes,
+        'created_at':      b.created_at.isoformat() if b.created_at else None,
+    }
 
 
-def get_bookings_for_user(organisation_id: str, user_id: int, status: str = '') -> list[dict]:
-    """
-    Return bookings belonging to a specific user within an organisation.
+def _qs_to_dicts(qs) -> list[dict]:
+    """Convert a Booking queryset to a list of dicts, newest-first."""
+    bookings = qs.select_related('resource', 'user').order_by('-start_time')
+    return [_booking_to_dict(b) for b in bookings]
 
-    Employees and External users see only their own bookings; this function
-    enforces that restriction at the Firestore query level.
 
-    Parameters
-    ----------
-    organisation_id : str
-    user_id : int
-        Django User.pk
-    status : str
-        Optional status filter.
-    """
-    col = _bookings_col(organisation_id)
-    query = col.where('user_id', '==', user_id)
+# â”€â”€ Read operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def get_bookings_for_organisation(organisation_id, status: str = '') -> list[dict]:
+    qs = Booking.objects.filter(organisation_id=organisation_id)
     if status and status != 'All':
-        query = query.where('status', '==', status)
+        qs = qs.filter(status=status)
+    return _qs_to_dicts(qs)
 
-    docs = query.stream()
-    bookings = []
-    for doc in docs:
-        data = doc.to_dict()
-        data['id'] = doc.id
-        bookings.append(data)
 
-    bookings.sort(key=lambda b: b.get('start_time', ''), reverse=True)
-    return bookings
+def get_bookings_for_user(organisation_id, user_id, status: str = '') -> list[dict]:
+    qs = Booking.objects.filter(organisation_id=organisation_id, user_id=user_id)
+    if status and status != 'All':
+        qs = qs.filter(status=status)
+    return _qs_to_dicts(qs)
 
 
 def get_all_bookings(status: str = '') -> list[dict]:
-    """
-    Return bookings across ALL organisations (PlatformAdmin only).
-
-    The view layer must verify the user is a PlatformAdmin before calling
-    this function.
-    """
-    from apps.core.firebase import get_firestore_client
-    db = get_firestore_client()
-    query = db.collection_group('bookings')
+    qs = Booking.objects.all()
     if status and status != 'All':
-        query = query.where('status', '==', status)
-
-    docs = query.stream()
-    bookings = []
-    for doc in docs:
-        data = doc.to_dict()
-        data['id'] = doc.id
-        bookings.append(data)
-
-    bookings.sort(key=lambda b: b.get('start_time', ''), reverse=True)
-    logger.debug("PlatformAdmin: fetched %d bookings across all orgs", len(bookings))
-    return bookings
+        qs = qs.filter(status=status)
+    return _qs_to_dicts(qs)
 
 
-def get_booking_by_id(organisation_id: str, booking_id: str) -> dict | None:
-    """
-    Return a single booking document, or None if not found.
-
-    Cross-tenant safety: verifies the document's organisation_id matches.
-    """
-    doc = _bookings_col(organisation_id).document(booking_id).get()
-    if not doc.exists:
-        return None
-    data = doc.to_dict()
-    if data.get('organisation_id') != str(organisation_id):
-        logger.warning(
-            "Booking %s claims org %s but was fetched under org %s — denied.",
-            booking_id, data.get('organisation_id'), organisation_id,
+def get_booking_by_id(organisation_id, booking_id) -> dict | None:
+    try:
+        b = Booking.objects.select_related('resource', 'user').get(
+            pk=booking_id,
+            organisation_id=organisation_id,
         )
+    except Booking.DoesNotExist:
         return None
-    data['id'] = doc.id
-    return data
+    return _booking_to_dict(b)
 
 
-# ── Write operations ─────────────────────────────────────────────────────────
+# â”€â”€ Write operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def create_booking(
-    organisation_id: str,
-    resource_id: str,
-    resource_name: str,
+    organisation_id,
+    resource_id,
     user,               # Django User instance
     start_time: datetime,
     end_time: datetime,
-    custom_data: dict = None,
-) -> str:
+    title: str,
+    purpose: str,
+    total_price: float = 0.00,
+    notes: str = '',
+):
     """
-    Create a new booking document in Firestore.
-
-    Parameters
-    ----------
-    organisation_id : str
-    resource_id : str
-        Firestore document ID of the resource being booked.
-    resource_name : str
-        Denormalised resource name (avoids extra read on every list page).
-    user : accounts.User
-        The user making the booking.
-    start_time, end_time : datetime (timezone-aware preferred)
-    custom_data : dict | None
-        Extra fields: department, full_name, phone, email, reason, etc.
-
-    Returns
-    -------
-    str
-        Firestore document ID of the new booking.
+    Create a new Booking row and generate a QR code for it.
     """
-    payload = {
-        'resource_id':     str(resource_id),
-        'resource_name':   resource_name,
-        'user_id':         user.pk,
-        'username':        user.username,
-        'organisation_id': str(organisation_id),
-        'start_time':      start_time.isoformat(),
-        'end_time':        end_time.isoformat(),
-        'status':          BookingStatus.PENDING,
-        'qr_token':        str(uuid.uuid4()),
-        'custom_data':     custom_data or {},
-        'issued_at':       None,
-        'verified_at':     None,
-    }
-    _, doc_ref = _bookings_col(organisation_id).add(payload)
+    booking = Booking.objects.create(
+        organisation_id=organisation_id,
+        resource_id=resource_id,
+        user=user,
+        start_time=start_time,
+        end_time=end_time,
+        title=title,
+        purpose=purpose,
+        status='pending',
+        total_price=total_price,
+        notes=notes,
+    )
+    
+    # Generate QR Code with booking UUID
+    qr_data = f"smartslot_booking:{booking.pk}"
+    booking.qr_code = _generate_qr_base64(qr_data)
+    booking.save(update_fields=['qr_code'])
+    
     logger.info(
         "Created booking %s for resource %s in org %s by user %s",
-        doc_ref.id, resource_id, organisation_id, user.username,
+        booking.pk, resource_id, organisation_id, user.username,
     )
-    return doc_ref.id
+    return booking.pk
 
 
 def update_booking_status(
-    organisation_id: str,
-    booking_id: str,
+    organisation_id,
+    booking_id,
     new_status: str,
 ) -> None:
-    """
-    Update only the status (and relevant timestamp) of a booking.
-
-    Parameters
-    ----------
-    organisation_id : str
-    booking_id : str
-    new_status : str
-        One of the BookingStatus constants.
-    """
-    now_iso = datetime.now(tz=timezone.utc).isoformat()
-    update_data = {'status': new_status}
-
-    if new_status == BookingStatus.ISSUED:
-        update_data['issued_at'] = now_iso
-    elif new_status == BookingStatus.VERIFIED:
-        update_data['verified_at'] = now_iso
-
-    _bookings_col(organisation_id).document(booking_id).update(update_data)
-    logger.info(
-        "Booking %s in org %s updated to status %s",
-        booking_id, organisation_id, new_status,
-    )
+    Booking.objects.filter(pk=booking_id, organisation_id=organisation_id).update(status=new_status)
+    logger.info("Booking %s in org %s updated to status %s", booking_id, organisation_id, new_status)
 
 
-def cancel_booking(organisation_id: str, booking_id: str) -> None:
-    """Cancel a booking (shortcut for update_booking_status CANCELLED)."""
-    update_booking_status(organisation_id, booking_id, BookingStatus.CANCELLED)
+def cancel_booking(organisation_id, booking_id) -> None:
+    update_booking_status(organisation_id, booking_id, 'cancelled')

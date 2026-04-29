@@ -6,8 +6,7 @@ Multi-tenant booking views.
 Access rules
 ------------
 - PlatformAdmin        → sees ALL bookings across every organisation.
-- OrganisationAdmin /
-  Receptionist         → sees all bookings within their own organisation.
+- OrganisationAdmin    → sees all bookings within their own organisation.
 - Employee / External  → sees ONLY their own personal bookings.
 
 All Firestore access goes through  apps.bookings.services.
@@ -37,7 +36,7 @@ from .forms import InternalBookingForm, ExternalBookingStep1Form, ExternalBookin
 
 
 # ── Roles that can see the whole organisation's bookings ──────────────────────
-_ORG_WIDE_ROLES = {'PlatformAdmin', 'OrganisationAdmin', 'Receptionist'}
+_ORG_WIDE_ROLES = {'super_admin', 'org_admin'}
 
 
 @method_decorator(login_required, name='dispatch')
@@ -46,7 +45,7 @@ class BookingListView(LoginRequiredMixin, View):
     Display a list of bookings.
 
     - PlatformAdmin           → all bookings, all organisations
-    - OrgAdmin / Receptionist → all bookings in their organisation
+    - OrgAdmin                → all bookings in their organisation
     - Employee / External     → only their own bookings
     """
 
@@ -84,21 +83,14 @@ class BookingListView(LoginRequiredMixin, View):
 def _receipt_context(booking: dict) -> list[tuple]:
     """Build receipt rows from a Firestore booking dict."""
     fmt = lambda s: s if s else '-'
-    cd = booking.get('custom_data', {})
     rows = [
         ('Resource',     booking.get('resource_name', ''), None),
         ('Organisation', booking.get('organisation_id', ''), None),
+        ('Title',        booking.get('title', ''), None),
+        ('Purpose',      booking.get('purpose', ''), None),
     ]
-    if cd.get('department'):
-        rows.append(('Department', cd['department'], None))
-    if cd.get('full_name'):
-        rows.append(('Name',       cd['full_name'],   None))
-    if cd.get('phone'):
-        rows.append(('Phone',      cd['phone'],       None))
-    if cd.get('email'):
-        rows.append(('Email',      cd['email'],       None))
-    if cd.get('reason'):
-        rows.append(('Reason',     cd['reason'],      None))
+    if booking.get('notes'):
+        rows.append(('Notes', booking.get('notes'), None))
     rows += [
         ('From',    fmt(booking.get('start_time')),  None),
         ('To',      fmt(booking.get('end_time')),    None),
@@ -107,13 +99,14 @@ def _receipt_context(booking: dict) -> list[tuple]:
     return rows
 
 
-def _get_resource_for_request(request, resource_id: str) -> tuple:
+def _get_resource_for_request(request, resource_id: int) -> tuple:
     """
-    Look up a resource by Firestore ID, enforcing org-scoped access.
+    Look up a resource by pk, enforcing org-scoped access.
 
     Returns (resource_dict, org_id) or raises PermissionDenied / Http404.
     """
     from django.http import Http404
+    from apps.resources.services import get_all_resources
 
     user = request.user
     try:
@@ -122,22 +115,15 @@ def _get_resource_for_request(request, resource_id: str) -> tuple:
         raise
 
     if user.is_platform_admin:
-        # PlatformAdmin can book any resource — must resolve org from the doc
-        from apps.core.firebase import get_firestore_client
-        db = get_firestore_client()
-        # collection_group search
-        docs = list(
-            db.collection_group('resources')
-              .where('__name__', '==', resource_id)
-              .stream()
-        )
-        if not docs:
+        # PlatformAdmin can book any resource across all orgs
+        all_resources = get_all_resources()
+        matches = [r for r in all_resources if r['id'] == int(resource_id)]
+        if not matches:
             raise Http404(f"Resource {resource_id!r} not found.")
-        data = docs[0].to_dict()
-        data['id'] = docs[0].id
-        return data, data['organisation_id']
+        resource = matches[0]
+        return resource, resource['organisation_id']
     else:
-        resource = get_resource_by_id(org_id, resource_id)
+        resource = get_resource_by_id(org_id, int(resource_id))
         if resource is None:
             raise Http404(f"Resource {resource_id!r} not found in your organisation.")
         return resource, org_id
@@ -148,7 +134,7 @@ def _get_resource_for_request(request, resource_id: str) -> tuple:
 @login_required
 def internal_booking_view(request, resource_id: str):
     """
-    Create a booking for an internal user (Employee, OrgAdmin, Receptionist).
+    Create a booking for an internal user (Employee, OrgAdmin).
 
     The resource is looked up from Firestore; the booking is scoped to the
     user's organisation automatically.
@@ -169,10 +155,8 @@ def internal_booking_view(request, resource_id: str):
                 user=request.user,
                 start_time=cd['start_time'],
                 end_time=cd['end_time'],
-                custom_data={
-                    'department': cd.get('department', ''),
-                    'reason':     cd.get('reason', ''),
-                },
+                title=cd['title'],
+                purpose=cd['purpose'],
             )
             booking = get_booking_by_id(org_id, booking_id)
             return render(request, 'bookings/booking_receipt.html', {
@@ -218,7 +202,8 @@ def external_booking_view(request, resource_id: str):
                     'full_name': form1.cleaned_data['full_name'],
                     'phone':     form1.cleaned_data['phone'],
                     'email':     form1.cleaned_data['email'],
-                    'reason':    form1.cleaned_data['reason'],
+                    'title':     form1.cleaned_data['title'],
+                    'purpose':   form1.cleaned_data['purpose'],
                 }
                 return render(request, 'bookings/booking_create_external.html', {
                     'resource': resource, 'step': 2, 'steps': STEPS,
@@ -261,14 +246,9 @@ def external_booking_view(request, resource_id: str):
                     user=request.user,
                     start_time=start,
                     end_time=end,
-                    custom_data={
-                        'full_name':      saved.get('full_name', ''),
-                        'phone':          saved.get('phone', ''),
-                        'email':          saved.get('email', ''),
-                        'reason':         saved.get('reason', ''),
-                        'payment_method': 'Card',
-                        'card_last4':     card_num[-4:] if len(card_num) >= 4 else '****',
-                    },
+                    title=saved.get('title', ''),
+                    purpose=saved.get('purpose', ''),
+                    notes=f"Payment: Card ending in {card_num[-4:] if len(card_num) >= 4 else '****'}\nName: {saved.get('full_name', '')}\nPhone: {saved.get('phone', '')}\nEmail: {saved.get('email', '')}",
                 )
                 request.session.pop(session_key, None)
                 booking = get_booking_by_id(org_id, booking_id)

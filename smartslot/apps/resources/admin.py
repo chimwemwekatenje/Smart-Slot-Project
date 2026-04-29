@@ -5,14 +5,14 @@ from .models import Resource
 
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
-    list_display    = ('photo_preview', 'name', 'category', 'price_display', 'organisation', 'created_at')
-    list_filter     = ('category', 'organisation', 'created_at')
-    search_fields   = ('name', 'description', 'category')
+    list_display    = ('photo_preview', 'name', 'resource_type', 'price_display', 'organisation', 'created_at')
+    list_filter     = ('resource_type', 'organisation', 'created_at')
+    search_fields   = ('name', 'description', 'resource_type')
     ordering        = ('-created_at',)
     readonly_fields = ('photo_preview',)
     fieldsets = (
         (None, {
-            'fields': ('organisation', 'name', 'category', 'price', 'description')
+            'fields': ('organisation', 'name', 'resource_type', 'price_per_hour', 'description')
         }),
         ('Photo', {
             'fields': ('photo', 'photo_preview'),

@@ -1,87 +1,52 @@
-"""
-apps/accounts/models.py
------------------------
-Custom User model with role-based access control and organisation scoping.
-
-Roles
------
-- PlatformAdmin    : super-admin, sees ALL organisations and their data
-- OrganisationAdmin: manages one organisation (resources, users, bookings)
-- Receptionist     : processes bookings for their organisation
-- Employee         : makes personal bookings within their organisation
-- External         : external/guest users; paid bookings only
-"""
-
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
     class RoleChoices(models.TextChoices):
-        PLATFORM_ADMIN      = 'PlatformAdmin',      'Platform Admin'
-        ORGANISATION_ADMIN  = 'OrganisationAdmin',  'Organisation Admin'
-        RECEPTIONIST        = 'Receptionist',        'Receptionist'
-        EMPLOYEE            = 'Employee',            'Employee'
-        EXTERNAL            = 'External',            'External'
+        SUPER_ADMIN       = 'super_admin',      'Super Admin'
+        ORG_ADMIN         = 'org_admin',        'Organisation Admin'
+        EMPLOYEE          = 'employee',         'Employee'
+        EXTERNAL          = 'external',         'External'
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Custom fields mapping to 'profiles' table
+    full_name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=50, blank=True, null=True)
     role = models.CharField(
         max_length=20,
         choices=RoleChoices.choices,
         default=RoleChoices.EMPLOYEE,
     )
-
-    # The organisation this user belongs to.
-    # PlatformAdmin users leave this NULL — they span all organisations.
     organisation = models.ForeignKey(
         'core.Organisation',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='members',
-        help_text=(
-            "The organisation this user belongs to. "
-            "Leave blank for Platform Admins."
-        ),
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    # Resolve related_name clashes with auth.User
-    groups = models.ManyToManyField(
-        'auth.Group',
-        verbose_name='groups',
-        blank=True,
-        help_text='The groups this user belongs to.',
-        related_name="custom_user_set",
-        related_query_name="user",
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        verbose_name='user permissions',
-        blank=True,
-        help_text='Specific permissions for this user.',
-        related_name="custom_user_set",
-        related_query_name="user",
-    )
-
-    # ── Computed helpers ──────────────────────────────────────────────────────
+    class Meta:
+        db_table = 'profiles'
+        verbose_name = "Profile"
+        verbose_name_plural = "Profiles"
 
     @property
     def is_platform_admin(self) -> bool:
-        """True only for PlatformAdmin — has full cross-org access."""
-        return self.role == self.RoleChoices.PLATFORM_ADMIN
+        """True only for super_admin â€” has full cross-org access."""
+        return self.role == self.RoleChoices.SUPER_ADMIN
 
     @property
     def is_org_admin(self) -> bool:
-        return self.role == self.RoleChoices.ORGANISATION_ADMIN
+        return self.role == self.RoleChoices.ORG_ADMIN
 
     @property
     def org_id(self) -> str | None:
-        """
-        Return the user's organisation pk as a string (for Firestore paths).
-        Returns None for PlatformAdmin users who have no assigned org.
-        """
-        if self.organisation_id:
-            return str(self.organisation_id)
-        return None
+        """Return the user's organisation pk (UUID as string)."""
+        return str(self.organisation_id) if self.organisation_id else None
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"

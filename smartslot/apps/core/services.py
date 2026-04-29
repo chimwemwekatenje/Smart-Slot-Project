@@ -18,9 +18,9 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-def get_org_id_for_user(user) -> str:
+def get_org_id_for_user(user) -> int | None:
     """
-    Return the Firestore organisation ID for *user*.
+    Return the organisation ID (integer PK) for *user*.
 
     Parameters
     ----------
@@ -29,9 +29,9 @@ def get_org_id_for_user(user) -> str:
 
     Returns
     -------
-    str
-        The organisation primary key as a string, ready to use in Firestore
-        paths like  organisations/{org_id}/resources .
+    int or None
+        The organisation primary key, or None for PlatformAdmins
+        (signal meaning "no restriction — access all orgs").
 
     Raises
     ------
@@ -52,25 +52,25 @@ def get_org_id_for_user(user) -> str:
     return user.org_id
 
 
-def assert_same_org(user, org_id: str) -> None:
+def assert_same_org(user, org_id: int) -> None:
     """
     Raise PermissionDenied unless *user* belongs to *org_id* (or is a
     PlatformAdmin).
 
     Use this when you already have an org_id from a URL parameter or a
-    Firestore document and need to verify the user is allowed to see it.
+    database record and need to verify the user is allowed to see it.
 
     Parameters
     ----------
     user : accounts.User
-    org_id : str
+    org_id : int
         The organisation ID taken from the resource/booking being accessed.
     """
     if user.is_platform_admin:
         return  # full access
 
     user_org = get_org_id_for_user(user)
-    if user_org != str(org_id):
+    if user_org != int(org_id):
         raise PermissionDenied(
             "You do not have permission to access data from this organisation."
         )

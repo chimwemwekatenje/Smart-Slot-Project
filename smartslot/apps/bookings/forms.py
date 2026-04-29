@@ -11,12 +11,12 @@ class InternalBookingForm(forms.ModelForm):
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         input_formats=['%Y-%m-%dT%H:%M'],
     )
-    department = forms.CharField(max_length=100)
-    reason     = forms.CharField(widget=forms.Textarea)
+    title = forms.CharField(max_length=255)
+    purpose = forms.CharField(widget=forms.Textarea)
 
     class Meta:
         model  = Booking
-        fields = ['start_time', 'end_time']
+        fields = ['start_time', 'end_time', 'title', 'purpose']
 
     def clean(self):
         cleaned = super().clean()
@@ -30,7 +30,8 @@ class ExternalBookingStep1Form(forms.Form):
     full_name = forms.CharField(max_length=150, label='Full Name')
     phone     = forms.CharField(max_length=20,  label='Phone Number')
     email     = forms.EmailField(label='Email Address')
-    reason    = forms.CharField(widget=forms.Textarea, label='Reason for Booking')
+    title     = forms.CharField(max_length=255, label='Booking Title')
+    purpose   = forms.CharField(widget=forms.Textarea, label='Purpose of Booking')
 
 
 class ExternalBookingStep3Form(forms.Form):
