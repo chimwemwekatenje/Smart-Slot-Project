@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/auth_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -43,10 +44,16 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
     try {
       final id = widget.resource['id'];
       final weekStr = DateFormat('yyyy-MM-dd').format(_weekStart);
-      final res = await ApiService.get(
-          '/api/resources/$id/schedule/?week_start=$weekStr');
-      if (res.statusCode == 200) {
-        setState(() => _bookings = jsonDecode(res.body));
+      
+      final data = await Supabase.instance.client
+          .from('bookings')
+          .select()
+          .eq('resource_id', id)
+          .gte('start_time', weekStr)
+          .lte('start_time', _weekStart.add(const Duration(days: 7)).toIso8601String());
+          
+      if (mounted) {
+        setState(() => _bookings = data);
       }
     } catch (_) {}
     setState(() => _loadingSchedule = false);
@@ -330,24 +337,21 @@ class _BookingDetailsSheetState extends State<_BookingDetailsSheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() { _loading = true; _error = null; });
     try {
-      final res = await ApiService.post('/api/bookings/', {
-        'resource': widget.resource['id'],
+      final auth = context.read<AuthProvider>();
+      final data = await Supabase.instance.client.from('bookings').insert({
+        'resource_id': widget.resource['id'],
+        'user_id': auth.user!['id'],
         'start_time': widget.selectedStart.toUtc().toIso8601String(),
         'end_time': widget.selectedEnd.toUtc().toIso8601String(),
-        'custom_data': {
-          'department': _deptCtrl.text.trim(),
-          'reason': _reasonCtrl.text.trim(),
-        },
-      });
+        'title': _deptCtrl.text.trim(),
+        'purpose': _reasonCtrl.text.trim(),
+        'status': 'Pending',
+      }).select('*, resource:resources(name, category), organisation:organisations(name)').single();
+      
       if (!mounted) return;
-      if (res.statusCode == 201) {
-        widget.onBooked(jsonDecode(res.body));
-      } else {
-        final err = jsonDecode(res.body);
-        final msg = err is Map ? err.values.first : err.toString();
-        setState(() => _error = msg is List ? msg.first : msg.toString());
-      }
+      widget.onBooked(data);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = 'Connection error. Check your network.');
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -474,8 +478,7 @@ class BookingReceiptScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat('EEE d MMM yyyy, HH:mm');
-    final customData = booking['custom_data'] as Map<String, dynamic>? ?? {};
-    final qrToken = booking['qr_token'] ?? booking['id'].toString();
+    final qrToken = booking['qr_code'] ?? booking['id'].toString();
     final start = DateTime.tryParse(booking['start_time'] ?? '')?.toLocal();
     final end = DateTime.tryParse(booking['end_time'] ?? '')?.toLocal();
 
@@ -565,22 +568,19 @@ class BookingReceiptScreen extends StatelessWidget {
                   const Divider(height: 20),
                   _ReceiptRow(
                       label: 'Resource',
-                      value: booking['resource_name'] ?? '-'),
+                      value: booking['resource']?['name'] ?? '-'),
                   _ReceiptRow(
                       label: 'Category',
-                      value: booking['resource_category'] ?? '-'),
+                      value: booking['resource']?['category'] ?? '-'),
                   _ReceiptRow(
                       label: 'Organisation',
-                      value: booking['organisation_name'] ?? '-'),
+                      value: booking['organisation']?['name'] ?? '-'),
                   _ReceiptRow(
-                      label: 'Booked by',
-                      value: booking['booked_by'] ?? '-'),
+                      label: 'Title',
+                      value: booking['title'] ?? '-'),
                   _ReceiptRow(
-                      label: 'Department',
-                      value: customData['department'] ?? '-'),
-                  _ReceiptRow(
-                      label: 'Reason',
-                      value: customData['reason'] ?? '-'),
+                      label: 'Purpose',
+                      value: booking['purpose'] ?? '-'),
                   const Divider(height: 20),
                   if (start != null)
                     _ReceiptRow(label: 'From', value: fmt.format(start)),

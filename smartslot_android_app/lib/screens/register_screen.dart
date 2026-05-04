@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneCtrl = TextEditingController();
 
   // Employee-specific
-  int? _selectedOrgId;
+  dynamic _selectedOrgId;
   List<Map<String, dynamic>> _organisations = [];
 
   bool _obscure = true;
@@ -38,12 +38,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _loadOrgs() async {
     try {
-      final res = await ApiService.get('/api/organisations/');
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as List;
-        setState(() => _organisations =
-            data.map((o) => {'id': o['id'], 'name': o['name']}).toList());
-      }
+      final data = await Supabase.instance.client
+          .from('organisations')
+          .select('id, name');
+      
+      setState(() => _organisations =
+          data.map((o) => {'id': o['id'], 'name': o['name']}).toList());
     } catch (_) {}
   }
 
@@ -201,8 +201,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               style: TextStyle(color: AppColors.textMuted)),
                         ]),
                       )
-                    : DropdownButtonFormField<int>(
-                        initialValue: _selectedOrgId,
+                    : DropdownButtonFormField<String>(
+                        value: _selectedOrgId?.toString(),
                         dropdownColor: AppColors.surface,
                         decoration: const InputDecoration(
                           labelText: 'Select Your Organisation',
@@ -210,8 +210,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               color: AppColors.textMuted),
                         ),
                         items: _organisations
-                            .map((o) => DropdownMenuItem<int>(
-                                  value: o['id'] as int,
+                            .map((o) => DropdownMenuItem<String>(
+                                  value: o['id'].toString(),
                                   child: Text(o['name']),
                                 ))
                             .toList(),

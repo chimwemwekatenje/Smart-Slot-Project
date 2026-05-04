@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../theme.dart';
 
 class BookingCard extends StatelessWidget {
@@ -100,9 +102,66 @@ class BookingCard extends StatelessWidget {
                       : 'MWK ${booking['resource_price']}',
                 ),
               ],
+              ],
+              if (status != 'Cancelled' && status != 'Completed') ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => _showQR(context),
+                    icon: const Icon(Icons.qr_code, size: 20),
+                    label: const Text('Show QR'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showQR(BuildContext context) {
+    final token = base64Encode(utf8.encode(jsonEncode({
+      'id': booking['id'],
+      'organisation_id': booking['organisation_id'],
+    })));
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Check-in QR Code', style: TextStyle(color: AppColors.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Show this to the staff at the entrance.', 
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: QrImageView(
+                data: token,
+                version: QrVersions.auto,
+                size: 200.0,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
       ),
     );
   }

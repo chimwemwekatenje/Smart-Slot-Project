@@ -149,12 +149,13 @@ class ProfileScreen extends StatelessWidget {
   }
 
   String _roleLabel(String role) {
-    switch (role) {
-      case 'PlatformAdmin': return 'Platform Admin';
-      case 'OrganisationAdmin': return 'Organisation Admin';
-      case 'Receptionist': return 'Receptionist';
-      case 'Employee': return 'Employee';
-      case 'External': return 'External User';
+    switch (role.toLowerCase()) {
+      case 'platform_admin': return 'Platform Admin';
+      case 'org_admin': 
+      case 'organisation_admin': return 'Organisation Admin';
+      case 'receptionist': return 'Receptionist';
+      case 'employee': return 'Employee';
+      case 'external': return 'External User';
       default: return role;
     }
   }

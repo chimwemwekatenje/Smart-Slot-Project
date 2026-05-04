@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -16,29 +16,41 @@ class AuthProvider extends ChangeNotifier {
   int? get organisationId => _user?['organisation'] as int?;
 
   Future<void> loadSession() async {
-    _user = await ApiService.getUser();
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      await _fetchProfile(session.user.id);
+    }
     notifyListeners();
   }
 
-  Future<String?> login(String username, String password) async {
+  Future<void> _fetchProfile(String userId) async {
+    try {
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+      _user = data;
+    } catch (e) {
+      debugPrint('Error fetching profile: $e');
+    }
+  }
+
+  Future<String?> login(String email, String password) async {
     _loading = true;
     notifyListeners();
     try {
-      final res = await ApiService.post(
-        '/api/auth/login/',
-        {'username': username, 'password': password},
-        auth: false,
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        await ApiService.saveToken(data['access']);
-        await ApiService.saveUser(data['user']);
-        _user = data['user'];
+      if (response.user != null) {
+        await _fetchProfile(response.user!.id);
         return null;
-      } else {
-        final err = jsonDecode(res.body);
-        return err['detail'] ?? 'Login failed';
       }
+      return 'Login failed';
+    } on AuthException catch (e) {
+      return e.message;
     } catch (e) {
       return 'Connection error. Check your network.';
     } finally {
@@ -51,14 +63,23 @@ class AuthProvider extends ChangeNotifier {
     _loading = true;
     notifyListeners();
     try {
-      final res = await ApiService.post('/api/auth/register/', data, auth: false);
-      if (res.statusCode == 201) {
+      final authResponse = await Supabase.instance.client.auth.signUp(
+        email: data['email'],
+        password: data['password'],
+        data: {
+          'full_name': '${data['first_name']} ${data['last_name']}',
+          'username': data['username'],
+          'role': data['role']?.toString().toLowerCase(),
+          'organisation_id': data['organisation_id'],
+        },
+      );
+
+      if (authResponse.user != null) {
         return null;
-      } else {
-        final err = jsonDecode(res.body);
-        final msg = err.values.first;
-        return msg is List ? msg.first : msg.toString();
       }
+      return 'Registration failed';
+    } on AuthException catch (e) {
+      return e.message;
     } catch (e) {
       return 'Connection error. Check your network.';
     } finally {
@@ -68,7 +89,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await ApiService.clearSession();
+    await Supabase.instance.client.auth.signOut();
     _user = null;
     notifyListeners();
   }

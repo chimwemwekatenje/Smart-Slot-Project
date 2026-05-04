@@ -1,10 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../widgets/booking_card.dart';
 import '../widgets/resource_card.dart';
 import 'resource_detail_screen.dart';
+import 'qr_scanner_screen.dart';
 
 class OrgPanelScreen extends StatefulWidget {
   const OrgPanelScreen({super.key});
@@ -38,10 +42,15 @@ class _OrgPanelScreenState extends State<OrgPanelScreen>
   Future<void> _loadResources() async {
     setState(() => _loadingRes = true);
     try {
-      final res = await ApiService.get('/api/org/resources/');
-      if (res.statusCode == 200) {
-        setState(() => _resources = jsonDecode(res.body));
-      }
+      final auth = context.read<AuthProvider>();
+      if (auth.organisationId == null) return;
+      
+      final data = await Supabase.instance.client
+          .from('resources')
+          .select()
+          .eq('organisation_id', auth.organisationId!);
+          
+      if (mounted) setState(() => _resources = data);
     } catch (_) {}
     setState(() => _loadingRes = false);
   }
@@ -49,10 +58,15 @@ class _OrgPanelScreenState extends State<OrgPanelScreen>
   Future<void> _loadBookings() async {
     setState(() => _loadingBook = true);
     try {
-      final res = await ApiService.get('/api/org/bookings/');
-      if (res.statusCode == 200) {
-        setState(() => _bookings = jsonDecode(res.body));
-      }
+      final auth = context.read<AuthProvider>();
+      if (auth.organisationId == null) return;
+      
+      final data = await Supabase.instance.client
+          .from('bookings')
+          .select('*, resource:resources(name), user:profiles(full_name, email)')
+          .eq('organisation_id', auth.organisationId!);
+          
+      if (mounted) setState(() => _bookings = data);
     } catch (_) {}
     setState(() => _loadingBook = false);
   }
@@ -125,6 +139,15 @@ class _OrgPanelScreenState extends State<OrgPanelScreen>
                       ),
                     ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+        ),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+        label: const Text('Verify QR', style: TextStyle(color: Colors.white)),
       ),
     );
   }

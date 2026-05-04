@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme.dart';
 import '../widgets/resource_card.dart';
 import 'resource_detail_screen.dart';
@@ -32,23 +33,21 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final res = await ApiService.get('/api/resources/');
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as List;
-        final cats = <String>{'All'};
-        for (final r in data) {
-          if (r['category'] != null) cats.add(r['category']);
-        }
-        setState(() {
-          _resources = data;
-          _categories = cats.toList();
-          _applyFilter();
-        });
-      } else {
-        setState(() => _error = 'Failed to load resources');
+      final data = await Supabase.instance.client
+          .from('resources')
+          .select('*, organisation:organisations(*)');
+      
+      final cats = <String>{'All'};
+      for (final r in data) {
+        if (r['category'] != null) cats.add(r['category']);
       }
+      setState(() {
+        _resources = data;
+        _categories = cats.toList();
+        _applyFilter();
+      });
     } catch (e) {
-      setState(() => _error = 'Connection error. Is the server running?');
+      setState(() => _error = 'Connection error or failed to load resources');
     } finally {
       setState(() => _loading = false);
     }

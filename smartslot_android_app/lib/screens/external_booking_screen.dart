@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -68,8 +69,15 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
     try {
       final id = widget.resource['id'];
       final weekStr = DateFormat('yyyy-MM-dd').format(_weekStart);
-      final res = await ApiService.get('/api/resources/$id/schedule/?week_start=$weekStr');
-      if (res.statusCode == 200) setState(() => _bookings = jsonDecode(res.body));
+      
+      final data = await Supabase.instance.client
+          .from('bookings')
+          .select()
+          .eq('resource_id', id)
+          .gte('start_time', weekStr)
+          .lte('start_time', _weekStart.add(const Duration(days: 7)).toIso8601String());
+          
+      if (mounted) setState(() => _bookings = data);
     } catch (_) {}
     setState(() => _loadingSchedule = false);
   }
@@ -111,44 +119,33 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
     if (!_payKey.currentState!.validate()) return;
     setState(() { _submitting = true; _error = null; });
     try {
-      final res = await ApiService.post('/api/bookings/', {
-        'resource': widget.resource['id'],
+      final purposeText = '${_reasonCtrl.text.trim()}\nEmail: ${_emailCtrl.text.trim()}\nPhone: ${_phoneCtrl.text.trim()}';
+      
+      final data = await Supabase.instance.client.from('bookings').insert({
+        'resource_id': widget.resource['id'],
         'start_time': _selectedStart!.toUtc().toIso8601String(),
         'end_time': _selectedEnd!.toUtc().toIso8601String(),
-        'custom_data': {
-          'full_name': _nameCtrl.text.trim(),
-          'phone': _phoneCtrl.text.trim(),
-          'email': _emailCtrl.text.trim(),
-          'reason': _reasonCtrl.text.trim(),
-          'payment_method': 'Card',
-          'card_last4': _cardNumCtrl.text.trim().replaceAll(' ', '').length >= 4
-              ? _cardNumCtrl.text.trim().replaceAll(' ', '').substring(
-                  _cardNumCtrl.text.trim().replaceAll(' ', '').length - 4)
-              : '****',
-        },
-      });
+        'title': 'External Booking - ${_nameCtrl.text.trim()}',
+        'purpose': purposeText,
+        'status': 'Pending',
+      }).select().single();
+      
       if (!mounted) return;
-      if (res.statusCode == 201) {
-        final booking = jsonDecode(res.body);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ExternalReceiptScreen(
-              booking: booking,
-              resource: widget.resource,
-              fullName: _nameCtrl.text.trim(),
-              phone: _phoneCtrl.text.trim(),
-              email: _emailCtrl.text.trim(),
-              reason: _reasonCtrl.text.trim(),
-            ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ExternalReceiptScreen(
+            booking: data,
+            resource: widget.resource,
+            fullName: _nameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim(),
+            email: _emailCtrl.text.trim(),
+            reason: _reasonCtrl.text.trim(),
           ),
-        );
-      } else {
-        final err = jsonDecode(res.body);
-        final msg = err is Map ? err.values.first : err.toString();
-        setState(() => _error = msg is List ? msg.first : msg.toString());
-      }
+        ),
+      );
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = 'Connection error. Check your network.');
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -765,7 +762,7 @@ class ExternalReceiptScreen extends StatelessWidget {
           pw.SizedBox(height: 20),
           pw.Text('QR TOKEN', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('94A3B8'), letterSpacing: 1.2)),
           pw.Divider(),
-          pw.Text(booking['qr_token'] ?? '', style: const pw.TextStyle(fontSize: 10)),
+          pw.Text(booking['qr_code'] ?? booking['id'].toString(), style: const pw.TextStyle(fontSize: 10)),
           pw.SizedBox(height: 30),
           pw.Center(
             child: pw.Text('Thank you for booking with SmartSlot',
@@ -792,7 +789,7 @@ class ExternalReceiptScreen extends StatelessWidget {
     final start = DateTime.tryParse(booking['start_time'] ?? '')?.toLocal();
     final end = DateTime.tryParse(booking['end_time'] ?? '')?.toLocal();
     final price = double.tryParse(resource['price']?.toString() ?? '0') ?? 0;
-    final qrToken = booking['qr_token'] ?? booking['id'].toString();
+    final qrToken = booking['qr_code'] ?? booking['id'].toString();
 
     return Scaffold(
       appBar: AppBar(

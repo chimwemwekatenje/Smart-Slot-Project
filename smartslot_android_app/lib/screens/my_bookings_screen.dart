@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
-import '../theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/booking_card.dart';
 
 class MyBookingsScreen extends StatefulWidget {
@@ -40,14 +42,17 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       _error = null;
     });
     try {
-      final res = await ApiService.get('/api/bookings/my/');
-      if (res.statusCode == 200) {
-        setState(() => _bookings = jsonDecode(res.body));
-      } else {
-        setState(() => _error = 'Failed to load bookings');
-      }
+      final auth = context.read<AuthProvider>();
+      if (!auth.isLoggedIn) throw Exception('Not logged in');
+      
+      final data = await Supabase.instance.client
+          .from('bookings')
+          .select('*, resource:resources(name)')
+          .eq('user_id', auth.user!['id']);
+      
+      setState(() => _bookings = data);
     } catch (e) {
-      setState(() => _error = 'Connection error');
+      setState(() => _error = 'Failed to load bookings');
     } finally {
       setState(() => _loading = false);
     }
@@ -72,8 +77,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       ),
     );
     if (confirm != true) return;
-    final res = await ApiService.patch('/api/bookings/$id/', {'status': 'Cancelled'});
-    if (res.statusCode == 200) {
+    final data = await Supabase.instance.client
+        .from('bookings')
+        .update({'status': 'Cancelled'})
+        .eq('id', id)
+        .select();
+    if (data.isNotEmpty) {
       _load();
     }
   }

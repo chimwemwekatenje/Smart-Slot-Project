@@ -21,7 +21,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _usernameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
   String? _error;
@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _slideTimer.cancel();
     _fadeCtrl.dispose();
-    _usernameCtrl.dispose();
+    _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
   }
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _error = null);
     final auth = context.read<AuthProvider>();
     final err =
-        await auth.login(_usernameCtrl.text.trim(), _passwordCtrl.text);
+        await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
     if (!mounted) return;
     if (err != null) {
       setState(() => _error = err);
@@ -182,14 +182,15 @@ class _LoginScreenState extends State<LoginScreen>
                               const SizedBox(height: 16),
                             ],
                             TextFormField(
-                              controller: _usernameCtrl,
+                              controller: _emailCtrl,
+                              keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
-                                labelText: 'Username',
-                                prefixIcon: Icon(Icons.person_outline,
+                                labelText: 'Email',
+                                prefixIcon: Icon(Icons.email_outlined,
                                     color: AppColors.textMuted),
                               ),
                               validator: (v) =>
-                                  v!.isEmpty ? 'Required' : null,
+                                  v!.isEmpty || !v.contains('@') ? 'Valid email required' : null,
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
