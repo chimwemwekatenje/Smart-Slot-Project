@@ -5,11 +5,15 @@ from .models import Resource
 
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
-    list_display    = ('photo_preview', 'name', 'category', 'price_display', 'organisation', 'created_at')
-    list_filter     = ('category', 'organisation', 'created_at')
-    search_fields   = ('name', 'description', 'category')
-    ordering        = ('-created_at',)
-    readonly_fields = ('photo_preview',)
+    list_display       = ('photo_preview', 'name', 'category', 'price_display', 'organisation', 'created_at')
+    # photo_preview returns HTML — Django cannot make it a link.
+    # Point the edit link at 'name' so clicking the resource name opens the edit page.
+    list_display_links = ('name',)
+    list_filter        = ('category', 'organisation', 'created_at')
+    search_fields      = ('name', 'description', 'category')
+    ordering           = ('-created_at',)
+    readonly_fields    = ('photo_preview', 'created_at', 'updated_at')
+
     fieldsets = (
         (None, {
             'fields': ('organisation', 'name', 'category', 'price', 'description')
@@ -19,6 +23,10 @@ class ResourceAdmin(admin.ModelAdmin):
         }),
         ('Custom Fields', {
             'fields': ('custom_fields',),
+            'classes': ('collapse',),
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',),
         }),
     )
@@ -39,13 +47,13 @@ class ResourceAdmin(admin.ModelAdmin):
 
     @admin.display(description='Price', ordering='price')
     def price_display(self, obj):
-        # Convert Decimal → int first; format_html cannot apply {:,.0f} to a SafeString
         price_int = int(obj.price)
         if price_int == 0:
             return format_html(
                 '<span style="color:#22c55e;font-weight:600;">Free</span>'
             )
+        formatted_price = '{:,}'.format(price_int)
         return format_html(
-            '<span style="color:#f59e0b;font-weight:600;">MWK {:,}</span>',
-            price_int
+            '<span style="color:#f59e0b;font-weight:600;">MWK {}</span>',
+            formatted_price
         )

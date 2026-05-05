@@ -5,11 +5,23 @@ from .models import Organisation
 
 @admin.register(Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
-    list_display  = ('logo_preview', 'name', 'created_at', 'updated_at')
-    search_fields = ('name',)
-    list_filter   = ('created_at',)
-    ordering      = ('-created_at',)
-    readonly_fields = ('logo_preview',)
+    list_display       = ('logo_preview', 'name', 'created_at', 'updated_at')
+    # logo_preview returns HTML — point the edit link at 'name' instead.
+    list_display_links = ('name',)
+    search_fields      = ('name',)
+    list_filter        = ('created_at',)
+    ordering           = ('-created_at',)
+    readonly_fields    = ('logo_preview', 'created_at', 'updated_at')
+
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'logo', 'logo_preview'),
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
 
     def logo_preview(self, obj):
         if obj.logo:
