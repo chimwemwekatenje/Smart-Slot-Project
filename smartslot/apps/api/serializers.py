@@ -111,6 +111,11 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         validated_data['qr_token'] = str(uuid.uuid4())
         user = self.context['request'].user
         validated_data['user'] = user
-        # BaseModel requires organisation — pull it from the resource
         validated_data['organisation'] = validated_data['resource'].organisation
-        return super().create(validated_data)
+        # All bookings are issued immediately upon creation
+        validated_data['status'] = 'Issued'
+        instance = super().create(validated_data)
+        return instance
+
+    def to_representation(self, instance):
+        return BookingSerializer(instance, context=self.context).data

@@ -9,4 +9,5 @@ urlpatterns = [
     path('resources/', include('apps.resources.urls')),
     path('bookings/', include('apps.bookings.urls')),
     path('api/', include('apps.api.urls')),
+    path('api/verification/', include('apps.verification.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

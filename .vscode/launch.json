@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "SmartSlot Android App",
+            "request": "launch",
+            "type": "dart",
+            "program": "C:/Users/HP/Desktop/Android App/smartslot_android_app/lib/main.dart",
+            "cwd": "C:/Users/HP/Desktop/Android App/smartslot_android_app"
+        },
+        {
+            "name": "Django Server",
+            "request": "launch",
+            "type": "python",
+            "program": "${workspaceFolder}/smartslot/manage.py",
+            "args": ["runserver", "0.0.0.0:8000"],
+            "django": true,
+            "cwd": "${workspaceFolder}/smartslot"
+        }
+    ]
+}

@@ -95,7 +95,40 @@ class BookingCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        # Send receipt email if booking succeeded and custom_data has an email
+        if response.status_code == 201:
+            try:
+                from .email_utils import send_booking_receipt_email
+                import threading
+                data = response.data
+                custom = data.get('custom_data') or {}
+                email = custom.get('email') or request.user.email
+                if email:
+                    resource_obj = Resource.objects.select_related('organisation').get(
+                        pk=data['resource'])
+                    resource_dict = {
+                        'name': resource_obj.name,
+                        'category': resource_obj.category,
+                        'price': str(resource_obj.price),
+                        'organisation_name': resource_obj.organisation.name,
+                    }
+                    # Send in background thread so it doesn't slow the response
+                    threading.Thread(
+                        target=send_booking_receipt_email,
+                        args=(
+                            dict(data),
+                            resource_dict,
+                            custom.get('full_name') or request.user.get_full_name() or request.user.username,
+                            custom.get('phone') or request.user.phone or '',
+                            email,
+                            custom.get('reason') or custom.get('department') or '',
+                        ),
+                        daemon=True,
+                    ).start()
+            except Exception:
+                pass  # Never fail the booking due to email issues
+        return response
 
 
 class BookingUpdateView(generics.UpdateAPIView):
@@ -108,11 +141,23 @@ class BookingUpdateView(generics.UpdateAPIView):
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         new_status = request.data.get('status')
-        if new_status == 'Cancelled' and instance.status == 'Pending':
+        if new_status == 'Cancelled' and instance.status in ['Pending', 'Issued']:
             instance.status = 'Cancelled'
             instance.save()
             return Response(BookingSerializer(instance).data)
         return Response({'detail': 'Not allowed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BookingDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class OrgResourceListView(generics.ListAPIView):
