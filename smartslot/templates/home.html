@@ -1,33 +1,117 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="text-align: center;">
-    <h1>Welcome to SmartSlot</h1>
-    <p>Efficient resource booking made simple</p>
-    
-    <div style="margin-top: 2rem;">
-        {% if user.is_authenticated %}
-            <a href="/resources/" class="btn">Browse Resources</a>
-            <a href="/bookings/" class="btn">My Bookings</a>
-        {% else %}
-            <a href="/accounts/login/" class="btn">Login</a>
-            <a href="/accounts/signup/" class="btn">Sign Up</a>
-        {% endif %}
+
+<!-- Hero -->
+<div style="text-align:center; padding:5rem 1rem 3rem;">
+
+    <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(20,184,166,0.1);
+                border:1px solid rgba(20,184,166,0.3); border-radius:20px;
+                padding:6px 16px; margin-bottom:1.5rem;">
+        <i class="fa-solid fa-bolt" style="color:var(--primary); font-size:0.8rem;"></i>
+        <span style="color:var(--primary); font-size:0.82rem; font-weight:600;">Smart Resource Booking for Malawi</span>
     </div>
 
-    <div class="features">
-        <div class="card">
-            <h3 style="color: #14b8a6; margin-bottom: 1rem;">Easy Booking</h3>
-            <p style="font-size: 1rem; margin: 0;">Book resources quickly with our intuitive interface</p>
-        </div>
-        <div class="card">
-            <h3 style="color: #14b8a6; margin-bottom: 1rem;">Real-time Availability</h3>
-            <p style="font-size: 1rem; margin: 0;">See what's available right now and plan ahead</p>
-        </div>
-        <div class="card">
-            <h3 style="color: #14b8a6; margin-bottom: 1rem;">Smart Management</h3>
-            <p style="font-size: 1rem; margin: 0;">Powerful admin tools for resource management</p>
-        </div>
+    <h1 style="font-size:3.4rem; font-weight:800; color:var(--text); line-height:1.15; margin-bottom:1rem;">
+        Book Office Resources<br>
+        <span style="color:var(--primary);">The Smart Way</span>
+    </h1>
+
+    <p style="color:var(--muted); font-size:1.1rem; max-width:540px; margin:0 auto 2.5rem; line-height:1.8;">
+        Real-time availability &middot; PayChangu payments &middot; QR verification.<br>
+        Built for Malawian organisations.
+    </p>
+
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        {% if user.is_authenticated %}
+            <a href="/resources/" class="btn btn-primary" style="font-size:1rem; padding:13px 32px;">
+                <i class="fa-solid fa-calendar-check"></i> Browse Resources
+            </a>
+            <a href="/bookings/" class="btn btn-outline" style="font-size:1rem; padding:13px 32px;">
+                <i class="fa-regular fa-calendar"></i> My Bookings
+            </a>
+        {% else %}
+            <a href="/resources/" class="btn btn-primary" style="font-size:1rem; padding:13px 32px;">
+                <i class="fa-solid fa-magnifying-glass"></i> Explore Resources
+            </a>
+            <a href="/accounts/signup/" class="btn btn-outline" style="font-size:1rem; padding:13px 32px;">
+                <i class="fa-solid fa-user-plus"></i> Get Started
+            </a>
+        {% endif %}
     </div>
 </div>
+
+<!-- Feature cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.25rem; margin-bottom:3rem;">
+    <div class="card" style="padding:1.5rem;">
+        <div style="font-size:1.5rem; color:var(--primary); margin-bottom:0.75rem;">
+            <i class="fa-regular fa-calendar-check"></i>
+        </div>
+        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:0.4rem;">Real-time Calendar</div>
+        <div style="color:var(--muted); font-size:0.875rem; line-height:1.6;">See what's available instantly and avoid double bookings.</div>
+    </div>
+    <div class="card" style="padding:1.5rem;">
+        <div style="font-size:1.5rem; color:var(--primary); margin-bottom:0.75rem;">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:0.4rem;">Secure Payments</div>
+        <div style="color:var(--muted); font-size:0.875rem; line-height:1.6;">Pay with PayChangu or book free resources instantly.</div>
+    </div>
+    <div class="card" style="padding:1.5rem;">
+        <div style="font-size:1.5rem; color:var(--primary); margin-bottom:0.75rem;">
+            <i class="fa-solid fa-qrcode"></i>
+        </div>
+        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:0.4rem;">QR Verification</div>
+        <div style="color:var(--muted); font-size:0.875rem; line-height:1.6;">Scan QR code on arrival for automatic check-in.</div>
+    </div>
+    <div class="card" style="padding:1.5rem;">
+        <div style="font-size:1.5rem; color:var(--primary); margin-bottom:0.75rem;">
+            <i class="fa-solid fa-building"></i>
+        </div>
+        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:0.4rem;">Multi-Organisation</div>
+        <div style="color:var(--muted); font-size:0.875rem; line-height:1.6;">Many organisations on one platform — boardrooms, vehicles, equipment.</div>
+    </div>
+</div>
+
+<!-- Stats row -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:3rem;">
+    <div style="text-align:center; padding:1.5rem; background:var(--surface); border-radius:var(--r); border:1px solid var(--border);">
+        <div style="font-size:2rem; font-weight:800; color:var(--primary);">2+</div>
+        <div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">Organisations</div>
+    </div>
+    <div style="text-align:center; padding:1.5rem; background:var(--surface); border-radius:var(--r); border:1px solid var(--border);">
+        <div style="font-size:2rem; font-weight:800; color:var(--primary);">10+</div>
+        <div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">Resources</div>
+    </div>
+    <div style="text-align:center; padding:1.5rem; background:var(--surface); border-radius:var(--r); border:1px solid var(--border);">
+        <div style="font-size:2rem; font-weight:800; color:var(--primary);">MWK</div>
+        <div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">Local Payments</div>
+    </div>
+    <div style="text-align:center; padding:1.5rem; background:var(--surface); border-radius:var(--r); border:1px solid var(--border);">
+        <div style="font-size:2rem; font-weight:800; color:var(--primary);">QR</div>
+        <div style="color:var(--muted); font-size:0.85rem; margin-top:4px;">Verified Check-in</div>
+    </div>
+</div>
+
+<!-- CTA -->
+{% if not user.is_authenticated %}
+<div style="text-align:center; padding:3rem 2rem; background:var(--surface);
+            border:1px solid var(--border); border-radius:var(--r); margin-bottom:2rem;">
+    <h2 style="font-size:1.6rem; font-weight:800; color:var(--text); margin-bottom:0.75rem;">
+        Ready to get started?
+    </h2>
+    <p style="color:var(--muted); font-size:1rem; margin-bottom:1.75rem;">
+        Join SmartSlot and start booking resources in minutes.
+    </p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="/accounts/signup/" class="btn btn-primary" style="font-size:1rem; padding:13px 32px;">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+        </a>
+        <a href="/accounts/login/" class="btn btn-ghost" style="font-size:1rem; padding:13px 32px;">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </a>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
