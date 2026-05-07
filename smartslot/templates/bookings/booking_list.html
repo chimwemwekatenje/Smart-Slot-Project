@@ -43,11 +43,9 @@
                     {{ booking.resource.name }}
                 </span>
                 <span class="badge
-                    {% if status == 'Pending' %}badge-warning
-                    {% elif status == 'Issued' %}badge-primary
-                    {% elif status == 'Verified' %}badge-success
-                    {% elif status == 'Completed' %}badge-muted
-                    {% else %}badge-error{% endif %}">
+                    {% if status == 'Booked' %}badge-success
+                    {% elif status == 'Cancelled' %}badge-error
+                    {% else %}badge-muted{% endif %}">
                     {{ status }}
                 </span>
             </div>
@@ -72,6 +70,21 @@
                     {% else %}MWK {{ booking.resource.price|floatformat:0 }}{% endif %}
                 </div>
             </div>
+
+            <!-- Cancel button — only for Booked bookings -->
+            {% if status == 'Booked' %}
+            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+                <form method="post" action="{% url 'booking_cancel' booking.pk %}"
+                      onsubmit="return confirm('Cancel this booking? The slot will be freed immediately.')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost"
+                            style="padding:7px 16px; font-size:0.82rem; color:var(--error);
+                                   border:1px solid rgba(239,68,68,0.3);">
+                        <i class="fa-solid fa-xmark"></i> Cancel Booking
+                    </button>
+                </form>
+            </div>
+            {% endif %}
 
         </div>
         {% endwith %}

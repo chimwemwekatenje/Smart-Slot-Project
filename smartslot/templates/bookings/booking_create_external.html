@@ -62,71 +62,19 @@
     <div class="card" style="padding:2rem;">
 
         {% if step == 1 %}
-        <!-- ── STEP 1: Details ── -->
-        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Your Details</div>
-        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.5rem;">We need these to confirm your booking.</p>
+        <!-- ── STEP 1: Time Slot ── -->
+        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Select Time Slot</div>
+        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">Choose your start and end time for <strong style="color:var(--text);">{{ resource.name }}</strong>.</p>
 
-        {% if form1.errors %}
+        {% if time_error %}
         <div class="alert alert-error" style="margin-bottom:1.25rem;">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <div>{% for f in form1 %}{% for e in f.errors %}<div>{{ e }}</div>{% endfor %}{% endfor %}</div>
+            <i class="fa-solid fa-ban"></i> {{ time_error }}
         </div>
         {% endif %}
 
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="step" value="1" />
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-regular fa-user" style="margin-right:5px;"></i>Full Name</label>
-                <input type="text" name="full_name" value="{{ form1.full_name.value|default:'' }}"
-                       class="form-input {% if form1.full_name.errors %}is-error{% endif %}"
-                       placeholder="Your full name" />
-                {% if form1.full_name.errors %}<span class="form-error">{{ form1.full_name.errors.0 }}</span>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-solid fa-phone" style="margin-right:5px;"></i>Phone Number</label>
-                <input type="tel" name="phone" value="{{ form1.phone.value|default:'' }}"
-                       class="form-input {% if form1.phone.errors %}is-error{% endif %}"
-                       placeholder="+265 999 000 000" />
-                {% if form1.phone.errors %}<span class="form-error">{{ form1.phone.errors.0 }}</span>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-regular fa-envelope" style="margin-right:5px;"></i>Email Address</label>
-                <input type="email" name="email" value="{{ form1.email.value|default:'' }}"
-                       class="form-input {% if form1.email.errors %}is-error{% endif %}"
-                       placeholder="your@email.com" />
-                {% if form1.email.errors %}<span class="form-error">{{ form1.email.errors.0 }}</span>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:1.5rem;">
-                <label class="form-label"><i class="fa-solid fa-note-sticky" style="margin-right:5px;"></i>Reason for Booking</label>
-                <textarea name="reason" rows="3"
-                          class="form-input {% if form1.reason.errors %}is-error{% endif %}"
-                          placeholder="e.g. Annual conference, product launch..."
-                          style="resize:vertical;">{{ form1.reason.value|default:'' }}</textarea>
-                {% if form1.reason.errors %}<span class="form-error">{{ form1.reason.errors.0 }}</span>{% endif %}
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%; padding:13px; font-size:1rem;">
-                Next <i class="fa-solid fa-arrow-right"></i>
-            </button>
-        </form>
-
-        {% elif step == 2 %}
-        <!-- ── STEP 2: Time Slot ── -->
-        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Select Time Slot</div>
-        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">Choose your start and end time.</p>
-
-        {% if time_error %}
-        <div class="alert alert-error" style="margin-bottom:1.25rem;">
-            <i class="fa-solid fa-triangle-exclamation"></i> {{ time_error }}
-        </div>
-        {% endif %}
-
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="step" value="2" />
-            {% for k, v in session_data.items %}
-            <input type="hidden" name="{{ k }}" value="{{ v }}" />
-            {% endfor %}
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
                 <div class="form-group">
                     <label class="form-label"><i class="fa-regular fa-clock" style="margin-right:5px;"></i>Start Time</label>
@@ -137,18 +85,13 @@
                     <input type="datetime-local" name="end_time" class="form-input" />
                 </div>
             </div>
-            <div style="display:flex; gap:0.75rem;">
-                <a href="{% url 'booking_create_external' resource.pk %}?step=1" class="btn btn-ghost" style="padding:13px 20px;">
-                    <i class="fa-solid fa-arrow-left"></i> Back
-                </a>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
-                    Next <i class="fa-solid fa-arrow-right"></i>
-                </button>
-            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:13px; font-size:1rem;">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </button>
         </form>
 
-        {% elif step == 3 %}
-        <!-- ── STEP 3: Confirm or Pay ── -->
+        {% elif step == 2 %}
+        <!-- ── STEP 2: Confirm or Pay ── -->
 
         <!-- Order summary -->
         <div style="background:rgba(20,184,166,0.08); border:1px solid rgba(20,184,166,0.25);
@@ -179,18 +122,15 @@
         </div>
 
         {% if resource.price == 0 %}
-        <!-- FREE — just confirm -->
         <div class="alert alert-success" style="margin-bottom:1.5rem;">
             <i class="fa-solid fa-circle-check"></i>
-            <span>This resource is free. Your booking will be submitted for approval.</span>
+            <span>This resource is free. Your booking will be confirmed instantly.</span>
         </div>
         <form method="post">
             {% csrf_token %}
-            <input type="hidden" name="step" value="3" />
-            <input type="hidden" name="is_free" value="1" />
-            {% for k, v in session_data.items %}
-            <input type="hidden" name="sd_{{ k }}" value="{{ v }}" />
-            {% endfor %}
+            <input type="hidden" name="step" value="2" />
+            <input type="hidden" name="sd_start_time" value="{{ session_data.start_time }}" />
+            <input type="hidden" name="sd_end_time" value="{{ session_data.end_time }}" />
             <div style="display:flex; gap:0.75rem;">
                 <a href="{% url 'booking_create_external' resource.pk %}?step=1" class="btn btn-ghost" style="padding:13px 20px;">
                     <i class="fa-solid fa-arrow-left"></i> Back
@@ -202,18 +142,16 @@
         </form>
 
         {% else %}
-        <!-- PAID — redirect to PayChangu -->
-        <div style="font-size:1.1rem; font-weight:700; color:var(--text); margin-bottom:4px;">Complete Payment</div>
+        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:4px;">Complete Payment</div>
         <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">
             <i class="fa-solid fa-lock" style="margin-right:4px;"></i>
-            You'll be redirected to PayChangu's secure checkout to complete payment.
+            You'll be redirected to PayChangu's secure checkout.
         </p>
         <form method="post">
             {% csrf_token %}
-            <input type="hidden" name="step" value="3" />
-            {% for k, v in session_data.items %}
-            <input type="hidden" name="sd_{{ k }}" value="{{ v }}" />
-            {% endfor %}
+            <input type="hidden" name="step" value="2" />
+            <input type="hidden" name="sd_start_time" value="{{ session_data.start_time }}" />
+            <input type="hidden" name="sd_end_time" value="{{ session_data.end_time }}" />
             <div style="display:flex; gap:0.75rem;">
                 <a href="{% url 'booking_create_external' resource.pk %}?step=1" class="btn btn-ghost" style="padding:13px 20px;">
                     <i class="fa-solid fa-arrow-left"></i> Back
@@ -226,7 +164,6 @@
         {% endif %}
 
         {% endif %}
-
     </div>
 </div>
 {% endblock %}

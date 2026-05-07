@@ -4,7 +4,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from apps.accounts.views import HomeView
-from apps.core.views import OrganisationAdminDashboardView, SuperAdminAnalysisView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -12,8 +11,8 @@ urlpatterns = [
     path('resources/', include('apps.resources.urls')),
     path('bookings/', include('apps.bookings.urls')),
     path('payments/', include('apps.payments.urls')),
-    path('dashboard/', OrganisationAdminDashboardView.as_view(), name='org_admin_dashboard'),
-    path('analysis/', SuperAdminAnalysisView.as_view(), name='super_admin_analysis'),
+    path('verify/', include('apps.verification.urls')),
+    path('dashboard/', include('apps.core.dashboard_urls')),
     path('', HomeView.as_view(), name='home'),
 ]
 

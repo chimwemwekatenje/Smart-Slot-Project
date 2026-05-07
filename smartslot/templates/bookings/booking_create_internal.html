@@ -34,6 +34,13 @@
             Select your time slot and fill in your details.
         </p>
 
+        {% if overlap_error %}
+        <div class="alert alert-error" style="margin-bottom:1.25rem;">
+            <i class="fa-solid fa-ban"></i>
+            <span><strong>Occupied</strong> — {{ overlap_error }}</span>
+        </div>
+        {% endif %}
+
         {% if form.non_field_errors %}
         <div class="alert alert-error" style="margin-bottom:1.25rem;">
             <i class="fa-solid fa-triangle-exclamation"></i>

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSlot</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
-        /* ── Design tokens — mirrors AppColors in theme.dart ── */
-        :root {
+        /* ── Design tokens — dark mode (default) ── */
+        :root, [data-theme="dark"] {
             --bg:           #0F172A;
             --surface:      #1E2937;
             --border:       #334155;
@@ -21,6 +21,27 @@
             --warning:      #F59E0B;
             --r:            12px;
             --r-sm:         8px;
+            --shadow:       rgba(0,0,0,0.35);
+            --nav-hover-bg: rgba(255,255,255,0.05);
+            --input-scheme: dark;
+        }
+
+        /* ── Light mode tokens ── */
+        [data-theme="light"] {
+            --bg:           #F8FAFC;
+            --surface:      #FFFFFF;
+            --border:       #E2E8F0;
+            --primary:      #0D9488;
+            --primary-dark: #0F766E;
+            --text:         #0F172A;
+            --muted:        #64748B;
+            --muted-dim:    #94A3B8;
+            --error:        #DC2626;
+            --success:      #16A34A;
+            --warning:      #D97706;
+            --shadow:       rgba(0,0,0,0.08);
+            --nav-hover-bg: rgba(0,0,0,0.04);
+            --input-scheme: light;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -158,7 +179,7 @@
             border-radius: var(--r-sm); color: var(--text);
             font-size: 0.92rem; outline: none; font-family: inherit;
             transition: border-color 0.15s, box-shadow 0.15s;
-            color-scheme: dark;
+            color-scheme: var(--input-scheme);
         }
         .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,0.12); }
         .form-input.is-error { border-color: var(--error); }
@@ -171,9 +192,9 @@
             padding: 12px 16px; border-radius: var(--r-sm);
             font-size: 0.875rem; display: flex; align-items: flex-start; gap: 10px;
         }
-        .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
-        .alert-success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #86efac; }
-        .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+        .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: var(--error); }
+        .alert-success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: var(--success); }
+        .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: var(--warning); }
         .alert-info    { background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); color: var(--primary); }
 
         /* ── Flash messages ── */
@@ -182,12 +203,23 @@
             padding: 10px 16px; border-radius: var(--r-sm);
             font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;
         }
-        .messages .success { background: #052e16; color: #86efac; border: 1px solid #166534; }
-        .messages .error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
-        .messages .info    { background: #0c1a2e; color: #93c5fd; border: 1px solid #1e40af; }
-        .messages .warning { background: #1c1400; color: #fcd34d; border: 1px solid #92400e; }
+        .messages .success { background: rgba(34,197,94,0.1);  color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+        .messages .error   { background: rgba(239,68,68,0.1);  color: var(--error);   border: 1px solid rgba(239,68,68,0.3); }
+        .messages .info    { background: rgba(59,130,246,0.1); color: #3B82F6;         border: 1px solid rgba(59,130,246,0.3); }
+        .messages .warning { background: rgba(245,158,11,0.1); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
 
         hr.divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+        /* ── Theme toggle button ── */
+        .theme-toggle {
+            background: none; border: 1px solid var(--border);
+            color: var(--muted); width: 34px; height: 34px;
+            border-radius: var(--r-sm); cursor: pointer; font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .theme-toggle:hover { background: var(--nav-hover-bg); color: var(--text); }
     </style>
 </head>
 <body>
@@ -203,7 +235,7 @@
             <a href="/admin/" class="nav-admin-btn">Admin Panel</a>
             <div class="nav-divider"></div>
             {% if user.is_authenticated and user.is_superuser or user.is_authenticated and user.role == 'PlatformAdmin' %}
-            <a href="/analysis/" {% if '/analysis' in request.path %}class="active"{% endif %}
+            <a href="{% url 'super_admin_analysis' %}" {% if '/analysis' in request.path %}class="active"{% endif %}
                style="color:#a78bfa !important; font-size:0.875rem; font-weight:600;
                       padding:5px 13px; border-radius:var(--r-sm);
                       border:1px solid rgba(167,139,250,0.35); text-decoration:none;
@@ -222,6 +254,9 @@
                 <a href="/accounts/signup/">Sign Up</a>
                 <a href="/accounts/login/" class="nav-login-btn">Login</a>
             {% endif %}
+            <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode" onclick="toggleTheme()">
+                <i class="fa-solid fa-moon" id="theme-icon"></i>
+            </button>
         </div>
     </nav>
 
@@ -307,5 +342,29 @@
         </main>
 
     </div>
+
+<script>
+    // ── Theme toggle ──────────────────────────────────────────────
+    const html = document.documentElement;
+    const icon = document.getElementById('theme-icon');
+
+    // Apply saved theme on load
+    const saved = localStorage.getItem('smartslot-theme') || 'dark';
+    html.setAttribute('data-theme', saved);
+    updateIcon(saved);
+
+    function toggleTheme() {
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('smartslot-theme', next);
+        updateIcon(next);
+    }
+
+    function updateIcon(theme) {
+        if (!icon) return;
+        icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
+</script>
 </body>
 </html>

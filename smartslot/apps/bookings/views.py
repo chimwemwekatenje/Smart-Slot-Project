@@ -3,6 +3,7 @@ from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from apps.bookings.models import Booking
 from apps.resources.models import Resource
 from .forms import InternalBookingForm, ExternalBookingStep1Form, ExternalBookingStep3Form
@@ -13,7 +14,7 @@ class BookingListView(LoginRequiredMixin, ListView):
     template_name = 'bookings/booking_list.html'
     context_object_name = 'bookings'
 
-    STATUSES = ['All', 'Pending', 'Issued', 'Verified', 'Completed', 'Cancelled']
+    STATUSES = ['All', 'Booked', 'Cancelled']
 
     def get_queryset(self):
         qs = Booking.objects.filter(user=self.request.user).order_by('-start_time')
@@ -40,7 +41,7 @@ def _make_booking(request, resource, custom_data):
         start_time=start,
         end_time=end,
         qr_token=str(uuid.uuid4()),
-        status=Booking.StatusChoices.PENDING,
+        status=Booking.StatusChoices.BOOKED,  # auto-confirmed
         custom_data=custom_data,
     )
     booking.save()
@@ -68,12 +69,36 @@ def _receipt_rows(booking):
     rows += [
         ('From',   fmt(booking.start_time.astimezone()), None),
         ('To',     fmt(booking.end_time.astimezone()),   None),
-        ('Status', booking.status,                       '#F59E0B'),
+        ('Status', booking.status, '#14B8A6'),
     ]
     return rows
 
 
 # ── Internal booking (Employee / OrgAdmin) ────────────────────────────────────
+
+def _make_internal_booking(request, resource, start, end, department, reason):
+    """Helper — creates and saves an internal booking from the authenticated user."""
+    user = request.user
+    full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+    email = user.email
+    booking = Booking(
+        resource=resource,
+        organisation=resource.organisation,
+        user=user,
+        start_time=start,
+        end_time=end,
+        qr_token=str(uuid.uuid4()),
+        status=Booking.StatusChoices.BOOKED,  # auto-confirmed
+        custom_data={
+            'full_name':  full_name,
+            'email':      email,
+            'department': department,
+            'reason':     reason,
+        },
+    )
+    booking.save()
+    return booking
+
 
 @login_required
 def internal_booking_view(request, resource_pk):
@@ -83,12 +108,20 @@ def internal_booking_view(request, resource_pk):
         form = InternalBookingForm(request.POST)
         if form.is_valid():
             cd = form.cleaned_data
-            booking = _make_booking(request, resource, {
-                'start_time':  cd['start_time'],
-                'end_time':    cd['end_time'],
-                'department':  cd['department'],
-                'reason':      cd['reason'],
-            })
+            try:
+                booking = _make_internal_booking(
+                    request, resource,
+                    start=cd['start_time'],
+                    end=cd['end_time'],
+                    department=cd['department'],
+                    reason=cd['reason'],
+                )
+            except ValidationError as e:
+                return render(request, 'bookings/booking_create_internal.html', {
+                    'form': form,
+                    'resource': resource,
+                    'overlap_error': e.message,
+                })
             return render(request, 'bookings/booking_receipt.html', {
                 'booking': booking,
                 'receipt_rows': _receipt_rows(booking),
@@ -102,10 +135,10 @@ def internal_booking_view(request, resource_pk):
     })
 
 
-STEPS = [('Details', 1), ('Time Slot', 2), ('Confirm', 3)]
-STEPS_PAID = [('Details', 1), ('Time Slot', 2), ('Payment', 3)]
+STEPS = [('Time Slot', 1), ('Confirm', 2)]
+STEPS_PAID = [('Time Slot', 1), ('Payment', 2)]
 
-# ── External booking (3-step: details → time → payment/confirm) ──────────────
+# ── External booking (2-step for logged-in: time → confirm/pay) ──────────────
 
 @login_required
 def external_booking_view(request, resource_pk):
@@ -114,68 +147,81 @@ def external_booking_view(request, resource_pk):
     step = int(request.POST.get('step', request.GET.get('step', 1)))
     session_key = f'ext_booking_{resource_pk}'
 
-    if request.method == 'POST':
-        if step == 1:
-            form1 = ExternalBookingStep1Form(request.POST)
-            if form1.is_valid():
-                request.session[session_key] = {
-                    'full_name': form1.cleaned_data['full_name'],
-                    'phone':     form1.cleaned_data['phone'],
-                    'email':     form1.cleaned_data['email'],
-                    'reason':    form1.cleaned_data['reason'],
-                }
-                return render(request, 'bookings/booking_create_external.html', {
-                    'resource': resource, 'step': 2, 'steps': steps,
-                    'session_data': request.session[session_key],
-                })
-            return render(request, 'bookings/booking_create_external.html', {
-                'resource': resource, 'step': 1, 'steps': steps, 'form1': form1,
-            })
+    # Pre-fill user details silently from profile
+    user = request.user
+    full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+    user_data = {
+        'full_name': full_name,
+        'email':     user.email,
+        'phone':     getattr(user, 'phone', '') or '',
+        'reason':    '',
+    }
 
-        elif step == 2:
+    if request.method == 'POST':
+
+        if step == 1:
+            # Step 1 is now time slot selection
             start_time = request.POST.get('start_time')
             end_time   = request.POST.get('end_time')
             if not start_time or not end_time:
                 return render(request, 'bookings/booking_create_external.html', {
-                    'resource': resource, 'step': 2, 'steps': steps,
-                    'session_data': request.session.get(session_key, {}),
+                    'resource': resource, 'step': 1, 'steps': steps,
+                    'session_data': {},
                     'time_error': 'Please select a start and end time.',
                 })
-            saved = request.session.get(session_key, {})
-            saved['start_time'] = start_time
-            saved['end_time']   = end_time
+            from datetime import datetime as dt_cls
+            try:
+                start_dt = dt_cls.fromisoformat(start_time)
+                end_dt   = dt_cls.fromisoformat(end_time)
+                if end_dt <= start_dt:
+                    raise ValueError("End time must be after start time.")
+                conflict = Booking.objects.filter(
+                    resource=resource,
+                    status__in=Booking.ACTIVE_STATUSES,
+                    start_time__lt=end_dt,
+                    end_time__gt=start_dt,
+                ).first()
+                if conflict:
+                    time_error = (
+                        f"Occupied — booked until "
+                        f"{conflict.end_time.strftime('%d %b %Y, %H:%M')}."
+                    )
+                    return render(request, 'bookings/booking_create_external.html', {
+                        'resource': resource, 'step': 1, 'steps': steps,
+                        'session_data': {},
+                        'time_error': time_error,
+                    })
+            except ValueError as e:
+                return render(request, 'bookings/booking_create_external.html', {
+                    'resource': resource, 'step': 1, 'steps': steps,
+                    'session_data': {},
+                    'time_error': str(e),
+                })
+            saved = {**user_data, 'start_time': start_time, 'end_time': end_time}
             request.session[session_key] = saved
             return render(request, 'bookings/booking_create_external.html', {
-                'resource': resource, 'step': 3, 'steps': steps,
+                'resource': resource, 'step': 2, 'steps': steps,
                 'session_data': saved,
-                'form3': ExternalBookingStep3Form(),
             })
 
-        elif step == 3:
+        elif step == 2:
             saved = request.session.get(session_key, {})
-
-            # Fall back to POST hidden fields if session expired
             if not saved.get('start_time'):
-                saved = {
-                    'full_name':  request.POST.get('sd_full_name', ''),
-                    'phone':      request.POST.get('sd_phone', ''),
-                    'email':      request.POST.get('sd_email', ''),
-                    'reason':     request.POST.get('sd_reason', ''),
-                    'start_time': request.POST.get('sd_start_time', ''),
-                    'end_time':   request.POST.get('sd_end_time', ''),
-                }
+                saved = {**user_data,
+                         'start_time': request.POST.get('sd_start_time', ''),
+                         'end_time':   request.POST.get('sd_end_time', '')}
 
-            # Free resource — confirm directly without payment
-            if request.POST.get('is_free') == '1' or resource.price == 0:
-                from datetime import datetime
-                start = datetime.fromisoformat(saved['start_time'])
-                end   = datetime.fromisoformat(saved['end_time'])
+            from datetime import datetime
+            start = datetime.fromisoformat(saved['start_time'])
+            end   = datetime.fromisoformat(saved['end_time'])
+
+            if resource.price == 0:
+                # Free — confirm directly
                 booking = _make_booking(request, resource, {
-                    'start_time': start,
-                    'end_time':   end,
+                    'start_time': start, 'end_time': end,
                     'full_name':  saved.get('full_name', ''),
-                    'phone':      saved.get('phone', ''),
                     'email':      saved.get('email', ''),
+                    'phone':      saved.get('phone', ''),
                     'reason':     saved.get('reason', ''),
                 })
                 request.session.pop(session_key, None)
@@ -183,44 +229,80 @@ def external_booking_view(request, resource_pk):
                     'booking': booking,
                     'receipt_rows': _receipt_rows(booking),
                 })
-
-            # Paid resource — create booking and redirect to PayChangu
-            from datetime import datetime
-            start = datetime.fromisoformat(saved['start_time'])
-            end   = datetime.fromisoformat(saved['end_time'])
-
-            booking = _make_booking(request, resource, {
-                'start_time':     start,
-                'end_time':       end,
-                'full_name':      saved.get('full_name', ''),
-                'phone':          saved.get('phone', ''),
-                'email':          saved.get('email', ''),
-                'reason':         saved.get('reason', ''),
-                'payment_method': 'PayChangu',
-            })
-            request.session.pop(session_key, None)
-
-            from apps.payments.services import initiate_payment
-            name_parts = saved.get('full_name', '').split(' ', 1)
-            try:
-                checkout_url, tx_ref = initiate_payment(
-                    booking=booking,
-                    customer_email=saved.get('email', ''),
-                    customer_first_name=name_parts[0],
-                    customer_last_name=name_parts[1] if len(name_parts) > 1 else '',
-                )
-                booking.custom_data['tx_ref'] = tx_ref
-                booking.save()
-                return redirect(checkout_url)
-            except Exception as e:
-                return render(request, 'bookings/booking_receipt.html', {
-                    'booking': booking,
-                    'receipt_rows': _receipt_rows(booking),
-                    'payment_error': str(e),
+            else:
+                # Paid — redirect to PayChangu
+                booking = _make_booking(request, resource, {
+                    'start_time':     start, 'end_time': end,
+                    'full_name':      saved.get('full_name', ''),
+                    'email':          saved.get('email', ''),
+                    'phone':          saved.get('phone', ''),
+                    'reason':         saved.get('reason', ''),
+                    'payment_method': 'PayChangu',
                 })
+                request.session.pop(session_key, None)
+                from apps.payments.services import initiate_payment
+                name_parts = saved.get('full_name', '').split(' ', 1)
+                try:
+                    checkout_url, tx_ref = initiate_payment(
+                        booking=booking,
+                        customer_email=saved.get('email', ''),
+                        customer_first_name=name_parts[0],
+                        customer_last_name=name_parts[1] if len(name_parts) > 1 else '',
+                    )
+                    booking.custom_data['tx_ref'] = tx_ref
+                    booking.save()
+                    return redirect(checkout_url)
+                except Exception as e:
+                    return render(request, 'bookings/booking_receipt.html', {
+                        'booking': booking,
+                        'receipt_rows': _receipt_rows(booking),
+                        'payment_error': str(e),
+                    })
 
-    # GET — start at step 1
+    # GET — start at step 1 (time slot)
     return render(request, 'bookings/booking_create_external.html', {
         'resource': resource, 'step': 1, 'steps': steps,
-        'form1': ExternalBookingStep1Form(),
+        'session_data': {},
     })
+
+
+# ── PDF Receipt download ──────────────────────────────────────────────────────
+
+@login_required
+def booking_pdf_view(request, booking_id):
+    from django.http import HttpResponse, Http404
+    from django.core.exceptions import PermissionDenied
+    from apps.bookings.pdf import generate_booking_pdf
+
+    try:
+        booking = Booking.objects.get(pk=booking_id)
+    except Booking.DoesNotExist:
+        raise Http404("Booking not found.")
+
+    if booking.user != request.user:
+        raise PermissionDenied
+
+    buffer = generate_booking_pdf(booking)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="booking-{booking_id}.pdf"'
+    return response
+
+
+# ── Cancel booking ────────────────────────────────────────────────────────────
+
+@login_required
+def cancel_booking_view(request, booking_pk):
+    from django.shortcuts import get_object_or_404
+    from django.contrib import messages
+
+    booking = get_object_or_404(Booking, pk=booking_pk, user=request.user)
+
+    if request.method == 'POST':
+        if booking.status == Booking.StatusChoices.BOOKED:
+            booking.status = Booking.StatusChoices.CANCELLED
+            # Skip full_clean on cancel — no overlap check needed
+            Booking.objects.filter(pk=booking.pk).update(status=Booking.StatusChoices.CANCELLED)
+            messages.success(request, f'Booking for {booking.resource.name} has been cancelled. The slot is now available.')
+        return redirect('booking_list')
+
+    return redirect('booking_list')

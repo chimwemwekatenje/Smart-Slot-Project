@@ -1,79 +1,97 @@
-{% extends "base.html" %}
+{% extends "dashboard/base_dashboard.html" %}
 
-{% block content %}
-<div class="space-y-6">
-  <!-- Header -->
-  <div>
-    <h1 class="text-3xl font-extrabold text-slate-100 mb-1">Welcome back, {{ organisation.name|default:"Organisation Admin" }}</h1>
-    <p class="text-slate-400 text-sm">Here is what's happening with your resources today.</p>
-  </div>
+{% block dashboard_content %}
+<div style="max-width:1100px;">
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-      <div class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Resources</div>
-      <div class="text-3xl font-bold text-teal-400">{{ total_resources }}</div>
+    <!-- Page title -->
+    <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
+            Dashboard
+        </h1>
+        <p style="color:var(--muted-dim); font-size:0.9rem;">
+            Welcome back, {{ organisation.name|default:"Organisation Admin" }}
+        </p>
     </div>
-    
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-      <div class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Active Bookings Today</div>
-      <div class="text-3xl font-bold text-teal-400">{{ active_bookings_today }}</div>
-    </div>
-    
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-      <div class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Bookings This Month</div>
-      <div class="text-3xl font-bold text-teal-400">{{ total_bookings_this_month }}</div>
-    </div>
-  </div>
 
-  <!-- Recent Bookings Table -->
-  <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden mt-8 shadow-lg">
-    <div class="px-6 py-5 border-b border-slate-700 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-slate-100">Recent Bookings</h2>
-      <a href="/bookings/" class="text-sm font-semibold text-teal-400 hover:text-teal-300 transition-colors">View All &rarr;</a>
+    <!-- Metric cards -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.25rem; margin-bottom:2rem;">
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="fa-regular fa-calendar-check"></i></div>
+            <div class="metric-value">{{ active_bookings_today }}</div>
+            <div class="metric-label">Bookings Today</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="fa-solid fa-box"></i></div>
+            <div class="metric-value">{{ total_resources }}</div>
+            <div class="metric-label">Total Resources</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="fa-regular fa-clock"></i></div>
+            <div class="metric-value">{{ pending_bookings_count }}</div>
+            <div class="metric-label">Pending Bookings</div>
+        </div>
+
     </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
-            <th class="px-6 py-3 font-semibold">User</th>
-            <th class="px-6 py-3 font-semibold">Resource</th>
-            <th class="px-6 py-3 font-semibold">Start Time</th>
-            <th class="px-6 py-3 font-semibold">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-700">
-          {% for b in recent_bookings %}
-          <tr class="hover:bg-slate-700/30 transition-colors">
-            <td class="px-6 py-4 text-sm text-slate-300 font-medium">
-              {{ b.user.get_full_name|default:b.user.username }}
-            </td>
-            <td class="px-6 py-4 text-sm text-slate-300">{{ b.resource.name }}</td>
-            <td class="px-6 py-4 text-sm text-slate-400">{{ b.start_time|date:"D, d M Y · H:i" }}</td>
-            <td class="px-6 py-4">
-               {% if b.status == 'Pending' %}
-                 <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/25">Pending</span>
-               {% elif b.status == 'Issued' %}
-                 <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-blue-400/10 text-blue-400 border border-blue-400/25">Issued</span>
-               {% elif b.status == 'Verified' %}
-                 <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-green-400/10 text-green-400 border border-green-400/25">Verified</span>
-               {% elif b.status == 'Completed' %}
-                 <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-teal-400/10 text-teal-400 border border-teal-400/25">Completed</span>
-               {% elif b.status == 'Cancelled' or b.status == 'NoShow' %}
-                 <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-red-400/10 text-red-400 border border-red-400/25">{{ b.get_status_display }}</span>
-               {% else %}
-                 <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-700 text-slate-400 border border-slate-600">{{ b.get_status_display }}</span>
-               {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="4" class="px-6 py-8 text-center text-slate-500 text-sm">No recent bookings found.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+    <!-- Recent bookings -->
+    <div class="card" style="overflow:hidden;">
+        <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+                    display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:0.95rem; font-weight:700; color:var(--text);">
+                <i class="fa-regular fa-calendar" style="color:var(--primary); margin-right:8px;"></i>
+                Recent Bookings
+            </div>
+            <a href="{% url 'dashboard_bookings' %}"
+               style="font-size:0.8rem; color:var(--primary); text-decoration:none; font-weight:600;">
+                View All &rarr;
+            </a>
+        </div>
+        <div class="table-wrapper">
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>Resource</th>
+                        <th>User</th>
+                        <th>Start Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in recent_bookings %}
+                    <tr>
+                        <td style="font-weight:600;">{{ b.resource.name }}</td>
+                        <td style="color:var(--muted);">{{ b.user.get_full_name|default:b.user.username }}</td>
+                        <td style="color:var(--muted-dim);">{{ b.start_time|date:"D, d M Y · H:i" }}</td>
+                        <td>
+                            {% if b.status == 'Pending' %}
+                                <span class="badge badge-warning">Pending</span>
+                            {% elif b.status == 'Issued' %}
+                                <span class="badge badge-primary">Issued</span>
+                            {% elif b.status == 'Verified' %}
+                                <span class="badge badge-success">Verified</span>
+                            {% elif b.status == 'Completed' %}
+                                <span class="badge badge-muted">Completed</span>
+                            {% elif b.status == 'Cancelled' or b.status == 'NoShow' %}
+                                <span class="badge badge-error">{{ b.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge badge-muted">{{ b.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align:center; color:var(--muted-dim); padding:2rem;">
+                            No recent bookings found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-  </div>
+
 </div>
 {% endblock %}

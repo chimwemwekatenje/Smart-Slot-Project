@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSlot Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        /* ── Design tokens ── */
+        :root {
+            --bg:           #0F172A;
+            --surface:      #1E2937;
+            --border:       #334155;
+            --primary:      #14B8A6;
+            --primary-dark: #0F766E;
+            --text:         #E2E8F0;
+            --muted:        #94A3B8;
+            --muted-dim:    #64748B;
+            --error:        #EF4444;
+            --success:      #22C55E;
+            --warning:      #F59E0B;
+            --r:            12px;
+            --r-sm:         8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 16px;
+            display: flex;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 256px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            min-height: 100vh;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid var(--border);
+            text-decoration: none;
+        }
+        .sidebar-brand img {
+            max-width: 40px;
+            max-height: 40px;
+            border-radius: var(--r-sm);
+            object-fit: contain;
+        }
+        .sidebar-brand-name {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0.75rem;
+            overflow-y: auto;
+        }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.6rem 1rem;
+            color: var(--muted);
+            border-radius: var(--r-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            margin-bottom: 0.3rem;
+            transition: color 0.15s, background 0.15s;
+        }
+        .sidebar-nav a:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+        .sidebar-nav a.active {
+            color: var(--primary);
+            background: rgba(20,184,166,0.1);
+        }
+        .sidebar-nav a i {
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        .sidebar-user-name {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .sidebar-user-role {
+            font-size: 0.75rem;
+            color: var(--muted-dim);
+            margin-bottom: 0.75rem;
+        }
+        .sidebar-logout-btn {
+            width: 100%;
+            text-align: left;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: var(--error);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: var(--r-sm);
+            transition: background 0.15s, color 0.15s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-logout-btn:hover {
+            background: rgba(239,68,68,0.1);
+            color: #fca5a5;
+        }
+
+        /* ── Main content ── */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .content-area {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* ── Flash messages ── */
+        .messages {
+            list-style: none;
+            padding: 0.75rem 2rem 0;
+        }
+        .messages li {
+            padding: 10px 16px;
+            border-radius: var(--r-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .messages .success { background: #052e16; color: #86efac; border: 1px solid #166534; }
+        .messages .error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+        .messages .info    { background: #0c1a2e; color: #93c5fd; border: 1px solid #1e40af; }
+        .messages .warning { background: #1c1400; color: #fcd34d; border: 1px solid #92400e; }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+        }
+
+        /* ── Metric cards ── */
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .metric-icon {
+            font-size: 1.4rem;
+            color: var(--primary);
+        }
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 24px;
+            border-radius: var(--r-sm);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+            font-family: inherit;
+            letter-spacing: 0.01em;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        .btn:active { transform: scale(0.97); box-shadow: none; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); color: #fff; }
+        .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+        .btn-outline:hover { background: rgba(20,184,166,0.08); }
+        .btn-ghost { background: var(--border); color: var(--muted); }
+        .btn-ghost:hover { background: #3d4f66; color: var(--text); }
+        .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+        .badge-primary { background: rgba(20,184,166,0.12);  color: var(--primary);  border: 1px solid rgba(20,184,166,0.3); }
+        .badge-success { background: rgba(34,197,94,0.12);   color: var(--success);  border: 1px solid rgba(34,197,94,0.3); }
+        .badge-warning { background: rgba(245,158,11,0.12);  color: var(--warning);  border: 1px solid rgba(245,158,11,0.3); }
+        .badge-error   { background: rgba(239,68,68,0.12);   color: var(--error);    border: 1px solid rgba(239,68,68,0.3); }
+        .badge-muted   { background: rgba(148,163,184,0.1);  color: var(--muted);    border: 1px solid rgba(148,163,184,0.2); }
+
+        /* ── Form inputs ── */
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-label { font-size: 0.83rem; font-weight: 600; color: var(--muted); }
+        .form-input {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            color: var(--text);
+            font-size: 0.92rem;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            color-scheme: dark;
+        }
+        .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,0.12); }
+        .form-input.is-error { border-color: var(--error); }
+        textarea.form-input { resize: vertical; }
+        select.form-input { cursor: pointer; }
+        .form-error { font-size: 0.78rem; color: var(--error); }
+
+        /* ── Alerts ── */
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--r-sm);
+            font-size: 0.875rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+        .alert-success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #86efac; }
+        .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+        .alert-info    { background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); color: var(--primary); }
+
+        /* ── Table ── */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table.dash-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        table.dash-table thead tr {
+            background: rgba(15,23,42,0.5);
+        }
+        table.dash-table th {
+            padding: 10px 16px;
+            text-align: left;
+            color: var(--muted-dim);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            font-weight: 700;
+        }
+        table.dash-table td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            color: var(--text);
+            vertical-align: middle;
+        }
+        table.dash-table tbody tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        hr.divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <!-- Brand -->
+        <div class="sidebar-brand">
+            {% if organisation and organisation.logo %}
+                <img src="{{ organisation.logo.url }}" alt="{{ organisation.name }}" />
+            {% endif %}
+            <span class="sidebar-brand-name">
+                {% if organisation %}{{ organisation.name }}{% else %}SmartSlot{% endif %}
+            </span>
+        </div>
+
+        <!-- Nav -->
+        <nav class="sidebar-nav">
+            <a href="{% url 'org_admin_dashboard' %}"
+               {% if request.resolver_match.url_name == 'org_admin_dashboard' %}class="active"{% endif %}>
+                <i class="fa-solid fa-gauge"></i> Dashboard
+            </a>
+            <a href="{% url 'dashboard_resources' %}"
+               {% if request.resolver_match.url_name == 'dashboard_resources' %}class="active"{% endif %}>
+                <i class="fa-solid fa-box"></i> Resources
+            </a>
+            <a href="{% url 'dashboard_bookings' %}"
+               {% if request.resolver_match.url_name == 'dashboard_bookings' %}class="active"{% endif %}>
+                <i class="fa-regular fa-calendar-check"></i> Bookings
+            </a>
+            {% if user.role == 'PlatformAdmin' or user.is_superuser %}
+            <a href="{% url 'dashboard_organisations' %}"
+               {% if request.resolver_match.url_name == 'dashboard_organisations' or request.resolver_match.url_name == 'dashboard_org_create' or request.resolver_match.url_name == 'dashboard_org_edit' %}class="active"{% endif %}>
+                <i class="fa-solid fa-building"></i> Organisations
+            </a>
+            <a href="{% url 'super_admin_analysis' %}"
+               {% if request.resolver_match.url_name == 'super_admin_analysis' %}class="active"{% endif %}>
+                <i class="fa-solid fa-chart-line"></i> Analysis
+            </a>
+            {% endif %}
+        </nav>
+
+        <!-- Footer -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</div>
+            <div class="sidebar-user-role">{{ user.get_role_display }}</div>
+            <form action="/accounts/logout/" method="post">
+                {% csrf_token %}
+                <button type="submit" class="sidebar-logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Log Out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main-content">
+
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="content-area">
+            {% block dashboard_content %}{% endblock %}
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -14,7 +14,7 @@
     <!-- QR Code -->
     <div style="background:#fff; border-radius:var(--r); padding:1.5rem;
                 display:flex; flex-direction:column; align-items:center; margin-bottom:1rem;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ booking.qr_token }}"
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ request.scheme }}://{{ request.get_host }}/verify/{{ booking.qr_token }}/"
              alt="QR Code" style="width:200px; height:200px;" />
     </div>
     <p style="text-align:center; color:var(--muted-dim); font-size:0.8rem; margin-bottom:1.5rem;">
@@ -40,7 +40,10 @@
         {% endfor %}
     </div>
 
-    <div style="display:flex; gap:0.75rem;">
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <a href="{% url 'booking_receipt_pdf' booking.id %}" class="btn btn-primary" style="flex:1; padding:13px;">
+            <i class="fa-solid fa-file-pdf"></i> Download Receipt
+        </a>
         <a href="/bookings/" class="btn btn-outline" style="flex:1; padding:13px;">My Bookings</a>
         <a href="/resources/" class="btn btn-ghost" style="flex:1; padding:13px;">Back to Resources</a>
     </div>

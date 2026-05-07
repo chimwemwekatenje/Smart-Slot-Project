@@ -1,0 +1,88 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block dashboard_content %}
+<div style="max-width:600px;">
+
+    <!-- Page title -->
+    <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
+            <i class="fa-solid fa-building" style="color:var(--primary); margin-right:10px;"></i>
+            {{ form_title }}
+        </h1>
+    </div>
+
+    <!-- Form card -->
+    <div class="card" style="padding:2rem;">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Name field -->
+            <div class="form-group" style="margin-bottom:1.25rem;">
+                <label class="form-label" for="id_name">Organisation Name</label>
+                <input type="text"
+                       id="id_name"
+                       name="name"
+                       value="{{ form.name.value|default:'' }}"
+                       class="form-input {% if form.name.errors %}is-error{% endif %}"
+                       placeholder="e.g. Equip Group" />
+                {% if form.name.errors %}
+                    {% for error in form.name.errors %}
+                    <span class="form-error">
+                        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+                    </span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Logo field -->
+            <div class="form-group" style="margin-bottom:1.75rem;">
+                <label class="form-label" for="id_logo">Logo (optional)</label>
+                {% if form.instance.pk and form.instance.logo %}
+                <div style="margin-bottom:0.75rem;">
+                    <img src="{{ form.instance.logo.url }}" alt="Current logo"
+                         style="max-width:80px; max-height:80px; border-radius:var(--r-sm);
+                                background:var(--bg); padding:4px; border:1px solid var(--border);" />
+                    <div style="font-size:0.78rem; color:var(--muted-dim); margin-top:4px;">
+                        Current logo — upload a new file to replace it.
+                    </div>
+                </div>
+                {% endif %}
+                <input type="file"
+                       id="id_logo"
+                       name="logo"
+                       accept="image/*"
+                       class="form-input {% if form.logo.errors %}is-error{% endif %}"
+                       style="padding:8px 14px; cursor:pointer;" />
+                {% if form.logo.errors %}
+                    {% for error in form.logo.errors %}
+                    <span class="form-error">
+                        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+                    </span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-error" style="margin-bottom:1.25rem;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div>
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save
+                </button>
+                <a href="{% url 'dashboard_organisations' %}" class="btn btn-ghost">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

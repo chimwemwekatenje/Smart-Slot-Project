@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width:520px; margin:0 auto;">
+
+    <!-- Status banner -->
+    <div style="text-align:center; padding:2rem 1.5rem; margin-bottom:1.5rem;
+                background:var(--surface); border:1px solid var(--border); border-radius:var(--r);">
+
+        {% if booking.status == 'Verified' or booking.status == 'Completed' %}
+            <div style="font-size:3rem; color:#22C55E; margin-bottom:0.75rem;">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        {% elif booking.status == 'Cancelled' or booking.status == 'NoShow' %}
+            <div style="font-size:3rem; color:#EF4444; margin-bottom:0.75rem;">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+        {% else %}
+            <div style="font-size:3rem; color:#F59E0B; margin-bottom:0.75rem;">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+        {% endif %}
+
+        <div style="font-size:1.3rem; font-weight:800; color:var(--text); margin-bottom:0.5rem;">
+            Booking Verification
+        </div>
+
+        <span style="display:inline-block; padding:5px 16px; border-radius:20px; font-size:0.8rem;
+                     font-weight:700; text-transform:uppercase; letter-spacing:0.07em;
+                     background:{{ status_color }}22; color:{{ status_color }};
+                     border:1px solid {{ status_color }}55;">
+            {{ booking.status }}
+        </span>
+    </div>
+
+    <!-- Booking details card -->
+    <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;">
+        <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                    letter-spacing:0.1em; color:var(--muted-dim); margin-bottom:0.75rem;">
+            Booking Details
+        </div>
+        <hr class="divider" style="margin-bottom:1rem;">
+
+        {% for label, value in rows %}
+        <div style="display:flex; padding:8px 0; border-bottom:1px solid rgba(51,65,85,0.4);">
+            <span style="width:140px; flex-shrink:0; font-size:0.83rem; color:var(--muted);">{{ label }}</span>
+            <span style="font-size:0.83rem; font-weight:600; color:var(--text);">{{ value }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="text-align:center;">
+        <p style="color:var(--muted-dim); font-size:0.8rem;">
+            <i class="fa-solid fa-shield-halved" style="color:var(--primary); margin-right:4px;"></i>
+            Verified by SmartSlot
+        </p>
+    </div>
+
+</div>
+{% endblock %}

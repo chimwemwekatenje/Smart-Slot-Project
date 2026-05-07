@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "dashboard/base_dashboard.html" %}
 
-{% block content %}
+{% block dashboard_content %}
 <div style="max-width:1200px; margin:0 auto;">
 
     <!-- Page header -->
@@ -58,7 +58,7 @@
                 <button type="submit" class="btn btn-primary" style="flex:1; padding:10px;">
                     <i class="fa-solid fa-filter"></i> Apply
                 </button>
-                <a href="/analysis/" class="btn btn-ghost" style="padding:10px 14px;">✕</a>
+                <a href="{% url 'super_admin_analysis' %}" class="btn btn-ghost" style="padding:10px 14px;">✕</a>
             </div>
         </div>
     </form>

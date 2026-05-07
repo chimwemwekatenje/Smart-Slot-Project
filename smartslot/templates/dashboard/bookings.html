@@ -1,0 +1,83 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block dashboard_content %}
+<div style="max-width:1100px;">
+
+    <!-- Page title -->
+    <div style="margin-bottom:1.5rem;">
+        <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
+            <i class="fa-regular fa-calendar-check" style="color:var(--primary); margin-right:10px;"></i>
+            Bookings
+        </h1>
+        <p style="color:var(--muted-dim); font-size:0.9rem;">
+            All bookings{% if organisation %} for {{ organisation.name }}{% endif %}
+        </p>
+    </div>
+
+    <!-- Status filter tabs -->
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+        {% for status in statuses %}
+        <a href="?status={{ status }}"
+           style="padding:6px 16px; border-radius:20px; font-size:0.8rem; font-weight:700;
+                  text-decoration:none; transition:all 0.15s;
+                  {% if current_status == status %}
+                      background:var(--primary); color:#fff;
+                  {% else %}
+                      background:var(--surface); color:var(--muted);
+                      border:1px solid var(--border);
+                  {% endif %}">
+            {{ status }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Bookings table -->
+    <div class="card" style="overflow:hidden;">
+        <div class="table-wrapper">
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Resource</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                    <tr>
+                        <td style="font-weight:600;">{{ b.user.get_full_name|default:b.user.username }}</td>
+                        <td style="color:var(--muted);">{{ b.resource.name }}</td>
+                        <td style="color:var(--muted-dim);">{{ b.start_time|date:"d M Y, H:i" }}</td>
+                        <td style="color:var(--muted-dim);">{{ b.end_time|date:"d M Y, H:i" }}</td>
+                        <td>
+                            {% if b.status == 'Pending' %}
+                                <span class="badge" style="background:rgba(245,158,11,0.12); color:#F59E0B; border:1px solid rgba(245,158,11,0.3);">Pending</span>
+                            {% elif b.status == 'Issued' %}
+                                <span class="badge" style="background:rgba(20,184,166,0.12); color:#14B8A6; border:1px solid rgba(20,184,166,0.3);">Issued</span>
+                            {% elif b.status == 'Verified' %}
+                                <span class="badge" style="background:rgba(34,197,94,0.12); color:#22C55E; border:1px solid rgba(34,197,94,0.3);">Verified</span>
+                            {% elif b.status == 'Completed' %}
+                                <span class="badge" style="background:rgba(148,163,184,0.1); color:#94A3B8; border:1px solid rgba(148,163,184,0.2);">Completed</span>
+                            {% elif b.status == 'Cancelled' or b.status == 'NoShow' %}
+                                <span class="badge" style="background:rgba(239,68,68,0.12); color:#EF4444; border:1px solid rgba(239,68,68,0.3);">{{ b.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge badge-muted">{{ b.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:var(--muted-dim); padding:2rem;">
+                            No bookings found{% if current_status != 'All' %} with status "{{ current_status }}"{% endif %}.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
