@@ -102,13 +102,15 @@ def internal_booking_view(request, resource_pk):
     })
 
 
-STEPS = [('Details', 1), ('Time Slot', 2), ('Payment', 3)]
+STEPS = [('Details', 1), ('Time Slot', 2), ('Confirm', 3)]
+STEPS_PAID = [('Details', 1), ('Time Slot', 2), ('Payment', 3)]
 
-# ── External booking (3-step: details → time → payment) ──────────────────────
+# ── External booking (3-step: details → time → payment/confirm) ──────────────
 
 @login_required
 def external_booking_view(request, resource_pk):
     resource = get_object_or_404(Resource, pk=resource_pk)
+    steps = STEPS_PAID if resource.price > 0 else STEPS
     step = int(request.POST.get('step', request.GET.get('step', 1)))
     session_key = f'ext_booking_{resource_pk}'
 
@@ -123,11 +125,11 @@ def external_booking_view(request, resource_pk):
                     'reason':    form1.cleaned_data['reason'],
                 }
                 return render(request, 'bookings/booking_create_external.html', {
-                    'resource': resource, 'step': 2, 'steps': STEPS,
+                    'resource': resource, 'step': 2, 'steps': steps,
                     'session_data': request.session[session_key],
                 })
             return render(request, 'bookings/booking_create_external.html', {
-                'resource': resource, 'step': 1, 'steps': STEPS, 'form1': form1,
+                'resource': resource, 'step': 1, 'steps': steps, 'form1': form1,
             })
 
         elif step == 2:
@@ -135,7 +137,7 @@ def external_booking_view(request, resource_pk):
             end_time   = request.POST.get('end_time')
             if not start_time or not end_time:
                 return render(request, 'bookings/booking_create_external.html', {
-                    'resource': resource, 'step': 2, 'steps': STEPS,
+                    'resource': resource, 'step': 2, 'steps': steps,
                     'session_data': request.session.get(session_key, {}),
                     'time_error': 'Please select a start and end time.',
                 })
@@ -144,42 +146,81 @@ def external_booking_view(request, resource_pk):
             saved['end_time']   = end_time
             request.session[session_key] = saved
             return render(request, 'bookings/booking_create_external.html', {
-                'resource': resource, 'step': 3, 'steps': STEPS,
+                'resource': resource, 'step': 3, 'steps': steps,
                 'session_data': saved,
                 'form3': ExternalBookingStep3Form(),
             })
 
         elif step == 3:
-            form3 = ExternalBookingStep3Form(request.POST)
             saved = request.session.get(session_key, {})
-            if form3.is_valid():
+
+            # Fall back to POST hidden fields if session expired
+            if not saved.get('start_time'):
+                saved = {
+                    'full_name':  request.POST.get('sd_full_name', ''),
+                    'phone':      request.POST.get('sd_phone', ''),
+                    'email':      request.POST.get('sd_email', ''),
+                    'reason':     request.POST.get('sd_reason', ''),
+                    'start_time': request.POST.get('sd_start_time', ''),
+                    'end_time':   request.POST.get('sd_end_time', ''),
+                }
+
+            # Free resource — confirm directly without payment
+            if request.POST.get('is_free') == '1' or resource.price == 0:
                 from datetime import datetime
                 start = datetime.fromisoformat(saved['start_time'])
                 end   = datetime.fromisoformat(saved['end_time'])
-                cd = form3.cleaned_data
-                card_num = cd['card_number'].replace(' ', '')
                 booking = _make_booking(request, resource, {
-                    'start_time':     start,
-                    'end_time':       end,
-                    'full_name':      saved.get('full_name', ''),
-                    'phone':          saved.get('phone', ''),
-                    'email':          saved.get('email', ''),
-                    'reason':         saved.get('reason', ''),
-                    'payment_method': 'Card',
-                    'card_last4':     card_num[-4:] if len(card_num) >= 4 else '****',
+                    'start_time': start,
+                    'end_time':   end,
+                    'full_name':  saved.get('full_name', ''),
+                    'phone':      saved.get('phone', ''),
+                    'email':      saved.get('email', ''),
+                    'reason':     saved.get('reason', ''),
                 })
                 request.session.pop(session_key, None)
                 return render(request, 'bookings/booking_receipt.html', {
                     'booking': booking,
                     'receipt_rows': _receipt_rows(booking),
                 })
-            return render(request, 'bookings/booking_create_external.html', {
-                'resource': resource, 'step': 3, 'steps': STEPS,
-                'session_data': saved, 'form3': form3,
+
+            # Paid resource — create booking and redirect to PayChangu
+            from datetime import datetime
+            start = datetime.fromisoformat(saved['start_time'])
+            end   = datetime.fromisoformat(saved['end_time'])
+
+            booking = _make_booking(request, resource, {
+                'start_time':     start,
+                'end_time':       end,
+                'full_name':      saved.get('full_name', ''),
+                'phone':          saved.get('phone', ''),
+                'email':          saved.get('email', ''),
+                'reason':         saved.get('reason', ''),
+                'payment_method': 'PayChangu',
             })
+            request.session.pop(session_key, None)
+
+            from apps.payments.services import initiate_payment
+            name_parts = saved.get('full_name', '').split(' ', 1)
+            try:
+                checkout_url, tx_ref = initiate_payment(
+                    booking=booking,
+                    customer_email=saved.get('email', ''),
+                    customer_first_name=name_parts[0],
+                    customer_last_name=name_parts[1] if len(name_parts) > 1 else '',
+                )
+                booking.custom_data['tx_ref'] = tx_ref
+                booking.save()
+                return redirect(checkout_url)
+            except Exception as e:
+                return render(request, 'bookings/booking_receipt.html', {
+                    'booking': booking,
+                    'receipt_rows': _receipt_rows(booking),
+                    'payment_error': str(e),
+                })
 
     # GET — start at step 1
     return render(request, 'bookings/booking_create_external.html', {
-        'resource': resource, 'step': 1, 'steps': STEPS,
+        'resource': resource, 'step': 1, 'steps': steps,
         'form1': ExternalBookingStep1Form(),
     })

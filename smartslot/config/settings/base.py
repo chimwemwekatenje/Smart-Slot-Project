@@ -105,6 +105,11 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/resources/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
+# PayChangu
+PAYCHANGU_SECRET_KEY = env('PAYCHANGU_SECRET_KEY', default='')
+PAYCHANGU_CALLBACK_URL = env('PAYCHANGU_CALLBACK_URL', default='http://127.0.0.1:8000/payments/callback/')
+PAYCHANGU_RETURN_URL = env('PAYCHANGU_RETURN_URL', default='http://127.0.0.1:8000/payments/return/')
+
 # Session expires after 2 minutes of inactivity
 SESSION_COOKIE_AGE = 60 * 2
 # Reset the timer on every request (inactivity timeout)

@@ -11,6 +11,7 @@ urlpatterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('resources/', include('apps.resources.urls')),
     path('bookings/', include('apps.bookings.urls')),
+    path('payments/', include('apps.payments.urls')),
     path('dashboard/', OrganisationAdminDashboardView.as_view(), name='org_admin_dashboard'),
     path('analysis/', SuperAdminAnalysisView.as_view(), name='super_admin_analysis'),
     path('', HomeView.as_view(), name='home'),
