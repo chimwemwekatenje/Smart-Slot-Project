@@ -1,0 +1,11 @@
+# Virtual environment — never commit this
+venv/
+.venv/
+env/
+
+# Kiro specs (local only)
+.kiro/
+
+# OS
+.DS_Store
+Thumbs.db
