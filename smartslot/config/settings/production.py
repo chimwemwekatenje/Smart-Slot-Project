@@ -1,9 +1,15 @@
 from .base import *
 import os
 
+# Always False in production — never read from env
 DEBUG = False
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'smartslot-bh9c.onrender.com,localhost,127.0.0.1').split(',')
+# Hardcoded so this never falls back to base defaults regardless of env vars
+ALLOWED_HOSTS = [
+    'smartslot-bh9c.onrender.com',
+    'localhost',
+    '127.0.0.1',
+]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://smartslot-bh9c.onrender.com',
