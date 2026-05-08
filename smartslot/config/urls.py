@@ -4,26 +4,17 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from apps.accounts.views import HomeView
-from apps.core.views import OrganisationAdminDashboardView
+from apps.core.views import OrganisationAdminDashboardView, SuperAdminAnalysisView
 
 urlpatterns = [
-    # Admin Interface
     path('admin/', admin.site.urls),
-
-    # All auth URLs (login, logout, signup, password-reset) handled in accounts app
     path('accounts/', include('apps.accounts.urls')),
-
-    # Other Apps
     path('resources/', include('apps.resources.urls')),
     path('bookings/', include('apps.bookings.urls')),
-    
-    # Dashboard
     path('dashboard/', OrganisationAdminDashboardView.as_view(), name='org_admin_dashboard'),
-
-    # Homepage (must be last to avoid catching other URLs)
+    path('analysis/', SuperAdminAnalysisView.as_view(), name='super_admin_analysis'),
     path('', HomeView.as_view(), name='home'),
 ]
 
-# Serve media files during development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

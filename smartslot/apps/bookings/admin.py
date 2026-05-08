@@ -5,25 +5,15 @@ from .models import Booking
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    # ------------------------------------------------------------------ list
-    list_display       = (
-        'id', 'user', 'resource', 'organisation',
-        'status_badge', 'start_time', 'end_time',
-    )
-    # 'id' is a plain value so Django can wrap it in the edit <a> tag
+    list_display       = ('id', 'user', 'resource', 'organisation',
+                          'status_badge', 'start_time', 'end_time')
     list_display_links = ('id',)
     list_filter        = ('status', 'organisation', 'start_time')
     search_fields      = ('user__username', 'resource__name', 'qr_token', 'status')
     date_hierarchy     = 'start_time'
     ordering           = ('-start_time',)
-
-    # ------------------------------------------------------------------ form
     autocomplete_fields = ('user', 'resource', 'organisation')
-
-    # qr_token is required & unique — must be editable on the Add form.
-    # issued_at / verified_at are nullable so they're safe as readonly.
-    # created_at / updated_at are auto_now fields — always readonly.
-    readonly_fields = ('issued_at', 'verified_at', 'created_at', 'updated_at')
+    readonly_fields    = ('issued_at', 'verified_at', 'created_at', 'updated_at')
 
     fieldsets = (
         ('Booking Details', {
@@ -49,7 +39,29 @@ class BookingAdmin(admin.ModelAdmin):
         }),
     )
 
-    # ------------------------------------------------------------------ display helpers
+    # ------------------------------------------------------------------
+    # Multi-tenancy
+    # ------------------------------------------------------------------
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser or request.user.role == 'PlatformAdmin':
+            return qs
+        if request.user.role == 'OrganisationAdmin' and request.user.organisation:
+            return qs.filter(organisation=request.user.organisation)
+        return qs.none()
+
+    def save_model(self, request, obj, form, change):
+        if (
+            not request.user.is_superuser
+            and request.user.role == 'OrganisationAdmin'
+            and request.user.organisation
+        ):
+            obj.organisation = request.user.organisation
+        super().save_model(request, obj, form, change)
+
+    # ------------------------------------------------------------------
+    # Display helpers
+    # ------------------------------------------------------------------
     @admin.display(description='Status', ordering='status')
     def status_badge(self, obj):
         colours = {
