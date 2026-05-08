@@ -103,7 +103,13 @@
                                  font-weight:600; padding:3px 10px; border-radius:6px;">
                         {{ resource.category }}
                     </span>
-                    <span class="badge badge-success">● Book</span>
+                    {% if resource.availability == 'booked' %}
+                        <span class="badge badge-error">● Booked Now</span>
+                    {% elif resource.availability == 'soon' %}
+                        <span class="badge badge-warning">● Booked Soon</span>
+                    {% else %}
+                        <span class="badge badge-success">● Available</span>
+                    {% endif %}
                 </div>
 
                 <!-- Description -->
@@ -120,16 +126,22 @@
                         <i class="fa-solid fa-building" style="font-size:0.8rem; color:var(--muted-dim);"></i>
                         <span style="font-size:0.8rem; color:var(--muted-dim);">{{ resource.organisation.name }}</span>
                     </div>
-                    <a href="{% if not is_authenticated %}{% url 'login' %}?next={{ request.path }}{% elif is_external %}{% url 'booking_create_external' resource.pk %}{% else %}{% url 'booking_create_internal' resource.pk %}{% endif %}"
-                       class="btn btn-primary" style="padding:8px 20px; font-size:0.85rem;">
-                        {% if not is_authenticated %}
-                            <i class="fa-regular fa-calendar-check"></i> Book Now
-                        {% elif is_external %}
-                            <i class="fa-solid fa-credit-card"></i> Book & Pay
-                        {% else %}
-                            <i class="fa-regular fa-calendar-check"></i> Book Now
-                        {% endif %}
-                    </a>
+                    {% if resource.availability == 'booked' %}
+                        <span class="btn btn-ghost" style="padding:8px 20px; font-size:0.85rem; cursor:not-allowed; opacity:0.5;">
+                            <i class="fa-solid fa-lock"></i> Unavailable
+                        </span>
+                    {% else %}
+                        <a href="{% if not is_authenticated %}{% url 'login' %}?next={{ request.path }}{% elif is_external %}{% url 'booking_create_external' resource.pk %}{% else %}{% url 'booking_create_internal' resource.pk %}{% endif %}"
+                           class="btn btn-primary" style="padding:8px 20px; font-size:0.85rem;">
+                            {% if not is_authenticated %}
+                                <i class="fa-regular fa-calendar-check"></i> Book Now
+                            {% elif is_external %}
+                                <i class="fa-solid fa-credit-card"></i> Book & Pay
+                            {% else %}
+                                <i class="fa-regular fa-calendar-check"></i> Book Now
+                            {% endif %}
+                        </a>
+                    {% endif %}
                 </div>
 
             </div>

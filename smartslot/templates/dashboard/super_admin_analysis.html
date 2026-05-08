@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:1200px; margin:0 auto;">
+
+    <!-- Page header -->
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;
+                flex-wrap:wrap; gap:1rem; margin-bottom:2rem;">
+        <div>
+            <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
+                <i class="fa-solid fa-chart-line" style="color:var(--primary); margin-right:10px;"></i>
+                Platform Analysis
+            </h1>
+            <p style="color:var(--muted-dim); font-size:0.9rem;">
+                Real-time statistics across all organisations and resources.
+            </p>
+        </div>
+        <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}export=csv"
+           class="btn btn-outline" style="font-size:0.875rem; padding:9px 18px;">
+            <i class="fa-solid fa-download"></i> Export CSV
+        </a>
+    </div>
+
+    <!-- ── Filters ── -->
+    <form method="get" style="background:var(--surface); border:1px solid var(--border);
+          border-radius:var(--r); padding:1.25rem 1.5rem; margin-bottom:2rem;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+                    gap:1rem; align-items:end;">
+            <div class="form-group">
+                <label class="form-label">Organisation</label>
+                <select name="organisation" class="form-input">
+                    <option value="">All Organisations</option>
+                    {% for org in organisations %}
+                    <option value="{{ org.pk }}" {% if selected_org == org.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ org.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-input">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">From</label>
+                <input type="date" name="date_from" value="{{ selected_date_from|default:'' }}" class="form-input" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">To</label>
+                <input type="date" name="date_to" value="{{ selected_date_to|default:'' }}" class="form-input" />
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <button type="submit" class="btn btn-primary" style="flex:1; padding:10px;">
+                    <i class="fa-solid fa-filter"></i> Apply
+                </button>
+                <a href="/analysis/" class="btn btn-ghost" style="padding:10px 14px;">✕</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- ── KPI Cards ── -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+                gap:1rem; margin-bottom:2rem;">
+
+        {% with kpis=total_bookings|stringformat:"s" %}
+        <div class="card" style="padding:1.25rem; text-align:center;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--muted-dim); margin-bottom:0.5rem;">
+                Total Bookings
+            </div>
+            <div style="font-size:2rem; font-weight:800; color:var(--primary);">{{ total_bookings }}</div>
+        </div>
+        {% endwith %}
+
+        <div class="card" style="padding:1.25rem; text-align:center;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--muted-dim); margin-bottom:0.5rem;">
+                Active Now
+            </div>
+            <div style="font-size:2rem; font-weight:800; color:var(--warning);">{{ active_bookings }}</div>
+        </div>
+
+        <div class="card" style="padding:1.25rem; text-align:center;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--muted-dim); margin-bottom:0.5rem;">
+                Completed
+            </div>
+            <div style="font-size:2rem; font-weight:800; color:var(--success);">{{ completed_bookings }}</div>
+        </div>
+
+        <div class="card" style="padding:1.25rem; text-align:center;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--muted-dim); margin-bottom:0.5rem;">
+                Cancelled
+            </div>
+            <div style="font-size:2rem; font-weight:800; color:var(--error);">{{ cancelled_bookings }}</div>
+        </div>
+
+        <div class="card" style="padding:1.25rem; text-align:center;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--muted-dim); margin-bottom:0.5rem;">
+                Revenue (MWK)
+            </div>
+            <div style="font-size:1.6rem; font-weight:800; color:var(--primary);">
+                {{ total_revenue|floatformat:0 }}
+            </div>
+        </div>
+
+        <div class="card" style="padding:1.25rem; text-align:center;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--muted-dim); margin-bottom:0.5rem;">
+                Organisations
+            </div>
+            <div style="font-size:2rem; font-weight:800; color:var(--primary);">{{ total_organisations }}</div>
+        </div>
+
+        <div class="card" style="padding:1.25rem; text-align:center;">
+            <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
+                        letter-spacing:0.08em; color:var(--muted-dim); margin-bottom:0.5rem;">
+                Resources
+            </div>
+            <div style="font-size:2rem; font-weight:800; color:var(--primary);">{{ total_resources }}</div>
+        </div>
+
+    </div>
+
+    <!-- ── Charts row 1: Trend + Status ── -->
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+
+        <!-- Booking trend line chart -->
+        <div class="card" style="padding:1.5rem;">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:1rem;">
+                <i class="fa-solid fa-chart-line" style="color:var(--primary); margin-right:6px;"></i>
+                Booking Trend — Last 30 Days
+            </div>
+            <canvas id="trendChart" height="100"></canvas>
+        </div>
+
+        <!-- Status doughnut -->
+        <div class="card" style="padding:1.5rem;">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:1rem;">
+                <i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:6px;"></i>
+                Bookings by Status
+            </div>
+            <canvas id="statusChart" height="180"></canvas>
+        </div>
+
+    </div>
+
+    <!-- ── Charts row 2: Peak hours + Category ── -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+
+        <!-- Peak hours bar chart -->
+        <div class="card" style="padding:1.5rem;">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:1rem;">
+                <i class="fa-solid fa-clock" style="color:var(--primary); margin-right:6px;"></i>
+                Peak Booking Hours
+            </div>
+            <canvas id="peakChart" height="140"></canvas>
+        </div>
+
+        <!-- Category bar chart -->
+        <div class="card" style="padding:1.5rem;">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:1rem;">
+                <i class="fa-solid fa-tags" style="color:var(--primary); margin-right:6px;"></i>
+                Bookings by Category
+            </div>
+            <canvas id="catChart" height="140"></canvas>
+        </div>
+
+    </div>
+
+    <!-- ── Revenue by Organisation ── -->
+    <div class="card" style="padding:1.5rem; margin-bottom:1.25rem;">
+        <div style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:1rem;">
+            <i class="fa-solid fa-building" style="color:var(--primary); margin-right:6px;"></i>
+            Revenue by Organisation (MWK)
+        </div>
+        <canvas id="revOrgChart" height="80"></canvas>
+    </div>
+
+    <!-- ── Most Booked Resources ── -->
+    <div class="card" style="padding:1.5rem; margin-bottom:1.25rem;">
+        <div style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:1rem;">
+            <i class="fa-solid fa-trophy" style="color:var(--warning); margin-right:6px;"></i>
+            Most Booked Resources
+        </div>
+        {% if top_resources %}
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            {% for r in top_resources %}
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="width:24px; height:24px; background:var(--border); border-radius:50%;
+                             display:flex; align-items:center; justify-content:center;
+                             font-size:0.7rem; font-weight:700; color:var(--muted); flex-shrink:0;">
+                    {{ forloop.counter }}
+                </span>
+                <div style="flex:1;">
+                    <div style="font-size:0.875rem; font-weight:600; color:var(--text);">
+                        {{ r.resource__name }}
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--muted-dim);">{{ r.resource__category }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <span style="font-size:1rem; font-weight:800; color:var(--primary);">{{ r.count }}</span>
+                    <span style="font-size:0.75rem; color:var(--muted-dim); margin-left:3px;">bookings</span>
+                </div>
+                <!-- Progress bar -->
+                <div style="width:120px; height:6px; background:var(--border); border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; background:var(--primary); border-radius:3px;
+                                width:{% widthratio r.count top_resources.0.count 100 %}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--muted-dim); font-size:0.875rem;">No booking data yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- ── Recent Bookings Table ── -->
+    <div class="card" style="overflow:hidden; margin-bottom:2rem;">
+        <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+                    display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--text);">
+                <i class="fa-regular fa-calendar" style="color:var(--primary); margin-right:6px;"></i>
+                Recent Bookings
+            </div>
+            <a href="/bookings/" style="font-size:0.8rem; color:var(--primary); text-decoration:none;">
+                View All →
+            </a>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                <thead>
+                    <tr style="background:rgba(15,23,42,0.5);">
+                        <th style="padding:10px 16px; text-align:left; color:var(--muted-dim);
+                                   font-size:0.7rem; text-transform:uppercase; letter-spacing:0.07em;">User</th>
+                        <th style="padding:10px 16px; text-align:left; color:var(--muted-dim);
+                                   font-size:0.7rem; text-transform:uppercase; letter-spacing:0.07em;">Resource</th>
+                        <th style="padding:10px 16px; text-align:left; color:var(--muted-dim);
+                                   font-size:0.7rem; text-transform:uppercase; letter-spacing:0.07em;">Organisation</th>
+                        <th style="padding:10px 16px; text-align:left; color:var(--muted-dim);
+                                   font-size:0.7rem; text-transform:uppercase; letter-spacing:0.07em;">Start</th>
+                        <th style="padding:10px 16px; text-align:left; color:var(--muted-dim);
+                                   font-size:0.7rem; text-transform:uppercase; letter-spacing:0.07em;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in recent_bookings %}
+                    <tr style="border-top:1px solid var(--border);">
+                        <td style="padding:10px 16px; color:var(--text);">
+                            {{ b.user.get_full_name|default:b.user.username }}
+                        </td>
+                        <td style="padding:10px 16px; color:var(--muted);">{{ b.resource.name }}</td>
+                        <td style="padding:10px 16px; color:var(--muted);">{{ b.organisation.name }}</td>
+                        <td style="padding:10px 16px; color:var(--muted-dim);">
+                            {{ b.start_time|date:"d M Y H:i" }}
+                        </td>
+                        <td style="padding:10px 16px;">
+                            {% if b.status == 'Pending' %}
+                                <span class="badge badge-warning">{{ b.status }}</span>
+                            {% elif b.status == 'Issued' %}
+                                <span class="badge badge-primary">{{ b.status }}</span>
+                            {% elif b.status == 'Verified' %}
+                                <span class="badge badge-success">{{ b.status }}</span>
+                            {% elif b.status == 'Completed' %}
+                                <span class="badge badge-muted">{{ b.status }}</span>
+                            {% else %}
+                                <span class="badge badge-error">{{ b.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="padding:2rem; text-align:center; color:var(--muted-dim);">
+                            No bookings found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const TEAL    = '#14B8A6';
+    const AMBER   = '#F59E0B';
+    const GREEN   = '#22C55E';
+    const RED     = '#EF4444';
+    const BLUE    = '#3B82F6';
+    const MUTED   = '#64748B';
+    const SURFACE = '#1E2937';
+    const BORDER  = '#334155';
+    const TEXT    = '#E2E8F0';
+
+    Chart.defaults.color = '#94A3B8';
+    Chart.defaults.borderColor = BORDER;
+    Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+    // ── Trend line ──────────────────────────────────────────────────
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels|safe }},
+            datasets: [{
+                label: 'Bookings',
+                data: {{ trend_values|safe }},
+                borderColor: TEAL,
+                backgroundColor: 'rgba(20,184,166,0.08)',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: TEAL,
+                fill: true,
+                tension: 0.35,
+            }],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: BORDER } },
+                y: { grid: { color: BORDER }, beginAtZero: true, ticks: { precision: 0 } },
+            },
+        },
+    });
+
+    // ── Status doughnut ─────────────────────────────────────────────
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ status_labels|safe }},
+            datasets: [{
+                data: {{ status_counts|safe }},
+                backgroundColor: [AMBER, BLUE, TEAL, GREEN, RED, MUTED],
+                borderWidth: 2,
+                borderColor: SURFACE,
+            }],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 12, boxWidth: 12 } },
+            },
+            cutout: '65%',
+        },
+    });
+
+    // ── Peak hours bar ──────────────────────────────────────────────
+    new Chart(document.getElementById('peakChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ peak_labels|safe }},
+            datasets: [{
+                label: 'Bookings',
+                data: {{ peak_values|safe }},
+                backgroundColor: 'rgba(20,184,166,0.6)',
+                borderColor: TEAL,
+                borderWidth: 1,
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: BORDER }, beginAtZero: true, ticks: { precision: 0 } },
+            },
+        },
+    });
+
+    // ── Category bar ────────────────────────────────────────────────
+    new Chart(document.getElementById('catChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ cat_labels|safe }},
+            datasets: [{
+                label: 'Bookings',
+                data: {{ cat_values|safe }},
+                backgroundColor: [TEAL, AMBER, BLUE, GREEN, RED, MUTED],
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: BORDER }, beginAtZero: true, ticks: { precision: 0 } },
+            },
+        },
+    });
+
+    // ── Revenue by org ──────────────────────────────────────────────
+    new Chart(document.getElementById('revOrgChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ rev_org_labels|safe }},
+            datasets: [{
+                label: 'Revenue (MWK)',
+                data: {{ rev_org_values|safe }},
+                backgroundColor: 'rgba(245,158,11,0.6)',
+                borderColor: AMBER,
+                borderWidth: 1,
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: BORDER }, beginAtZero: true },
+                y: { grid: { display: false } },
+            },
+        },
+    });
+})();
+</script>
+{% endblock %}
