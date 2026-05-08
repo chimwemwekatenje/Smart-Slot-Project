@@ -52,18 +52,12 @@
                         <td style="color:var(--muted-dim);">{{ b.start_time|date:"d M Y, H:i" }}</td>
                         <td style="color:var(--muted-dim);">{{ b.end_time|date:"d M Y, H:i" }}</td>
                         <td>
-                            {% if b.status == 'Pending' %}
-                                <span class="badge" style="background:rgba(245,158,11,0.12); color:#F59E0B; border:1px solid rgba(245,158,11,0.3);">Pending</span>
-                            {% elif b.status == 'Issued' %}
-                                <span class="badge" style="background:rgba(20,184,166,0.12); color:#14B8A6; border:1px solid rgba(20,184,166,0.3);">Issued</span>
-                            {% elif b.status == 'Verified' %}
-                                <span class="badge" style="background:rgba(34,197,94,0.12); color:#22C55E; border:1px solid rgba(34,197,94,0.3);">Verified</span>
-                            {% elif b.status == 'Completed' %}
-                                <span class="badge" style="background:rgba(148,163,184,0.1); color:#94A3B8; border:1px solid rgba(148,163,184,0.2);">Completed</span>
-                            {% elif b.status == 'Cancelled' or b.status == 'NoShow' %}
-                                <span class="badge" style="background:rgba(239,68,68,0.12); color:#EF4444; border:1px solid rgba(239,68,68,0.3);">{{ b.get_status_display }}</span>
+                            {% if b.status == 'Booked' %}
+                                <span class="badge badge-success">Booked</span>
+                            {% elif b.status == 'Cancelled' %}
+                                <span class="badge badge-error">Cancelled</span>
                             {% else %}
-                                <span class="badge badge-muted">{{ b.get_status_display }}</span>
+                                <span class="badge badge-muted">{{ b.status }}</span>
                             {% endif %}
                         </td>
                     </tr>

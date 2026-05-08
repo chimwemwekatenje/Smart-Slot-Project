@@ -10,6 +10,7 @@ class OrgScopedMixin(LoginRequiredMixin, UserPassesTestMixin):
     PlatformAdmin → no restriction (sees all orgs).
     OrganisationAdmin → scoped to their own organisation.
     """
+    login_url = '/dashboard/login/'
 
     def test_func(self):
         return self.request.user.role in ('OrganisationAdmin', 'PlatformAdmin')

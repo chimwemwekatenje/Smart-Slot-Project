@@ -1,0 +1,178 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block dashboard_content %}
+<div style="max-width:1200px;">
+
+    <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
+            <i class="fa-solid fa-users" style="color:var(--primary); margin-right:10px;"></i>
+            Users
+        </h1>
+        <p style="color:var(--muted-dim); font-size:0.9rem;">
+            Manage all users across the platform.
+        </p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:360px 1fr; gap:1.5rem; align-items:start;">
+
+        <!-- ── Create Org Admin form ── -->
+        <div class="card" style="padding:1.75rem;">
+            <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:1.25rem;">
+                <i class="fa-solid fa-user-plus" style="color:var(--primary); margin-right:8px;"></i>
+                Add Org Admin
+            </div>
+
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom:1.25rem;">
+                <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create" />
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" value="{{ form_data.first_name|default:'' }}"
+                               class="form-input" placeholder="First" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" value="{{ form_data.last_name|default:'' }}"
+                               class="form-input" placeholder="Last" />
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" value="{{ form_data.username|default:'' }}"
+                           class="form-input" placeholder="Choose a username" />
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" value="{{ form_data.email|default:'' }}"
+                           class="form-input" placeholder="admin@org.com" />
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-input" placeholder="Set a password" />
+                </div>
+                <div class="form-group" style="margin-bottom:1.25rem;">
+                    <label class="form-label">Organisation</label>
+                    <select name="organisation" class="form-input">
+                        <option value="">Select organisation</option>
+                        {% for org in organisations %}
+                        <option value="{{ org.pk }}"
+                            {% if form_data.organisation == org.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ org.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">
+                    <i class="fa-solid fa-user-plus"></i> Create Org Admin
+                </button>
+            </form>
+        </div>
+
+        <!-- ── All users table ── -->
+        <div class="card" style="overflow:hidden;">
+            <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+                        font-size:0.95rem; font-weight:700; color:var(--text);">
+                <i class="fa-solid fa-users" style="color:var(--primary); margin-right:8px;"></i>
+                All Users ({{ all_users|length }})
+            </div>
+            <div class="table-wrapper">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Organisation</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in all_users %}
+                        <tr>
+                            <td style="font-weight:600;">{{ u.get_full_name|default:u.username }}</td>
+                            <td style="color:var(--muted);">{{ u.username }}</td>
+                            <td>
+                                {% if u.is_superuser %}
+                                    <span class="badge" style="background:rgba(167,139,250,0.12); color:#a78bfa; border:1px solid rgba(167,139,250,0.3);">Super Admin</span>
+                                {% elif u.role == 'OrganisationAdmin' %}
+                                    <span class="badge badge-primary">Org Admin</span>
+                                {% elif u.role == 'Employee' %}
+                                    <span class="badge badge-muted">Employee</span>
+                                {% elif u.role == 'Receptionist' %}
+                                    <span class="badge badge-muted">Receptionist</span>
+                                {% elif u.role == 'External' %}
+                                    <span class="badge badge-warning">External</span>
+                                {% else %}
+                                    <span class="badge badge-muted">{{ u.get_role_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="color:var(--muted-dim);">{{ u.organisation.name|default:"—" }}</td>
+                            <td>
+                                {% if u.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-error">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    {% if u.is_active %}
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="deactivate" />
+                                        <input type="hidden" name="user_id" value="{{ u.pk }}" />
+                                        <button type="submit" class="btn btn-ghost btn-sm"
+                                                style="color:var(--warning); border:1px solid rgba(245,158,11,0.3);"
+                                                title="Deactivate">
+                                            <i class="fa-solid fa-ban"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="activate" />
+                                        <input type="hidden" name="user_id" value="{{ u.pk }}" />
+                                        <button type="submit" class="btn btn-ghost btn-sm"
+                                                style="color:var(--success); border:1px solid rgba(34,197,94,0.3);"
+                                                title="Activate">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="post" style="display:inline;"
+                                          onsubmit="return confirm('Delete {{ u.username }}? This cannot be undone.')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete" />
+                                        <input type="hidden" name="user_id" value="{{ u.pk }}" />
+                                        <button type="submit" class="btn btn-ghost btn-sm"
+                                                style="color:var(--error); border:1px solid rgba(239,68,68,0.3);"
+                                                title="Delete">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align:center; color:var(--muted-dim); padding:2rem;">
+                                No users found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -63,11 +63,17 @@ class Command(BaseCommand):
                     last_name=u['last_name'],
                 )
                 user.role = u['role']
+                user.organisation = org
                 user.save()
                 self.stdout.write(self.style.SUCCESS(
                     f"  Created user  →  {u['username']} ({u['role']})"
                 ))
             else:
+                # Update organisation if missing
+                existing = User.objects.get(username=u['username'])
+                if not existing.organisation:
+                    existing.organisation = org
+                    existing.save()
                 self.stdout.write(self.style.WARNING(
                     f"  User '{u['username']}' already exists."
                 ))

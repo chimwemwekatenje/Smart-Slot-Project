@@ -1,0 +1,110 @@
+{% extends "dashboard/base_dashboard.html" %}
+
+{% block dashboard_content %}
+<div style="max-width:1200px;">
+
+    <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
+            <i class="fa-solid fa-cubes" style="color:var(--primary); margin-right:10px;"></i>
+            Manage Resources
+        </h1>
+        <p style="color:var(--muted-dim); font-size:0.9rem;">
+            Resources for {{ organisation.name }}
+        </p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:320px 1fr; gap:1.5rem; align-items:start;">
+
+        <!-- Add resource form -->
+        <div class="card" style="padding:1.75rem;">
+            <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:1.25rem;">
+                <i class="fa-solid fa-plus" style="color:var(--primary); margin-right:8px;"></i>
+                Add Resource
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create" />
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-input" placeholder="e.g. Main Boardroom" required />
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-input">
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-input" rows="2"
+                              placeholder="Brief description..." style="resize:vertical;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom:1.25rem;">
+                    <label class="form-label">Price (MWK) — 0 for free</label>
+                    <input type="number" name="price" class="form-input" value="0" min="0" step="100" />
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">
+                    <i class="fa-solid fa-plus"></i> Add Resource
+                </button>
+            </form>
+        </div>
+
+        <!-- Resources table -->
+        <div class="card" style="overflow:hidden;">
+            <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+                        font-size:0.95rem; font-weight:700; color:var(--text);">
+                <i class="fa-solid fa-box" style="color:var(--primary); margin-right:8px;"></i>
+                Resources ({{ resources|length }})
+            </div>
+            <div class="table-wrapper">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in resources %}
+                        <tr>
+                            <td style="font-weight:600;">{{ r.name }}</td>
+                            <td><span class="badge badge-primary">{{ r.category }}</span></td>
+                            <td>
+                                {% if r.price == 0 %}
+                                    <span style="color:var(--success); font-weight:600;">Free</span>
+                                {% else %}
+                                    <span style="color:var(--warning); font-weight:700;">MWK {{ r.price|floatformat:0 }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="post" style="display:inline;"
+                                      onsubmit="return confirm('Delete {{ r.name }}?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete" />
+                                    <input type="hidden" name="resource_id" value="{{ r.pk }}" />
+                                    <button type="submit" class="btn btn-ghost btn-sm"
+                                            style="color:var(--error); border:1px solid rgba(239,68,68,0.3);">
+                                        <i class="fa-solid fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align:center; color:var(--muted-dim); padding:2rem;">
+                                No resources yet. Add one using the form.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

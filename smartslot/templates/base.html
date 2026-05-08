@@ -232,7 +232,7 @@
             <a href="/resources/" {% if '/resources' in request.path %}class="active"{% endif %}>Resources</a>
             <a href="/bookings/" {% if '/bookings' in request.path %}class="active"{% endif %}>My Bookings</a>
             <div class="nav-divider"></div>
-            <a href="/admin/" class="nav-admin-btn">Admin Panel</a>
+            <a href="{% url 'admin_login' %}" class="nav-admin-btn">Admin Panel</a>
             <div class="nav-divider"></div>
             {% if user.is_authenticated and user.is_superuser or user.is_authenticated and user.role == 'PlatformAdmin' %}
             <a href="{% url 'super_admin_analysis' %}" {% if '/analysis' in request.path %}class="active"{% endif %}

@@ -347,10 +347,24 @@
                {% if request.resolver_match.url_name == 'dashboard_bookings' %}class="active"{% endif %}>
                 <i class="fa-regular fa-calendar-check"></i> Bookings
             </a>
+            {% if user.role == 'OrganisationAdmin' %}
+            <a href="{% url 'dashboard_org_users' %}"
+               {% if request.resolver_match.url_name == 'dashboard_org_users' %}class="active"{% endif %}>
+                <i class="fa-solid fa-users"></i> My Users
+            </a>
+            <a href="{% url 'dashboard_org_resources' %}"
+               {% if request.resolver_match.url_name == 'dashboard_org_resources' %}class="active"{% endif %}>
+                <i class="fa-solid fa-cubes"></i> Manage Resources
+            </a>
+            {% endif %}
             {% if user.role == 'PlatformAdmin' or user.is_superuser %}
             <a href="{% url 'dashboard_organisations' %}"
                {% if request.resolver_match.url_name == 'dashboard_organisations' or request.resolver_match.url_name == 'dashboard_org_create' or request.resolver_match.url_name == 'dashboard_org_edit' %}class="active"{% endif %}>
                 <i class="fa-solid fa-building"></i> Organisations
+            </a>
+            <a href="{% url 'dashboard_users' %}"
+               {% if request.resolver_match.url_name == 'dashboard_users' %}class="active"{% endif %}>
+                <i class="fa-solid fa-users"></i> Users
             </a>
             <a href="{% url 'super_admin_analysis' %}"
                {% if request.resolver_match.url_name == 'super_admin_analysis' %}class="active"{% endif %}>

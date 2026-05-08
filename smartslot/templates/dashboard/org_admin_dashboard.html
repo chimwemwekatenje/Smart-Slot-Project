@@ -30,8 +30,8 @@
 
         <div class="metric-card">
             <div class="metric-icon"><i class="fa-regular fa-clock"></i></div>
-            <div class="metric-value">{{ pending_bookings_count }}</div>
-            <div class="metric-label">Pending Bookings</div>
+            <div class="metric-value">{{ booked_count }}</div>
+            <div class="metric-label">Active Bookings</div>
         </div>
 
     </div>
@@ -66,18 +66,12 @@
                         <td style="color:var(--muted);">{{ b.user.get_full_name|default:b.user.username }}</td>
                         <td style="color:var(--muted-dim);">{{ b.start_time|date:"D, d M Y · H:i" }}</td>
                         <td>
-                            {% if b.status == 'Pending' %}
-                                <span class="badge badge-warning">Pending</span>
-                            {% elif b.status == 'Issued' %}
-                                <span class="badge badge-primary">Issued</span>
-                            {% elif b.status == 'Verified' %}
-                                <span class="badge badge-success">Verified</span>
-                            {% elif b.status == 'Completed' %}
-                                <span class="badge badge-muted">Completed</span>
-                            {% elif b.status == 'Cancelled' or b.status == 'NoShow' %}
-                                <span class="badge badge-error">{{ b.get_status_display }}</span>
+                            {% if b.status == 'Booked' %}
+                                <span class="badge badge-success">Booked</span>
+                            {% elif b.status == 'Cancelled' %}
+                                <span class="badge badge-error">Cancelled</span>
                             {% else %}
-                                <span class="badge badge-muted">{{ b.get_status_display }}</span>
+                                <span class="badge badge-muted">{{ b.status }}</span>
                             {% endif %}
                         </td>
                     </tr>
