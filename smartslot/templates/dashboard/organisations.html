@@ -58,10 +58,20 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'dashboard_org_edit' org.pk %}"
-                               class="btn btn-outline btn-sm">
-                                <i class="fa-solid fa-pen"></i> Edit
-                            </a>
+                            <div style="display:flex; gap:6px;">
+                                <a href="{% url 'dashboard_org_edit' org.pk %}"
+                                   class="btn btn-outline btn-sm">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </a>
+                                <form method="post" action="{% url 'dashboard_org_delete' org.pk %}"
+                                      onsubmit="return confirm('Delete {{ org.name }}? This will remove all associated resources and bookings.')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-ghost btn-sm"
+                                            style="color:var(--error); border:1px solid rgba(239,68,68,0.3);">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

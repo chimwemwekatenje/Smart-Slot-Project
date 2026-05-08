@@ -10,7 +10,7 @@
             Resources
         </h1>
         <p style="color:var(--muted-dim); font-size:0.9rem;">
-            All resources{% if organisation %} for {{ organisation.name }}{% endif %}
+            All resources{% if organisation and user.role == 'OrganisationAdmin' %} for {{ organisation.name }}{% endif %}
         </p>
     </div>
 
@@ -23,7 +23,7 @@
                         <th>Name</th>
                         <th>Category</th>
                         <th>Price</th>
-                        <th>Organisation</th>
+                        {% if not user.role == 'OrganisationAdmin' %}<th>Organisation</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -42,7 +42,9 @@
                                 <span style="color:var(--success); font-weight:600;">Free</span>
                             {% endif %}
                         </td>
+                        {% if not user.role == 'OrganisationAdmin' %}
                         <td style="color:var(--muted);">{{ resource.organisation.name }}</td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>

@@ -66,11 +66,11 @@ class OrganisationAdminDashboardView(OrgScopedMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        organisation = self.get_org() or Organisation.objects.first()
+        organisation = self.get_org()  # None for PlatformAdmin/superuser
         booking_qs   = self.scope_qs(Booking.objects.all())
         resource_qs  = self.scope_qs(Resource.objects.all())
 
-        ctx['organisation']              = organisation
+        ctx['organisation']              = organisation  # None = shows SmartSlot in sidebar
         today                            = timezone.now().date()
         month_start                      = today.replace(day=1)
         ctx['total_resources']           = resource_qs.count()
@@ -91,7 +91,7 @@ class DashboardResourceListView(OrgScopedMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['resources']    = self.scope_qs(Resource.objects.all()).order_by('name')
-        ctx['organisation'] = self.get_org() or Organisation.objects.first()
+        ctx['organisation'] = self.get_org()  # None for super admin
         return ctx
 
 
@@ -109,7 +109,7 @@ class DashboardBookingListView(OrgScopedMixin, TemplateView):
         ctx['bookings']       = qs
         ctx['statuses']       = ['All', 'Booked', 'Cancelled']
         ctx['current_status'] = status_filter or 'All'
-        ctx['organisation']   = self.get_org() or Organisation.objects.first()
+        ctx['organisation']   = self.get_org()  # None for super admin
         return ctx
 
 
@@ -347,7 +347,7 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['selected_date_from'] = date_from
         ctx['selected_date_to']   = date_to
         ctx['recent_bookings']    = qs.order_by('-created_at')[:10]
-        ctx['organisation']       = Organisation.objects.first()
+        ctx['organisation']       = None  # super admin — show SmartSlot in sidebar
         return ctx
 
 
@@ -455,3 +455,21 @@ def dashboard_org_resources_view(request):
         'organisation': org,
         'categories':   ['Boardroom', 'Vehicle', 'Equipment', 'Other'],
     })
+
+
+# ── Platform Admin — Delete organisation ─────────────────────────────────────
+
+@login_required(login_url='/dashboard/login/')
+def dashboard_org_delete_view(request, pk):
+    from django.contrib import messages
+    if not (request.user.is_superuser or request.user.role == 'PlatformAdmin'):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+
+    org = get_object_or_404(Organisation, pk=pk)
+    if request.method == 'POST':
+        name = org.name
+        org.delete()
+        messages.success(request, f'Organisation "{name}" and all its data have been deleted.')
+        return redirect('dashboard_organisations')
+    return redirect('dashboard_organisations')
