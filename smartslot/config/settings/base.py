@@ -81,6 +81,9 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
+# If DATABASE_URL points to PostgreSQL but connection fails at startup,
+# Django will still start — the error only appears when a request hits the DB.
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
