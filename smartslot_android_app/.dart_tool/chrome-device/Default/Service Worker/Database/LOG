@@ -1,3 +1,4 @@
-2026/04/16-22:48:19.842 3e0c Reusing MANIFEST C:\Users\HP\AppData\Local\Temp\flutter_tools.2e85e995\flutter_tools_chrome_device.705c0489\Default\Service Worker\Database/MANIFEST-000001
-2026/04/16-22:48:19.843 3e0c Recovering log #3
-2026/04/16-22:48:19.844 3e0c Reusing old log C:\Users\HP\AppData\Local\Temp\flutter_tools.2e85e995\flutter_tools_chrome_device.705c0489\Default\Service Worker\Database/000003.log 
+2026/05/11-21:51:37.887 2134 Reusing MANIFEST C:\Users\HP\AppData\Local\Temp\flutter_tools.18f11bb\flutter_tools_chrome_device.cb0eba41\Default\Service Worker\Database/MANIFEST-000001
+2026/05/11-21:51:37.888 2134 Recovering log #3
+2026/05/11-21:51:37.889 2134 (ignoring error) C:\Users\HP\AppData\Local\Temp\flutter_tools.18f11bb\flutter_tools_chrome_device.cb0eba41\Default\Service Worker\Database/000003.log: dropping 166 bytes; Corruption: missing start of fragmented record(2)
+2026/05/11-21:51:37.889 2134 Reusing old log C:\Users\HP\AppData\Local\Temp\flutter_tools.18f11bb\flutter_tools_chrome_device.cb0eba41\Default\Service Worker\Database/000003.log 

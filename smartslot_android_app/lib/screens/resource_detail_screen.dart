@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../services/api_service.dart';
 import '../theme.dart';
 import '../transitions.dart';
 import 'booking_form_screen.dart';
@@ -19,9 +18,7 @@ class ResourceDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price = double.tryParse(resource['price']?.toString() ?? '0') ?? 0;
-    final photoPath = resource['photo'];
-    final photoUrl = photoPath != null && photoPath.toString().isNotEmpty
-        ? '${ApiService.baseUrl}/media/$photoPath' : null;
+    final photoUrl = resource['photo_url'] as String?;
     final orgName = resource['organisation_name'] ?? 'Unknown Organisation';
 
     return Scaffold(

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../services/pdf_receipt_service.dart';
 import '../theme.dart';
 import '../transitions.dart';
 
@@ -341,7 +342,9 @@ class BookingReceiptScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final fmt = DateFormat('EEE d MMM yyyy, HH:mm');
     final customData = booking['custom_data'] as Map<String, dynamic>? ?? {};
-    final qrToken = (booking['qr_token'] as String?)?.isNotEmpty == true ? booking['qr_token'] as String : 'BOOKING-${booking['id'] ?? DateTime.now().millisecondsSinceEpoch}';
+    final qrToken = (booking['qr_token'] as String?)?.isNotEmpty == true
+        ? booking['qr_token'] as String
+        : 'BOOKING-${booking['id'] ?? DateTime.now().millisecondsSinceEpoch}';
     final start = DateTime.tryParse(booking['start_time'] ?? '')?.toLocal();
     final end = DateTime.tryParse(booking['end_time'] ?? '')?.toLocal();
 
@@ -354,6 +357,7 @@ class BookingReceiptScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
+          // ── Success banner ──────────────────────────────────────────────
           Container(
             width: double.infinity, padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.success.withValues(alpha: 0.4))),
@@ -365,6 +369,8 @@ class BookingReceiptScreen extends StatelessWidget {
             ]),
           ),
           const SizedBox(height: 24),
+
+          // ── QR Code ─────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
@@ -373,6 +379,8 @@ class BookingReceiptScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text('Booking ID: #${booking['id'] ?? 'N/A'}', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
           const SizedBox(height: 24),
+
+          // ── Receipt details ──────────────────────────────────────────────
           Container(
             width: double.infinity, padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12), border: Border.fromBorderSide(BorderSide(color: Theme.of(context).dividerColor))),
@@ -392,11 +400,30 @@ class BookingReceiptScreen extends StatelessWidget {
               const _Row(label: 'Status', value: 'Confirmed', valueColor: AppColors.success),
             ]),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
+          // ── Download PDF button ──────────────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.download_outlined),
+              label: const Text('Download PDF Receipt'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () => PdfReceiptService.downloadReceipt(context, booking),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Back to home ─────────────────────────────────────────────────
           SizedBox(width: double.infinity, child: OutlinedButton.icon(
             icon: const Icon(Icons.home_outlined), label: const Text('Back to Home'),
             onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false),
           )),
+          const SizedBox(height: 8),
         ]),
       ),
     );

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/api_service.dart';
+import '../services/pdf_receipt_service.dart';
 import '../theme.dart';
 import '../widgets/booking_card.dart';
 
@@ -140,6 +141,16 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
               leading: const Icon(Icons.qr_code, color: AppColors.primary),
               title: const Text('Show QR Code'),
               onTap: () { Navigator.pop(context); _showQr(booking); },
+            ),
+          // Download PDF receipt for any confirmed/active booking
+          if (status == 'Issued' || status == 'Verified' || status == 'Completed')
+            ListTile(
+              leading: const Icon(Icons.download_outlined, color: AppColors.primary),
+              title: const Text('Download PDF Receipt'),
+              onTap: () {
+                Navigator.pop(context);
+                PdfReceiptService.downloadReceipt(context, booking);
+              },
             ),
           if (status == 'Issued')
             ListTile(
