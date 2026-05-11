@@ -6,8 +6,8 @@
     <title>SmartSlot Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
-        /* ── Design tokens ── */
-        :root {
+        /* ── Design tokens — dark (default) ── */
+        :root, [data-theme="dark"] {
             --bg:           #0F172A;
             --surface:      #1E2937;
             --border:       #334155;
@@ -21,6 +21,31 @@
             --warning:      #F59E0B;
             --r:            12px;
             --r-sm:         8px;
+            --input-scheme: dark;
+            --nav-hover-bg: rgba(255,255,255,0.05);
+            --table-head-bg: rgba(15,23,42,0.5);
+            --table-row-hover: rgba(255,255,255,0.02);
+        }
+
+        /* ── Design tokens — light ── */
+        [data-theme="light"] {
+            --bg:           #F1F5F9;
+            --surface:      #FFFFFF;
+            --border:       #E2E8F0;
+            --primary:      #0D9488;
+            --primary-dark: #0F766E;
+            --text:         #0F172A;
+            --muted:        #64748B;
+            --muted-dim:    #94A3B8;
+            --error:        #DC2626;
+            --success:      #16A34A;
+            --warning:      #D97706;
+            --r:            12px;
+            --r-sm:         8px;
+            --input-scheme: light;
+            --nav-hover-bg: rgba(0,0,0,0.04);
+            --table-head-bg: rgba(241,245,249,0.8);
+            --table-row-hover: rgba(0,0,0,0.02);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -92,7 +117,7 @@
         }
         .sidebar-nav a:hover {
             color: var(--text);
-            background: rgba(255,255,255,0.05);
+            background: var(--nav-hover-bg);
         }
         .sidebar-nav a.active {
             color: var(--primary);
@@ -110,7 +135,7 @@
         }
         .sidebar-user-name {
             font-size: 0.875rem;
-            color: #cbd5e1;
+            color: var(--text);
             font-weight: 600;
             margin-bottom: 2px;
         }
@@ -119,8 +144,13 @@
             color: var(--muted-dim);
             margin-bottom: 0.75rem;
         }
+        .sidebar-footer-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
         .sidebar-logout-btn {
-            width: 100%;
+            flex: 1;
             text-align: left;
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
@@ -140,6 +170,19 @@
             background: rgba(239,68,68,0.1);
             color: #fca5a5;
         }
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            width: 34px; height: 34px;
+            border-radius: var(--r-sm);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .theme-toggle:hover { background: var(--nav-hover-bg); color: var(--text); }
 
         /* ── Main content ── */
         .main-content {
@@ -167,10 +210,10 @@
             font-weight: 500;
             margin-bottom: 0.5rem;
         }
-        .messages .success { background: #052e16; color: #86efac; border: 1px solid #166534; }
-        .messages .error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
-        .messages .info    { background: #0c1a2e; color: #93c5fd; border: 1px solid #1e40af; }
-        .messages .warning { background: #1c1400; color: #fcd34d; border: 1px solid #92400e; }
+        .messages .success { background: rgba(34,197,94,0.1);  color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+        .messages .error   { background: rgba(239,68,68,0.1);  color: var(--error);   border: 1px solid rgba(239,68,68,0.3); }
+        .messages .info    { background: rgba(59,130,246,0.1); color: #3B82F6;         border: 1px solid rgba(59,130,246,0.3); }
+        .messages .warning { background: rgba(245,158,11,0.1); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
 
         /* ── Card ── */
         .card {
@@ -228,7 +271,7 @@
         .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
         .btn-outline:hover { background: rgba(20,184,166,0.08); }
         .btn-ghost { background: var(--border); color: var(--muted); }
-        .btn-ghost:hover { background: #3d4f66; color: var(--text); }
+        .btn-ghost:hover { background: var(--muted-dim); color: var(--text); }
         .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
 
         /* ── Badges ── */
@@ -263,7 +306,7 @@
             outline: none;
             font-family: inherit;
             transition: border-color 0.15s, box-shadow 0.15s;
-            color-scheme: dark;
+            color-scheme: var(--input-scheme);
         }
         .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,0.12); }
         .form-input.is-error { border-color: var(--error); }
@@ -280,9 +323,9 @@
             align-items: flex-start;
             gap: 10px;
         }
-        .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
-        .alert-success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #86efac; }
-        .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+        .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: var(--error); }
+        .alert-success { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: var(--success); }
+        .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: var(--warning); }
         .alert-info    { background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); color: var(--primary); }
 
         /* ── Table ── */
@@ -295,7 +338,7 @@
             font-size: 0.875rem;
         }
         table.dash-table thead tr {
-            background: rgba(15,23,42,0.5);
+            background: var(--table-head-bg);
         }
         table.dash-table th {
             padding: 10px 16px;
@@ -313,7 +356,7 @@
             vertical-align: middle;
         }
         table.dash-table tbody tr:hover {
-            background: rgba(255,255,255,0.02);
+            background: var(--table-row-hover);
         }
 
         hr.divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
@@ -377,12 +420,17 @@
         <div class="sidebar-footer">
             <div class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</div>
             <div class="sidebar-user-role">{{ user.get_role_display }}</div>
-            <form action="/accounts/logout/" method="post">
-                {% csrf_token %}
-                <button type="submit" class="sidebar-logout-btn">
-                    <i class="fa-solid fa-right-from-bracket"></i> Log Out
+            <div class="sidebar-footer-actions">
+                <form action="/accounts/logout/" method="post" style="flex:1;">
+                    {% csrf_token %}
+                    <button type="submit" class="sidebar-logout-btn">
+                        <i class="fa-solid fa-right-from-bracket"></i> Log Out
+                    </button>
+                </form>
+                <button class="theme-toggle" id="dash-theme-toggle" title="Toggle light/dark mode" onclick="toggleDashTheme()">
+                    <i class="fa-solid fa-moon" id="dash-theme-icon"></i>
                 </button>
-            </form>
+            </div>
         </div>
     </aside>
 
@@ -403,5 +451,29 @@
 
     </div>
 
+<script>
+    // ── Dashboard theme toggle ────────────────────────────────────
+    const dashHtml = document.documentElement;
+    const dashIcon = document.getElementById('dash-theme-icon');
+    const DASH_STORAGE_KEY = 'smartslot-theme';
+
+    // Apply saved theme on load
+    const savedDashTheme = localStorage.getItem(DASH_STORAGE_KEY) || 'dark';
+    dashHtml.setAttribute('data-theme', savedDashTheme);
+    applyDashIcon(savedDashTheme);
+
+    function toggleDashTheme() {
+        const current = dashHtml.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        dashHtml.setAttribute('data-theme', next);
+        localStorage.setItem(DASH_STORAGE_KEY, next);
+        applyDashIcon(next);
+    }
+
+    function applyDashIcon(theme) {
+        if (!dashIcon) return;
+        dashIcon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
+</script>
 </body>
 </html>

@@ -117,9 +117,13 @@ class DashboardBookingListView(OrgScopedMixin, TemplateView):
 
 class DashboardOrgListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboard/organisations.html'
+    raise_exception = False
 
     def test_func(self):
         return self.request.user.role == 'PlatformAdmin' or self.request.user.is_superuser
+
+    def handle_no_permission(self):
+        return redirect('org_admin_dashboard')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -132,9 +136,13 @@ class DashboardOrgCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView
     model = Organisation
     form_class = OrganisationForm
     template_name = 'dashboard/organisation_form.html'
+    raise_exception = False
 
     def test_func(self):
         return self.request.user.role == 'PlatformAdmin' or self.request.user.is_superuser
+
+    def handle_no_permission(self):
+        return redirect('org_admin_dashboard')
 
     def get_success_url(self):
         from django.urls import reverse
@@ -156,9 +164,13 @@ class DashboardOrgEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Organisation
     form_class = OrganisationForm
     template_name = 'dashboard/organisation_form.html'
+    raise_exception = False
 
     def test_func(self):
         return self.request.user.role == 'PlatformAdmin' or self.request.user.is_superuser
+
+    def handle_no_permission(self):
+        return redirect('org_admin_dashboard')
 
     def get_success_url(self):
         from django.urls import reverse
@@ -186,8 +198,7 @@ def dashboard_users_view(request):
     User = get_user_model()
 
     if not (request.user.is_superuser or request.user.role == 'PlatformAdmin'):
-        from django.core.exceptions import PermissionDenied
-        raise PermissionDenied
+        return redirect('org_admin_dashboard')
 
     error = None
 
@@ -271,9 +282,13 @@ def dashboard_users_view(request):
 
 class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboard/super_admin_analysis.html'
+    raise_exception = False
 
     def test_func(self):
         return self.request.user.is_superuser or self.request.user.role == 'PlatformAdmin'
+
+    def handle_no_permission(self):
+        return redirect('org_admin_dashboard')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -292,6 +307,7 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         ctx['total_bookings']      = qs.count()
         ctx['active_bookings']     = qs.filter(status='Booked').count()
+        ctx['completed_bookings']  = qs.filter(status='Booked').count()  # alias for display
         ctx['cancelled_bookings']  = qs.filter(status='Cancelled').count()
         ctx['total_revenue']       = qs.filter(status='Booked').aggregate(
             rev=Sum('resource__price'))['rev'] or 0
@@ -463,8 +479,7 @@ def dashboard_org_resources_view(request):
 def dashboard_org_delete_view(request, pk):
     from django.contrib import messages
     if not (request.user.is_superuser or request.user.role == 'PlatformAdmin'):
-        from django.core.exceptions import PermissionDenied
-        raise PermissionDenied
+        return redirect('org_admin_dashboard')
 
     org = get_object_or_404(Organisation, pk=pk)
     if request.method == 'POST':

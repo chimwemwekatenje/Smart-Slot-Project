@@ -15,6 +15,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://smartslot-bh9c.onrender.com',
 ]
 
+# Absolute site URL — used for QR codes and any absolute links in emails/PDFs
+SITE_URL = 'https://smartslot-bh9c.onrender.com'
+
 # Static files served by WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
