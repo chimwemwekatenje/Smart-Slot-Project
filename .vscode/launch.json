@@ -6,14 +6,24 @@
             "request": "launch",
             "type": "dart",
             "program": "C:/Users/HP/Desktop/Android App/smartslot_android_app/lib/main.dart",
-            "cwd": "C:/Users/HP/Desktop/Android App/smartslot_android_app"
+            "cwd": "C:/Users/HP/Desktop/Android App/smartslot_android_app",
+            "args": ["--dart-define=API_URL=http://10.91.252.84:8000"]
+        },
+        {
+            "name": "SmartSlot Android App (WiFi)",
+            "request": "launch",
+            "type": "dart",
+            "program": "C:/Users/HP/Desktop/Android App/smartslot_android_app/lib/main.dart",
+            "cwd": "C:/Users/HP/Desktop/Android App/smartslot_android_app",
+            "args": ["--dart-define=API_URL=http://41.70.47.83:8000"]
         },
         {
             "name": "Django Server",
             "request": "launch",
             "type": "python",
+            "python": "C:/Users/HP/Desktop/Smart Slots/Smart-Slot-Project/.venv/Scripts/python.exe",
             "program": "${workspaceFolder}/smartslot/manage.py",
-            "args": ["runserver", "0.0.0.0:8000"],
+            "args": ["runserver", "0.0.0.0:8000", "--skip-checks"],
             "django": true,
             "cwd": "${workspaceFolder}/smartslot"
         }

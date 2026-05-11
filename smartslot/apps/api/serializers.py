@@ -55,10 +55,22 @@ class OrganisationSerializer(serializers.ModelSerializer):
 
 class ResourceSerializer(serializers.ModelSerializer):
     organisation_name = serializers.CharField(source='organisation.name', read_only=True)
+    photo_url = serializers.SerializerMethodField()
+
+    def get_photo_url(self, obj):
+        if not obj.photo:
+            return None
+        request = self.context.get('request')
+        if request:
+            # Build absolute URL using the request's host so the app can fetch it
+            url = obj.photo.url
+            return request.build_absolute_uri(url)
+        # Fallback: return the relative media path
+        return obj.photo.url
 
     class Meta:
         model = Resource
-        fields = ('id', 'name', 'description', 'photo', 'price',
+        fields = ('id', 'name', 'description', 'photo', 'photo_url', 'price',
                   'category', 'custom_fields', 'organisation',
                   'organisation_name', 'created_at', 'updated_at')
 
