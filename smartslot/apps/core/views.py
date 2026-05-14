@@ -373,13 +373,12 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         qs        = _build_analysis_qs(request)
         echo      = _EchoBuffer()
         writer    = csv.writer(echo)
-        rows      = (writer.write(row) for row in _csv_rows(qs))
+        rows      = (writer.writerow(row) for row in _csv_rows(qs))
         filename  = 'smartslot_analysis_{}.csv'.format(
             timezone.now().strftime('%Y-%m-%d')
         )
         response  = StreamingHttpResponse(rows, content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        # Prevent proxies / browsers from caching the download
         response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response['Pragma']        = 'no-cache'
         response['Expires']       = '0'
