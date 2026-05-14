@@ -13,7 +13,8 @@
         </p>
     </div>
 
-    <div style="display:grid; grid-template-columns:320px 1fr; gap:1.5rem; align-items:start;">
+    <div style="display:grid; grid-template-columns:340px 1fr; gap:1.5rem; align-items:start;"
+         class="resource-grid">
 
         <!-- Add resource form -->
         <div class="card" style="padding:1.75rem;">
@@ -21,13 +22,17 @@
                 <i class="fa-solid fa-plus" style="color:var(--primary); margin-right:8px;"></i>
                 Add Resource
             </div>
-            <form method="post">
+
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="create" />
+
                 <div class="form-group" style="margin-bottom:0.75rem;">
                     <label class="form-label">Name</label>
-                    <input type="text" name="name" class="form-input" placeholder="e.g. Main Boardroom" required />
+                    <input type="text" name="name" class="form-input"
+                           placeholder="e.g. Main Boardroom" required />
                 </div>
+
                 <div class="form-group" style="margin-bottom:0.75rem;">
                     <label class="form-label">Category</label>
                     <select name="category" class="form-input">
@@ -36,15 +41,56 @@
                         {% endfor %}
                     </select>
                 </div>
+
                 <div class="form-group" style="margin-bottom:0.75rem;">
                     <label class="form-label">Description</label>
                     <textarea name="description" class="form-input" rows="2"
-                              placeholder="Brief description..." style="resize:vertical;"></textarea>
+                              placeholder="Brief description..."
+                              style="resize:vertical;"></textarea>
                 </div>
-                <div class="form-group" style="margin-bottom:1.25rem;">
+
+                <div class="form-group" style="margin-bottom:0.75rem;">
                     <label class="form-label">Price (MWK) — 0 for free</label>
-                    <input type="number" name="price" class="form-input" value="0" min="0" step="100" />
+                    <input type="number" name="price" class="form-input"
+                           value="0" min="0" step="100" />
                 </div>
+
+                <!-- Photo upload -->
+                <div class="form-group" style="margin-bottom:1.25rem;">
+                    <label class="form-label">Photo <span style="color:var(--muted-dim); font-weight:400;">(optional)</span></label>
+
+                    <!-- Hidden real file input -->
+                    <input type="file" name="photo" id="photo-input"
+                           accept="image/*" style="display:none;"
+                           onchange="previewPhoto(this)" />
+
+                    <!-- Custom upload button -->
+                    <div id="photo-drop-zone"
+                         onclick="document.getElementById('photo-input').click()"
+                         style="border:2px dashed var(--border); border-radius:var(--r-sm);
+                                padding:1.25rem; text-align:center; cursor:pointer;
+                                transition:border-color 0.15s, background 0.15s;">
+                        <div id="photo-placeholder">
+                            <i class="fa-solid fa-image"
+                               style="font-size:1.6rem; color:var(--muted-dim); margin-bottom:0.5rem; display:block;"></i>
+                            <span style="font-size:0.8rem; color:var(--muted-dim);">
+                                Click to upload a photo
+                            </span>
+                        </div>
+                        <img id="photo-preview" src="" alt="Preview"
+                             style="display:none; max-width:100%; max-height:140px;
+                                    border-radius:var(--r-sm); object-fit:cover;" />
+                    </div>
+
+                    <button type="button" id="photo-clear-btn"
+                            onclick="clearPhoto()"
+                            style="display:none; margin-top:0.5rem; background:none;
+                                   border:none; color:var(--error); font-size:0.8rem;
+                                   cursor:pointer; font-family:inherit; padding:0;">
+                        <i class="fa-solid fa-xmark"></i> Remove photo
+                    </button>
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">
                     <i class="fa-solid fa-plus"></i> Add Resource
                 </button>
@@ -62,6 +108,7 @@
                 <table class="dash-table">
                     <thead>
                         <tr>
+                            <th style="width:56px;"></th>
                             <th>Name</th>
                             <th>Category</th>
                             <th>Price</th>
@@ -71,13 +118,30 @@
                     <tbody>
                         {% for r in resources %}
                         <tr>
+                            <!-- Thumbnail -->
+                            <td style="padding:8px 12px;">
+                                {% if r.photo %}
+                                    <img src="{{ r.photo.url }}" alt="{{ r.name }}"
+                                         style="width:44px; height:44px; object-fit:cover;
+                                                border-radius:var(--r-sm); border:1px solid var(--border);" />
+                                {% else %}
+                                    <div style="width:44px; height:44px; background:var(--border);
+                                                border-radius:var(--r-sm); display:flex;
+                                                align-items:center; justify-content:center;
+                                                color:var(--muted-dim); font-size:1.1rem;">
+                                        <i class="fa-solid fa-image"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td style="font-weight:600;">{{ r.name }}</td>
                             <td><span class="badge badge-primary">{{ r.category }}</span></td>
                             <td>
                                 {% if r.price == 0 %}
                                     <span style="color:var(--success); font-weight:600;">Free</span>
                                 {% else %}
-                                    <span style="color:var(--warning); font-weight:700;">MWK {{ r.price|floatformat:0 }}</span>
+                                    <span style="color:var(--warning); font-weight:700;">
+                                        MWK {{ r.price|floatformat:0 }}
+                                    </span>
                                 {% endif %}
                             </td>
                             <td>
@@ -95,7 +159,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" style="text-align:center; color:var(--muted-dim); padding:2rem;">
+                            <td colspan="5" style="text-align:center; color:var(--muted-dim); padding:2rem;">
                                 No resources yet. Add one using the form.
                             </td>
                         </tr>
@@ -107,4 +171,69 @@
 
     </div>
 </div>
+
+<style>
+@media (max-width: 900px) {
+    .resource-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+
+<script>
+function previewPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('photo-preview');
+        const placeholder = document.getElementById('photo-placeholder');
+        const clearBtn = document.getElementById('photo-clear-btn');
+        const dropZone = document.getElementById('photo-drop-zone');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        clearBtn.style.display = 'inline-block';
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.background = 'rgba(20,184,166,0.04)';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearPhoto() {
+    const input = document.getElementById('photo-input');
+    const preview = document.getElementById('photo-preview');
+    const placeholder = document.getElementById('photo-placeholder');
+    const clearBtn = document.getElementById('photo-clear-btn');
+    const dropZone = document.getElementById('photo-drop-zone');
+    input.value = '';
+    preview.src = '';
+    preview.style.display = 'none';
+    placeholder.style.display = 'block';
+    clearBtn.style.display = 'none';
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background = '';
+}
+
+// Drag-and-drop support
+const dropZone = document.getElementById('photo-drop-zone');
+dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--primary)';
+    dropZone.style.background = 'rgba(20,184,166,0.06)';
+});
+dropZone.addEventListener('dragleave', () => {
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background = '';
+});
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const input = document.getElementById('photo-input');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        previewPhoto(input);
+    }
+});
+</script>
 {% endblock %}

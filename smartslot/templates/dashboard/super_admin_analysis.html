@@ -293,17 +293,19 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-    const TEAL    = '#14B8A6';
+    // Read CSS variables so charts respect light/dark mode
+    const style = getComputedStyle(document.documentElement);
+    const TEAL    = style.getPropertyValue('--primary').trim() || '#14B8A6';
     const AMBER   = '#F59E0B';
     const GREEN   = '#22C55E';
     const RED     = '#EF4444';
     const BLUE    = '#3B82F6';
-    const MUTED   = '#64748B';
-    const SURFACE = '#1E2937';
-    const BORDER  = '#334155';
-    const TEXT    = '#E2E8F0';
+    const MUTED   = style.getPropertyValue('--muted-dim').trim() || '#64748B';
+    const SURFACE = style.getPropertyValue('--surface').trim() || '#1E2937';
+    const BORDER  = style.getPropertyValue('--border').trim() || '#334155';
+    const TEXT    = style.getPropertyValue('--text').trim() || '#E2E8F0';
 
-    Chart.defaults.color = '#94A3B8';
+    Chart.defaults.color = style.getPropertyValue('--muted').trim() || '#94A3B8';
     Chart.defaults.borderColor = BORDER;
     Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 

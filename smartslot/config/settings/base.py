@@ -63,6 +63,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.core.context_processors.site_url',
             ],
         },
     },
@@ -122,15 +123,11 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/resources/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
-# =============================================================================
-# Sessions
-# =============================================================================
-SESSION_COOKIE_AGE = 60 * 2          # 2-minute inactivity timeout
-SESSION_SAVE_EVERY_REQUEST = True    # reset timer on every request
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+# Site URL — used for QR codes, emails, and any absolute URLs.
+# Set SITE_URL in your .env for local dev (e.g. http://192.168.x.x:8000)
+# and in production env vars (e.g. https://smartslot-bh9c.onrender.com).
+SITE_URL = env('SITE_URL', default='https://smartslot-bh9c.onrender.com')
 
-# =============================================================================
 # PayChangu
 # =============================================================================
 PAYCHANGU_SECRET_KEY = env('PAYCHANGU_SECRET_KEY', default='')

@@ -14,8 +14,14 @@
     <!-- QR Code -->
     <div style="background:#fff; border-radius:var(--r); padding:1.5rem;
                 display:flex; flex-direction:column; align-items:center; margin-bottom:1rem;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ request.scheme }}://{{ request.get_host }}/verify/{{ booking.qr_token }}/"
-             alt="QR Code" style="width:200px; height:200px;" />
+        <a href="{{ SITE_URL }}/verify/{{ booking.qr_token }}/"
+           target="_blank" title="Open booking verification page">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ SITE_URL }}/verify/{{ booking.qr_token }}/"
+                 alt="QR Code" style="width:200px; height:200px; display:block;" />
+        </a>
+        <p style="margin-top:0.75rem; font-size:0.75rem; color:#64748B; text-align:center;">
+            Tap to open verification page
+        </p>
     </div>
     <p style="text-align:center; color:var(--muted-dim); font-size:0.8rem; margin-bottom:1.5rem;">
         Booking ID: #{{ booking.id }}
