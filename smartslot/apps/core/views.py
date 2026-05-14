@@ -280,6 +280,77 @@ def dashboard_users_view(request):
 
 # ── Super Admin Analysis ──────────────────────────────────────────────────────
 
+import csv
+from django.http import StreamingHttpResponse
+
+
+class _EchoBuffer:
+    """Minimal write-buffer that csv.writer can use with StreamingHttpResponse."""
+    def write(self, value):
+        return value
+
+
+def _build_analysis_qs(request):
+    """
+    Return a filtered Booking queryset based on GET params.
+    Shared by both the page view and the CSV export so they always agree.
+    """
+    qs = (
+        Booking.objects
+        .select_related('resource', 'user', 'organisation')
+        .order_by('-start_time')
+    )
+    org_id    = request.GET.get('organisation')
+    category  = request.GET.get('category')
+    date_from = request.GET.get('date_from')
+    date_to   = request.GET.get('date_to')
+
+    if org_id:    qs = qs.filter(organisation_id=org_id)
+    if category:  qs = qs.filter(resource__category=category)
+    if date_from: qs = qs.filter(start_time__date__gte=date_from)
+    if date_to:   qs = qs.filter(start_time__date__lte=date_to)
+    return qs
+
+
+def _csv_rows(qs):
+    """
+    Generator that yields one row at a time (header first, then data).
+    Using a generator + StreamingHttpResponse means Django never builds the
+    entire CSV in memory — safe for large datasets.
+    """
+    header = [
+        'Booking ID',
+        'User',
+        'Email',
+        'Resource',
+        'Category',
+        'Organisation',
+        'Status',
+        'Start Time',
+        'End Time',
+        'Price (MWK)',
+        'QR Token',
+        'Created At',
+    ]
+    yield header
+
+    for b in qs.iterator(chunk_size=500):
+        yield [
+            b.id,
+            b.user.get_full_name() or b.user.username,
+            b.user.email,
+            b.resource.name,
+            b.resource.category,
+            b.organisation.name if b.organisation else '',
+            b.status,
+            b.start_time.strftime('%Y-%m-%d %H:%M') if b.start_time else '',
+            b.end_time.strftime('%Y-%m-%d %H:%M')   if b.end_time   else '',
+            '{:.2f}'.format(float(b.resource.price)),
+            b.qr_token,
+            b.created_at.strftime('%Y-%m-%d %H:%M') if b.created_at else '',
+        ]
+
+
 class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboard/super_admin_analysis.html'
     raise_exception = False
@@ -290,8 +361,35 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def handle_no_permission(self):
         return redirect('org_admin_dashboard')
 
+    # ------------------------------------------------------------------
+    # CSV export — intercept before TemplateView.get() renders HTML
+    # ------------------------------------------------------------------
+    def get(self, request, *args, **kwargs):
+        if request.GET.get('export') == 'csv':
+            return self._csv_response(request)
+        return super().get(request, *args, **kwargs)
+
+    def _csv_response(self, request):
+        qs        = _build_analysis_qs(request)
+        echo      = _EchoBuffer()
+        writer    = csv.writer(echo)
+        rows      = (writer.write(row) for row in _csv_rows(qs))
+        filename  = 'smartslot_analysis_{}.csv'.format(
+            timezone.now().strftime('%Y-%m-%d')
+        )
+        response  = StreamingHttpResponse(rows, content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        # Prevent proxies / browsers from caching the download
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma']        = 'no-cache'
+        response['Expires']       = '0'
+        return response
+
+    # ------------------------------------------------------------------
+    # Normal page render
+    # ------------------------------------------------------------------
     def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
+        ctx   = super().get_context_data(**kwargs)
         today = timezone.now().date()
 
         org_id    = self.request.GET.get('organisation')
@@ -299,15 +397,11 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         date_from = self.request.GET.get('date_from')
         date_to   = self.request.GET.get('date_to')
 
-        qs = Booking.objects.select_related('resource', 'user', 'organisation')
-        if org_id:    qs = qs.filter(organisation_id=org_id)
-        if category:  qs = qs.filter(resource__category=category)
-        if date_from: qs = qs.filter(start_time__date__gte=date_from)
-        if date_to:   qs = qs.filter(start_time__date__lte=date_to)
+        qs = _build_analysis_qs(self.request)
 
         ctx['total_bookings']      = qs.count()
         ctx['active_bookings']     = qs.filter(status='Booked').count()
-        ctx['completed_bookings']  = qs.filter(status='Booked').count()  # alias for display
+        ctx['completed_bookings']  = qs.filter(status='Booked').count()
         ctx['cancelled_bookings']  = qs.filter(status='Cancelled').count()
         ctx['total_revenue']       = qs.filter(status='Booked').aggregate(
             rev=Sum('resource__price'))['rev'] or 0
@@ -324,9 +418,14 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['status_counts'] = json.dumps([s['count'] for s in status_data])
 
         thirty_days_ago = today - timezone.timedelta(days=29)
-        trend = (Booking.objects.filter(start_time__date__gte=thirty_days_ago)
-                 .annotate(day=TruncDate('start_time')).values('day')
-                 .annotate(count=Count('id')).order_by('day'))
+        trend = (
+            Booking.objects
+            .filter(start_time__date__gte=thirty_days_ago)
+            .annotate(day=TruncDate('start_time'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
         trend_map = {str(t['day']): t['count'] for t in trend}
         trend_labels, trend_values = [], []
         for i in range(30):
@@ -336,8 +435,12 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['trend_labels'] = json.dumps(trend_labels)
         ctx['trend_values'] = json.dumps(trend_values)
 
-        peak = (qs.annotate(hour=TruncHour('start_time')).values('hour')
-                .annotate(count=Count('id')).order_by('hour'))
+        peak = (
+            qs.annotate(hour=TruncHour('start_time'))
+            .values('hour')
+            .annotate(count=Count('id'))
+            .order_by('hour')
+        )
         hour_map = {}
         for p in peak:
             if p['hour']:
@@ -346,9 +449,12 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['peak_labels'] = json.dumps([f"{h:02d}:00" for h in range(24)])
         ctx['peak_values'] = json.dumps([hour_map.get(h, 0) for h in range(24)])
 
-        rev_by_org = (Booking.objects.filter(status='Booked')
-                      .values('organisation__name').annotate(rev=Sum('resource__price'))
-                      .order_by('-rev')[:8])
+        rev_by_org = (
+            Booking.objects.filter(status='Booked')
+            .values('organisation__name')
+            .annotate(rev=Sum('resource__price'))
+            .order_by('-rev')[:8]
+        )
         ctx['rev_org_labels'] = json.dumps([r['organisation__name'] or 'Unknown' for r in rev_by_org])
         ctx['rev_org_values'] = json.dumps([float(r['rev'] or 0) for r in rev_by_org])
 
@@ -363,7 +469,7 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['selected_date_from'] = date_from
         ctx['selected_date_to']   = date_to
         ctx['recent_bookings']    = qs.order_by('-created_at')[:10]
-        ctx['organisation']       = None  # super admin — show SmartSlot in sidebar
+        ctx['organisation']       = None
         return ctx
 
 
