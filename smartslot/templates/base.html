@@ -6,7 +6,7 @@
     <title>SmartSlot</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
-        /* ── Design tokens — dark mode (default) ── */
+        /* ── Design tokens — dark ── */
         :root, [data-theme="dark"] {
             --bg:           #0F172A;
             --surface:      #1E2937;
@@ -25,8 +25,7 @@
             --nav-hover-bg: rgba(255,255,255,0.05);
             --input-scheme: dark;
         }
-
-        /* ── Light mode tokens ── */
+        /* ── Design tokens — light ── */
         [data-theme="light"] {
             --bg:           #F8FAFC;
             --surface:      #FFFFFF;
@@ -54,88 +53,160 @@
             font-size: 16px;
         }
 
-        /* ── Navbar ── */
+        /* ── Navbar — 3-zone layout ── */
         .navbar {
             background: var(--surface);
             border-bottom: 1px solid var(--border);
-            padding: 0 2rem;
+            padding: 0 1.5rem;
             height: 60px;
-            display: flex;
+            display: grid;
+            /* left=logo | center=page links | right=actions */
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            justify-content: space-between;
-            position: sticky; top: 0; z-index: 100;
+            position: sticky; top: 0; z-index: 200;
         }
-        .logo { font-size: 1.35rem; font-weight: 800; color: var(--primary); text-decoration: none; }
-        .nav-links { display: flex; align-items: center; gap: 0.2rem; }
-        .nav-links a {
+        .logo {
+            font-size: 1.35rem; font-weight: 800; color: var(--primary);
+            text-decoration: none; flex-shrink: 0; justify-self: start;
+        }
+
+        /* Centre zone — page nav links */
+        .nav-center {
+            display: flex; align-items: center; gap: 0.15rem;
+            justify-self: center;
+        }
+        .nav-center a {
             color: var(--muted); text-decoration: none;
             font-size: 0.875rem; font-weight: 500;
             padding: 6px 13px; border-radius: var(--r-sm);
-            transition: color 0.15s, background 0.15s;
+            transition: color 0.15s, background 0.15s; white-space: nowrap;
         }
-        .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-        .nav-links a.active { color: var(--primary); background: rgba(20,184,166,0.08); }
-        .nav-divider { width: 1px; height: 20px; background: var(--border); margin: 0 0.4rem; }
+        .nav-center a:hover  { color: var(--text); background: var(--nav-hover-bg); }
+        .nav-center a.active { color: var(--primary); background: rgba(20,184,166,0.08); }
+
+        /* Right zone — fixed actions */
+        .nav-right {
+            display: flex; align-items: center; gap: 0.4rem;
+            justify-self: end;
+        }
+        .nav-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
         .nav-logout-form { display: inline; }
         .nav-logout-btn {
             background: none; border: 1px solid var(--error); color: #f87171;
             font-size: 0.875rem; font-weight: 500; padding: 5px 13px;
             border-radius: var(--r-sm); cursor: pointer; font-family: inherit;
-            transition: background 0.15s, color 0.15s;
+            transition: background 0.15s, color 0.15s; white-space: nowrap;
         }
         .nav-logout-btn:hover { background: var(--error); color: #fff; }
         .nav-login-btn {
             background: var(--primary); color: #fff !important;
             font-size: 0.875rem; font-weight: 600; padding: 6px 16px;
-            border-radius: var(--r-sm); text-decoration: none; transition: background 0.15s;
+            border-radius: var(--r-sm); text-decoration: none;
+            transition: background 0.15s; white-space: nowrap;
         }
         .nav-login-btn:hover { background: var(--primary-dark) !important; }
+        .nav-signup-btn {
+            background: transparent; color: var(--primary) !important;
+            font-size: 0.875rem; font-weight: 600; padding: 5px 15px;
+            border-radius: var(--r-sm); text-decoration: none;
+            border: 1.5px solid var(--primary); transition: background 0.15s; white-space: nowrap;
+        }
+        .nav-signup-btn:hover { background: rgba(20,184,166,0.08) !important; }
         .nav-admin-btn {
             color: var(--warning) !important; font-size: 0.875rem; font-weight: 600;
             padding: 5px 13px; border-radius: var(--r-sm);
             border: 1px solid rgba(245,158,11,0.35); text-decoration: none;
-            transition: background 0.15s;
+            transition: background 0.15s; white-space: nowrap;
         }
         .nav-admin-btn:hover { background: rgba(245,158,11,0.1) !important; }
         .nav-user {
             font-size: 0.78rem; font-weight: 600; color: var(--muted-dim);
             padding: 4px 10px; background: var(--bg); border-radius: 20px;
+            white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis;
         }
+
+        /* ── Theme toggle ── */
+        .theme-toggle {
+            background: none; border: 1px solid var(--border);
+            color: var(--muted); width: 34px; height: 34px;
+            border-radius: var(--r-sm); cursor: pointer; font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s; flex-shrink: 0;
+        }
+        .theme-toggle:hover { background: var(--nav-hover-bg); color: var(--text); }
+
+        /* ── Hamburger button (mobile only) ── */
+        .nav-hamburger {
+            display: none;
+            background: none; border: 1px solid var(--border);
+            color: var(--muted); width: 36px; height: 36px;
+            border-radius: var(--r-sm); cursor: pointer; font-size: 1rem;
+            align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s; flex-shrink: 0;
+        }
+        .nav-hamburger:hover { background: var(--nav-hover-bg); color: var(--text); }
+
+        /* ── Mobile drawer overlay ── */
+        .mobile-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 150;
+            background: rgba(0,0,0,0.5);
+        }
+        .mobile-overlay.open { display: block; }
+
+        /* ── Mobile drawer ── */
+        .mobile-drawer {
+            position: fixed; top: 0; right: -280px; width: 280px; height: 100vh;
+            background: var(--surface); border-left: 1px solid var(--border);
+            z-index: 160; display: flex; flex-direction: column;
+            transition: right 0.25s ease; overflow-y: auto;
+            padding: 1rem;
+        }
+        .mobile-drawer.open { right: 0; }
+        .mobile-drawer-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+        }
+        .mobile-drawer-close {
+            background: none; border: none; color: var(--muted);
+            font-size: 1.1rem; cursor: pointer; padding: 4px 8px;
+        }
+        .mobile-drawer a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0.7rem 1rem; color: var(--muted);
+            border-radius: var(--r-sm); font-weight: 600; font-size: 0.9rem;
+            text-decoration: none; margin-bottom: 0.25rem; transition: all 0.15s;
+        }
+        .mobile-drawer a:hover, .mobile-drawer a.active {
+            color: var(--primary); background: rgba(20,184,166,0.1);
+        }
+        .mobile-drawer .drawer-divider {
+            border: none; border-top: 1px solid var(--border); margin: 0.75rem 0;
+        }
+        .mobile-drawer .drawer-user {
+            font-size: 0.8rem; color: var(--muted-dim); padding: 0 1rem 0.5rem;
+        }
+        .mobile-drawer .drawer-logout-btn {
+            width: 100%; text-align: left; padding: 0.7rem 1rem;
+            font-size: 0.9rem; color: var(--error); background: none;
+            border: none; cursor: pointer; font-weight: 600;
+            border-radius: var(--r-sm); font-family: inherit;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .mobile-drawer .drawer-logout-btn:hover { background: rgba(239,68,68,0.1); }
+        .mobile-drawer .drawer-theme-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.5rem 1rem; margin-top: 0.5rem;
+        }
+        .mobile-drawer .drawer-theme-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
 
         /* ── Layout ── */
         .layout-wrapper { display: flex; min-height: calc(100vh - 60px); }
 
-        /* ── Sidebar (OrgAdmin) ── */
-        .sidebar {
-            width: 256px; background: var(--surface);
-            border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; flex-shrink: 0;
-        }
-        .sidebar-nav { flex: 1; padding: 1rem; overflow-y: auto; }
-        .sidebar-nav a {
-            display: flex; align-items: center; gap: 10px;
-            padding: 0.6rem 1rem; color: var(--muted);
-            border-radius: var(--r-sm); font-weight: 600;
-            text-decoration: none; margin-bottom: 0.4rem; transition: all 0.15s;
-        }
-        .sidebar-nav a:hover { color: var(--text); background: var(--border); }
-        .sidebar-nav a.active { color: var(--primary); background: rgba(20,184,166,0.1); }
-        .sidebar-footer { padding: 1rem; border-top: 1px solid var(--border); }
-        .sidebar-user { margin-bottom: 0.75rem; }
-        .sidebar-user-name { font-size: 0.875rem; color: #cbd5e1; font-weight: 600; }
-        .sidebar-user-role { font-size: 0.75rem; color: var(--muted-dim); margin-top: 2px; }
-        .sidebar-logout-btn {
-            width: 100%; text-align: left; padding: 0.5rem 1rem;
-            font-size: 0.875rem; color: var(--error); background: none;
-            border: none; cursor: pointer; font-weight: 600;
-            border-radius: var(--r-sm); transition: all 0.15s; font-family: inherit;
-        }
-        .sidebar-logout-btn:hover { background: rgba(239,68,68,0.1); color: #fca5a5; }
-
         /* ── Main content ── */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
-        .content-area { padding: 2rem; flex: 1; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.5rem; width: 100%; }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; min-width: 0; }
+        .content-area { padding: 1.5rem; flex: 1; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem; width: 100%; }
 
         /* ── Card ── */
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); }
@@ -156,7 +227,7 @@
         .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
         .btn-outline:hover { background: rgba(20,184,166,0.08); }
         .btn-ghost { background: var(--border); color: var(--muted); }
-        .btn-ghost:hover { background: #3d4f66; color: var(--text); }
+        .btn-ghost:hover { background: var(--muted-dim); color: var(--text); }
 
         /* ── Badges ── */
         .badge {
@@ -198,7 +269,7 @@
         .alert-info    { background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); color: var(--primary); }
 
         /* ── Flash messages ── */
-        .messages { list-style: none; padding: 0.75rem 1.5rem 0; }
+        .messages { list-style: none; padding: 0.75rem 1.25rem 0; }
         .messages li {
             padding: 10px 16px; border-radius: var(--r-sm);
             font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;
@@ -210,40 +281,50 @@
 
         hr.divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
 
-        /* ── Theme toggle button ── */
-        .theme-toggle {
-            background: none; border: 1px solid var(--border);
-            color: var(--muted); width: 34px; height: 34px;
-            border-radius: var(--r-sm); cursor: pointer; font-size: 0.9rem;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.15s, color 0.15s;
-            flex-shrink: 0;
+        /* ── Mobile breakpoint ── */
+        @media (max-width: 768px) {
+            .nav-center  { display: none; }
+            .nav-right   { display: none; }
+            .nav-hamburger { display: flex; }
+            /* Switch navbar back to flex for mobile (logo left, hamburger right) */
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                padding: 0 1rem;
+            }
+            .logo { justify-self: unset; }
+            .container { padding: 1.25rem 1rem; }
+            .content-area { padding: 1rem; }
         }
-        .theme-toggle:hover { background: var(--nav-hover-bg); color: var(--text); }
     </style>
 </head>
 <body>
 
     <!-- Navbar -->
     <nav class="navbar">
+        <!-- Left: logo -->
         <a href="/" class="logo">SmartSlot</a>
-        <div class="nav-links">
+
+        <!-- Centre: page nav links -->
+        <div class="nav-center">
             <a href="/" {% if request.path == '/' %}class="active"{% endif %}>Home</a>
             <a href="/resources/" {% if '/resources' in request.path %}class="active"{% endif %}>Resources</a>
             <a href="/bookings/" {% if '/bookings' in request.path %}class="active"{% endif %}>My Bookings</a>
-            <div class="nav-divider"></div>
+        </div>
+
+        <!-- Right: fixed actions -->
+        <div class="nav-right">
             <a href="{% url 'admin_login' %}" class="nav-admin-btn">Admin Panel</a>
-            <div class="nav-divider"></div>
             {% if user.is_authenticated and user.is_superuser or user.is_authenticated and user.role == 'PlatformAdmin' %}
+            <div class="nav-divider"></div>
             <a href="{% url 'super_admin_analysis' %}" {% if '/analysis' in request.path %}class="active"{% endif %}
                style="color:#a78bfa !important; font-size:0.875rem; font-weight:600;
                       padding:5px 13px; border-radius:var(--r-sm);
-                      border:1px solid rgba(167,139,250,0.35); text-decoration:none;
-                      transition:background 0.15s;">
+                      border:1px solid rgba(167,139,250,0.35); text-decoration:none;">
                 <i class="fa-solid fa-chart-line"></i> Analysis
             </a>
-            <div class="nav-divider"></div>
             {% endif %}
+            <div class="nav-divider"></div>
             {% if user.is_authenticated %}
                 <span class="nav-user">{{ user.username }}</span>
                 <form class="nav-logout-form" action="/accounts/logout/" method="post">
@@ -251,14 +332,75 @@
                     <button type="submit" class="nav-logout-btn">Log Out</button>
                 </form>
             {% else %}
-                <a href="/accounts/signup/">Sign Up</a>
+                <a href="/accounts/signup/" class="nav-signup-btn">Sign Up</a>
                 <a href="/accounts/login/" class="nav-login-btn">Login</a>
             {% endif %}
-            <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode" onclick="toggleTheme()">
+            <button class="theme-toggle" id="theme-toggle" title="Toggle theme" onclick="toggleTheme()">
                 <i class="fa-solid fa-moon" id="theme-icon"></i>
             </button>
         </div>
+
+        <!-- Mobile right side: theme toggle + hamburger (hidden on desktop) -->
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+            <button class="theme-toggle" id="theme-toggle-mobile" title="Toggle theme" onclick="toggleTheme()" style="display:none;">
+                <i class="fa-solid fa-moon" id="theme-icon-mobile"></i>
+            </button>
+            <button class="nav-hamburger" id="nav-hamburger" onclick="openDrawer()" aria-label="Open menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
     </nav>
+
+    <!-- Mobile overlay -->
+    <div class="mobile-overlay" id="mobile-overlay" onclick="closeDrawer()"></div>
+
+    <!-- Mobile drawer -->
+    <div class="mobile-drawer" id="mobile-drawer">
+        <div class="mobile-drawer-header">
+            <span style="font-weight:800; color:var(--primary); font-size:1.1rem;">SmartSlot</span>
+            <button class="mobile-drawer-close" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <a href="/" {% if request.path == '/' %}class="active"{% endif %}>
+            <i class="fa-solid fa-house"></i> Home
+        </a>
+        <a href="/resources/" {% if '/resources' in request.path %}class="active"{% endif %}>
+            <i class="fa-solid fa-box"></i> Resources
+        </a>
+        <a href="/bookings/" {% if '/bookings' in request.path %}class="active"{% endif %}>
+            <i class="fa-regular fa-calendar-check"></i> My Bookings
+        </a>
+        <hr class="drawer-divider">
+        <a href="{% url 'admin_login' %}" style="color:var(--warning) !important;">
+            <i class="fa-solid fa-gauge"></i> Admin Panel
+        </a>
+        {% if user.is_authenticated and user.is_superuser or user.is_authenticated and user.role == 'PlatformAdmin' %}
+        <a href="{% url 'super_admin_analysis' %}" style="color:#a78bfa !important;">
+            <i class="fa-solid fa-chart-line"></i> Analysis
+        </a>
+        {% endif %}
+        <hr class="drawer-divider">
+        {% if user.is_authenticated %}
+            <div class="drawer-user">Signed in as <strong>{{ user.username }}</strong></div>
+            <form action="/accounts/logout/" method="post">
+                {% csrf_token %}
+                <button type="submit" class="drawer-logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Log Out
+                </button>
+            </form>
+        {% else %}
+            <a href="/accounts/signup/"><i class="fa-solid fa-user-plus"></i> Sign Up</a>
+            <a href="/accounts/login/" style="color:var(--primary) !important; font-weight:700;">
+                <i class="fa-solid fa-right-to-bracket"></i> Login
+            </a>
+        {% endif %}
+        <div class="drawer-theme-row">
+            <span class="drawer-theme-label"><i class="fa-solid fa-circle-half-stroke"></i> Theme</span>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                <i class="fa-solid fa-moon" id="theme-icon-drawer"></i>
+            </button>
+        </div>
+    </div>
 
     <!-- Flash messages -->
     {% if messages %}
@@ -269,55 +411,26 @@
 
     <!-- Layout wrapper -->
     <div class="layout-wrapper">
-
-        {% if user.is_authenticated and user.role == 'OrganisationAdmin' %}
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="/resources/" {% if '/resources' in request.path %}class="active"{% endif %}>
-                    <i class="fa-solid fa-grid-2"></i> Resources
-                </a>
-                <a href="/bookings/" {% if '/bookings' in request.path %}class="active"{% endif %}>
-                    <i class="fa-regular fa-calendar-check"></i> Bookings
-                </a>
-                <a href="/admin/">
-                    <i class="fa-solid fa-gauge"></i> Admin Panel
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <div class="sidebar-user">
-                    <div class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</div>
-                    <div class="sidebar-user-role">{{ user.get_role_display }}</div>
-                </div>
-                <form action="/accounts/logout/" method="post">
-                    {% csrf_token %}
-                    <button type="submit" class="sidebar-logout-btn">
-                        <i class="fa-solid fa-right-from-bracket"></i> Log Out
-                    </button>
-                </form>
-            </div>
-        </aside>
-        {% endif %}
-
-        <main class="main-content" {% if not user.is_authenticated or user.role != 'OrganisationAdmin' %}style="width:100%;"{% endif %}>
-            <div class="{% if user.is_authenticated and user.role == 'OrganisationAdmin' %}content-area{% else %}container{% endif %}">
+        <main class="main-content" style="width:100%;">
+            <div class="container">
                 {% block content %}
 
                 {% if show_welcome %}
-                <div style="text-align:center; padding:4rem 0 2rem;">
-                    <h1 style="font-size:3.4rem; font-weight:800; color:var(--primary); margin-bottom:0.75rem;">SmartSlot</h1>
-                    <p style="color:var(--muted); font-size:1.2rem; max-width:520px; margin:0 auto 2.5rem; line-height:1.8;">
+                <div style="text-align:center; padding:3rem 0 2rem;">
+                    <h1 style="font-size:clamp(2rem,6vw,3.4rem); font-weight:800; color:var(--primary); margin-bottom:0.75rem;">SmartSlot</h1>
+                    <p style="color:var(--muted); font-size:clamp(0.95rem,2.5vw,1.2rem); max-width:520px; margin:0 auto 2.5rem; line-height:1.8;">
                         The smart way to book and manage office resources.<br>
                         Real-time availability &middot; PayChangu payments &middot; QR verification
                     </p>
                     <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
-                        <a href="/resources/" class="btn btn-primary" style="font-size:1.05rem; padding:14px 36px;">
+                        <a href="/resources/" class="btn btn-primary" style="font-size:1rem; padding:13px 28px;">
                             <i class="fa-solid fa-calendar-check"></i> Browse Resources
                         </a>
-                        <a href="/admin/" class="btn btn-outline" style="font-size:1.05rem; padding:14px 36px;">
+                        <a href="{% url 'admin_login' %}" class="btn btn-outline" style="font-size:1rem; padding:13px 28px;">
                             <i class="fa-solid fa-gauge"></i> Admin Panel
                         </a>
                     </div>
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.25rem; margin-top:3.5rem; text-align:left;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1.25rem; margin-top:3rem; text-align:left;">
                         <div class="card" style="padding:1.5rem;">
                             <div style="font-size:1.6rem; margin-bottom:0.75rem; color:var(--primary);"><i class="fa-regular fa-calendar-check"></i></div>
                             <div style="font-weight:700; margin-bottom:0.4rem;">Real-time Calendar</div>
@@ -340,31 +453,52 @@
                 {% endblock %}
             </div>
         </main>
-
     </div>
 
 <script>
-    // ── Theme toggle ──────────────────────────────────────────────
-    const html = document.documentElement;
-    const icon = document.getElementById('theme-icon');
+    // ── Theme ──────────────────────────────────────────────────────
+    const html  = document.documentElement;
+    const THEME_KEY = 'smartslot-theme';
 
-    // Apply saved theme on load
-    const saved = localStorage.getItem('smartslot-theme') || 'dark';
+    const saved = localStorage.getItem(THEME_KEY) || 'dark';
     html.setAttribute('data-theme', saved);
-    updateIcon(saved);
+    applyAllIcons(saved);
 
     function toggleTheme() {
-        const current = html.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
+        const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         html.setAttribute('data-theme', next);
-        localStorage.setItem('smartslot-theme', next);
-        updateIcon(next);
+        localStorage.setItem(THEME_KEY, next);
+        applyAllIcons(next);
     }
 
-    function updateIcon(theme) {
-        if (!icon) return;
-        icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    function applyAllIcons(theme) {
+        const cls = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        ['theme-icon','theme-icon-mobile','theme-icon-drawer'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.className = cls;
+        });
     }
+
+    // ── Mobile drawer ──────────────────────────────────────────────
+    function openDrawer() {
+        document.getElementById('mobile-drawer').classList.add('open');
+        document.getElementById('mobile-overlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer() {
+        document.getElementById('mobile-drawer').classList.remove('open');
+        document.getElementById('mobile-overlay').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // Show mobile-only theme toggle when hamburger is visible
+    function syncMobileToggle() {
+        const isMobile = window.innerWidth <= 768;
+        const mobileToggle = document.getElementById('theme-toggle-mobile');
+        if (mobileToggle) mobileToggle.style.display = isMobile ? 'flex' : 'none';
+    }
+    syncMobileToggle();
+    window.addEventListener('resize', syncMobileToggle);
 </script>
 </body>
 </html>
