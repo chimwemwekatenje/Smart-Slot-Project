@@ -440,13 +440,17 @@ def dashboard_org_resources_view(request):
             category    = request.POST.get('category', '').strip()
             description = request.POST.get('description', '').strip()
             price       = request.POST.get('price', '0') or '0'
+            photo       = request.FILES.get('photo')
             if name and category and org:
-                Resource.objects.create(
+                resource = Resource(
                     name=name, category=category,
                     description=description,
                     price=float(price),
                     organisation=org,
                 )
+                if photo:
+                    resource.photo = photo
+                resource.save()
                 messages.success(request, f'Resource "{name}" created.')
             return redirect('dashboard_org_resources')
 
