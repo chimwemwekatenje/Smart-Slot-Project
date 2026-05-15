@@ -14,7 +14,7 @@ class BookingListView(LoginRequiredMixin, ListView):
     template_name = 'bookings/booking_list.html'
     context_object_name = 'bookings'
 
-    STATUSES = ['All', 'Booked', 'Paid', 'Pending', 'Cancelled']
+    STATUSES = ['All', 'Booked', 'Cancelled']
 
     def get_queryset(self):
         qs = Booking.objects.filter(user=self.request.user).order_by('-start_time')

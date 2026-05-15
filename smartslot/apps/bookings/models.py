@@ -14,7 +14,7 @@ class Booking(BaseModel):
         CANCELLED = 'Cancelled', 'Cancelled'
 
     # Active statuses — used for overlap detection
-    ACTIVE_STATUSES = ['Pending', 'Booked', 'Paid']
+    ACTIVE_STATUSES = ['Booked', 'Paid']
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
