@@ -391,6 +391,10 @@
                    {% if request.resolver_match.url_name == 'dashboard_organisations' or request.resolver_match.url_name == 'dashboard_org_create' or request.resolver_match.url_name == 'dashboard_org_edit' %}class="active"{% endif %}>
                     <i class="fa-solid fa-building"></i> Organisations
                 </a>
+                <a href="{% url 'dashboard_org_applications' %}"
+                   {% if request.resolver_match.url_name == 'dashboard_org_applications' or request.resolver_match.url_name == 'dashboard_org_application_detail' %}class="active"{% endif %}>
+                    <i class="fa-solid fa-building-circle-check"></i> Applications
+                </a>
                 <a href="{% url 'dashboard_users' %}"
                    {% if request.resolver_match.url_name == 'dashboard_users' %}class="active"{% endif %}>
                     <i class="fa-solid fa-users"></i> Users

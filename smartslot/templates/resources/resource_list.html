@@ -65,8 +65,8 @@
              onmouseout="this.style.transform=''; this.style.boxShadow='';">
 
             <!-- Photo / placeholder — mirrors ResourceCard image block -->
-            {% if resource.photo %}
-                <img src="{{ resource.photo.url }}" alt="{{ resource.name }}"
+            {% if resource.image %}
+                <img src="{{ resource.image }}" alt="{{ resource.name }}"
                      style="width:160px; min-height:130px; object-fit:cover; flex-shrink:0;" />
             {% else %}
                 <div style="width:160px; min-height:130px; background:var(--border); flex-shrink:0;

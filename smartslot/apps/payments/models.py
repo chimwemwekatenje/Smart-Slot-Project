@@ -8,7 +8,7 @@ class Payment(models.Model):
         FAILED = 'Failed', 'Failed'
         
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='payments')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
     paychangu_reference = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(
         max_length=20, 

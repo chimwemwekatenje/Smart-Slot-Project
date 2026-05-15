@@ -90,6 +90,7 @@ DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 DATABASES['default'].setdefault('OPTIONS', {})
 DATABASES['default']['OPTIONS']['sslmode'] = 'require'
 
+# Supabase Storage — for persistent image uploads
 SUPABASE_URL = env('SUPABASE_URL', default='')
 SUPABASE_KEY = env('SUPABASE_KEY', default='')
 # =============================================================================

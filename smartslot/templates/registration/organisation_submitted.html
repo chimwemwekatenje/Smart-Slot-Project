@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display:flex; align-items:flex-start; justify-content:center; padding:2rem 0 4rem;">
+<div style="width:100%; max-width:640px;">
+    <div class="card" style="padding:2rem; text-align:center;">
+        <div style="width:64px; height:64px; border-radius:999px; background:rgba(20,184,166,0.12);
+                    color:var(--primary); display:flex; align-items:center; justify-content:center;
+                    margin:0 auto 1rem; font-size:1.6rem;">
+            <i class="fa-solid fa-building-circle-check"></i>
+        </div>
+        <h1 style="font-size:1.6rem; color:var(--text); margin-bottom:0.75rem;">Application Submitted</h1>
+        <p style="color:var(--muted); line-height:1.6; margin-bottom:1.5rem;">
+            {{ application.organisation_name }} has been submitted for verification.
+            The SmartSlot super admin team will review your company details
+            and manually verify the listed resources.
+        </p>
+        <p style="color:var(--muted); line-height:1.6; margin-bottom:1.5rem;">
+            If approved, you will receive an email with the next payment step.
+            If not approved, the email will explain what needs to be fixed before registering again.
+        </p>
+        <a href="{% url 'home' %}" class="btn btn-primary">Done</a>
+    </div>
+</div>
+</div>
+{% endblock %}

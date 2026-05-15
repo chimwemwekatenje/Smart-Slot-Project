@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Organisation
+from .models import Organisation, OrganisationApplication, ApplicationResource
 
 
 @admin.register(Organisation)
@@ -36,3 +36,27 @@ class OrganisationAdmin(admin.ModelAdmin):
             'font-size:20px;">🏢</div>'
         )
     logo_preview.short_description = 'Logo'
+
+
+class ApplicationResourceInline(admin.TabularInline):
+    model = ApplicationResource
+    extra = 0
+    readonly_fields = ('verified_at', 'created_at', 'updated_at')
+    show_change_link = True
+
+
+@admin.register(OrganisationApplication)
+class OrganisationApplicationAdmin(admin.ModelAdmin):
+    list_display = ('organisation_name', 'contact_email', 'status', 'submitted_at', 'reviewed_at')
+    list_filter = ('status', 'submitted_at', 'reviewed_at')
+    search_fields = ('organisation_name', 'contact_name', 'contact_email')
+    readonly_fields = ('verification_token', 'submitted_at', 'updated_at')
+    inlines = (ApplicationResourceInline,)
+
+
+@admin.register(ApplicationResource)
+class ApplicationResourceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'application', 'category', 'price', 'status', 'verified_at')
+    list_filter = ('status', 'category', 'created_at')
+    search_fields = ('name', 'application__organisation_name')
+    readonly_fields = ('verified_at', 'created_at', 'updated_at')

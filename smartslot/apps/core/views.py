@@ -3,14 +3,18 @@ from django.views.generic.edit import CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
+from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate, TruncHour
 from django import forms as dj_forms
 from apps.resources.models import Resource
 from apps.bookings.models import Booking
-from apps.core.models import Organisation
+from apps.core.models import ApplicationResource, Organisation, OrganisationApplication
 from apps.core.mixins import OrgScopedMixin
 import json
 
@@ -472,6 +476,124 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return ctx
 
 
+class DashboardOrganisationApplicationListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'dashboard/organisation_applications.html'
+    raise_exception = False
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.role == 'PlatformAdmin'
+
+    def handle_no_permission(self):
+        return redirect('org_admin_dashboard')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        status_filter = self.request.GET.get('status', 'All')
+        qs = OrganisationApplication.objects.prefetch_related('resources').order_by('-submitted_at')
+        if status_filter and status_filter != 'All':
+            qs = qs.filter(status=status_filter)
+        ctx['applications'] = qs
+        ctx['statuses'] = ['All'] + [choice[0] for choice in OrganisationApplication.StatusChoices.choices]
+        ctx['current_status'] = status_filter
+        ctx['organisation'] = None
+        return ctx
+
+
+@login_required(login_url='/dashboard/login/')
+def dashboard_organisation_application_detail_view(request, pk):
+    if not (request.user.is_superuser or request.user.role == 'PlatformAdmin'):
+        return redirect('org_admin_dashboard')
+
+    application = get_object_or_404(
+        OrganisationApplication.objects.prefetch_related('resources'),
+        pk=pk,
+    )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'verify_resource':
+            resource = get_object_or_404(ApplicationResource, pk=request.POST.get('resource_id'), application=application)
+            resource.status = ApplicationResource.StatusChoices.VERIFIED
+            resource.admin_notes = request.POST.get('admin_notes', '').strip()
+            resource.verified_at = timezone.now()
+            resource.save(update_fields=['status', 'admin_notes', 'verified_at', 'updated_at'])
+            if application.status == OrganisationApplication.StatusChoices.SUBMITTED:
+                application.status = OrganisationApplication.StatusChoices.UNDER_REVIEW
+                application.save(update_fields=['status', 'updated_at'])
+            messages.success(request, f'Resource "{resource.name}" marked as verified.')
+            return redirect('dashboard_org_application_detail', pk=application.pk)
+
+        if action == 'unverify_resource':
+            resource = get_object_or_404(ApplicationResource, pk=request.POST.get('resource_id'), application=application)
+            resource.status = ApplicationResource.StatusChoices.PENDING
+            resource.verified_at = None
+            resource.save(update_fields=['status', 'verified_at', 'updated_at'])
+            messages.warning(request, f'Resource "{resource.name}" moved back to pending.')
+            return redirect('dashboard_org_application_detail', pk=application.pk)
+
+        if action == 'approve_for_payment':
+            if not application.all_resources_verified:
+                messages.error(request, 'All resources must be verified before approval.')
+                return redirect('dashboard_org_application_detail', pk=application.pk)
+            application.status = OrganisationApplication.StatusChoices.APPROVED_FOR_PAYMENT
+            application.reviewed_at = timezone.now()
+            application.save(update_fields=['status', 'reviewed_at', 'updated_at'])
+            _send_application_email(
+                application,
+                subject='SmartSlot organisation verification approved',
+                message=(
+                    f'Hello {application.contact_name},\n\n'
+                    f'{application.organisation_name} has been approved for SmartSlot verification. '
+                    'The next step is payment of the MWK 200,000 registration fee. '
+                    'A payment link will be sent once payment onboarding is enabled.\n\n'
+                    'After successful payment, the organisation will be activated and the SmartSlot super admin '
+                    'will create your organisation admin account.'
+                ),
+            )
+            messages.success(request, 'Application approved for payment and notification email queued.')
+            return redirect('dashboard_org_application_detail', pk=application.pk)
+
+        if action == 'reject':
+            reason = request.POST.get('rejection_reason', '').strip()
+            if not reason:
+                messages.error(request, 'Add a rejection reason before rejecting.')
+                return redirect('dashboard_org_application_detail', pk=application.pk)
+            application.status = OrganisationApplication.StatusChoices.REJECTED
+            application.rejection_reason = reason
+            application.reviewed_at = timezone.now()
+            application.save(update_fields=['status', 'rejection_reason', 'reviewed_at', 'updated_at'])
+            _send_application_email(
+                application,
+                subject='SmartSlot organisation verification not approved',
+                message=(
+                    f'Hello {application.contact_name},\n\n'
+                    f'Your registration for {application.organisation_name} was not approved.\n\n'
+                    f'Reason:\n{reason}\n\n'
+                    'Please fix the issue and submit a new organisation registration.'
+                ),
+            )
+            messages.warning(request, 'Application rejected and notification email queued.')
+            return redirect('dashboard_org_applications')
+
+    return render(request, 'dashboard/organisation_application_detail.html', {
+        'application': application,
+        'organisation': None,
+    })
+
+
+def _send_application_email(application, subject, message):
+    if not application.contact_email:
+        return
+    send_mail(
+        subject,
+        message,
+        getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@smartslot.local'),
+        [application.contact_email],
+        fail_silently=True,
+    )
+
+
 # ── Org Admin — manage their org's users ─────────────────────────────────────
 
 @login_required(login_url='/dashboard/login/')
@@ -547,10 +669,18 @@ def dashboard_org_resources_view(request):
             price       = request.POST.get('price', '0') or '0'
             photo       = request.FILES.get('photo')
             if name and category and org:
+                try:
+                    price_value = Decimal(price)
+                except InvalidOperation:
+                    messages.error(request, 'Enter a valid resource price.')
+                    return redirect('dashboard_org_resources')
+                if price_value < 0:
+                    messages.error(request, 'Resource price cannot be negative.')
+                    return redirect('dashboard_org_resources')
                 resource = Resource(
                     name=name, category=category,
                     description=description,
-                    price=float(price),
+                    price=price_value,
                     organisation=org,
                 )
                 if photo:

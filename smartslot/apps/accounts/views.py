@@ -1,7 +1,7 @@
 from django.views.generic import TemplateView
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
-from .forms import SignupForm
+from .forms import OrganisationRegistrationForm, SignupForm
 
 
 class HomeView(TemplateView):
@@ -29,4 +29,21 @@ def signup_view(request):
     return render(request, 'registration/register.html', {
         'form': form,
         'organisations': organisations,
+    })
+
+
+def organisation_signup_view(request):
+    if request.method == 'POST':
+        form = OrganisationRegistrationForm(request.POST, request.FILES)
+        if form.is_valid():
+            application = form.save()
+            return render(request, 'registration/organisation_submitted.html', {
+                'application': application,
+            })
+    else:
+        form = OrganisationRegistrationForm()
+
+    return render(request, 'registration/organisation_register.html', {
+        'form': form,
+        'resource_slots': OrganisationRegistrationForm.RESOURCE_SLOTS,
     })

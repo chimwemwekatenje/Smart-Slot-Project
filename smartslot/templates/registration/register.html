@@ -17,8 +17,8 @@
         </div>
 
         <!-- Account type selector — mirrors _AccountTypeSelector -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1.75rem;">
-            <div class="type-card" id="card-external" onclick="selectType('external')"
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="type-card" id="card-external" onclick="selectType('External')"
                  style="padding:1.1rem; border-radius:10px; border:2px solid var(--primary);
                         background:rgba(20,184,166,0.1); cursor:pointer; text-align:center;
                         transition:all 0.2s;">
@@ -26,7 +26,7 @@
                 <div style="font-weight:700; font-size:0.95rem; color:var(--primary);">External User</div>
                 <div style="font-size:0.8rem; color:var(--muted); margin-top:4px;">Browse &amp; contact organisations</div>
             </div>
-            <div class="type-card" id="card-employee" onclick="selectType('employee')"
+            <div class="type-card" id="card-employee" onclick="selectType('Employee')"
                  style="padding:1.1rem; border-radius:10px; border:1px solid var(--border);
                         background:var(--surface); cursor:pointer; text-align:center;
                         transition:all 0.2s;">
@@ -35,7 +35,15 @@
                 <div style="font-size:0.8rem; color:var(--muted); margin-top:4px;">Book resources at my organisation</div>
             </div>
         </div>
-        <input type="hidden" name="role" id="role-input" value="external" form="signup-form" />
+        <a href="{% url 'organisation_signup' %}"
+           style="display:flex; align-items:center; justify-content:center; gap:10px;
+                  border:1px solid var(--border); border-radius:10px; padding:1rem;
+                  color:var(--primary); text-decoration:none; font-weight:700;
+                  margin-bottom:1.75rem; background:rgba(20,184,166,0.06);">
+            <i class="fa-solid fa-building-circle-check"></i>
+            Register an organisation for verification
+        </a>
+        <input type="hidden" name="role" id="role-input" value="External" form="signup-form" />
 
         {% if form.errors %}
         <div class="alert alert-error" style="margin-bottom:1.25rem;">
@@ -55,7 +63,7 @@
 
         <form method="post" id="signup-form">
             {% csrf_token %}
-            <input type="hidden" name="role" id="role-field" value="external" />
+            <input type="hidden" name="role" id="role-field" value="External" />
 
             <!-- Name row -->
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1.1rem;">
@@ -161,17 +169,18 @@
 
 <script>
 // Restore selected type if form was re-submitted with errors
-const savedRole = document.getElementById('role-field').value || 'external';
+const savedRole = document.getElementById('role-field').value || 'External';
 selectType(savedRole);
 
 function selectType(type) {
     document.getElementById('role-field').value = type;
+    document.getElementById('role-input').value = type;
 
     const extCard = document.getElementById('card-external');
     const empCard = document.getElementById('card-employee');
     const orgSection = document.getElementById('org-section');
 
-    if (type === 'external') {
+    if (type === 'External') {
         extCard.style.border = '2px solid var(--primary)';
         extCard.style.background = 'rgba(20,184,166,0.1)';
         extCard.querySelector('i').style.color = 'var(--primary)';
