@@ -1,6 +1,30 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<style>
+    /* Step indicator styles — avoids Django tags inside style="" attributes */
+    .step-circle {
+        width: 30px; height: 30px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 700; color: #fff;
+        background: var(--border);
+    }
+    .step-circle.done    { background: var(--primary); }
+    .step-circle.current { background: var(--primary); }
+
+    .step-label {
+        font-size: 0.72rem; margin-top: 4px;
+        font-weight: 400; color: var(--muted-dim);
+    }
+    .step-label.current { font-weight: 700; color: var(--primary); }
+
+    .step-line {
+        flex: 1; height: 2px; margin: 0 6px; margin-bottom: 18px;
+        background: var(--border);
+    }
+    .step-line.done { background: var(--primary); }
+</style>
+
 <div style="max-width:620px; margin:0 auto;">
 
     <a href="/resources/" style="color:var(--muted-dim); text-decoration:none; font-size:0.875rem;
@@ -13,15 +37,21 @@
         <div style="width:52px; height:52px; background:var(--bg); border-radius:10px; flex-shrink:0;
                     display:flex; align-items:center; justify-content:center; font-size:1.4rem;
                     color:var(--primary); border:1px solid var(--border);">
-            {% if resource.category == 'Boardroom' %}<i class="fa-solid fa-building"></i>
-            {% elif resource.category == 'Vehicle' %}<i class="fa-solid fa-car"></i>
-            {% elif resource.category == 'Equipment' %}<i class="fa-solid fa-desktop"></i>
-            {% else %}<i class="fa-solid fa-box"></i>
+            {% if resource.category == 'Boardroom' %}
+                <i class="fa-solid fa-building"></i>
+            {% elif resource.category == 'Vehicle' %}
+                <i class="fa-solid fa-car"></i>
+            {% elif resource.category == 'Equipment' %}
+                <i class="fa-solid fa-desktop"></i>
+            {% else %}
+                <i class="fa-solid fa-box"></i>
             {% endif %}
         </div>
         <div style="flex:1;">
             <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
-                        letter-spacing:0.08em; color:var(--primary); margin-bottom:2px;">{{ resource.category }}</div>
+                        letter-spacing:0.08em; color:var(--primary); margin-bottom:2px;">
+                {{ resource.category }}
+            </div>
             <div style="font-size:1rem; font-weight:700; color:var(--text);">{{ resource.name }}</div>
             <div style="font-size:0.8rem; color:var(--muted-dim);">{{ resource.organisation.name }}</div>
         </div>
@@ -29,32 +59,29 @@
             {% if resource.price == 0 %}
                 <span class="badge badge-success">Free</span>
             {% else %}
-                <span style="font-size:1.05rem; font-weight:800; color:var(--primary);">MWK {{ resource.price|floatformat:0 }}</span>
+                <span style="font-size:1.05rem; font-weight:800; color:var(--primary);">
+                    MWK {{ resource.price|floatformat:0 }}
+                </span>
             {% endif %}
         </div>
     </div>
 
-    <!-- Step indicator -->
+    <!-- Step indicator — CSS classes replace Django tags inside style="" -->
     <div class="card" style="padding:1rem 1.5rem; margin-bottom:1.5rem; display:flex; align-items:center;">
         {% for label, num in steps %}
-        <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
-            <div style="width:30px; height:30px; border-radius:50%; display:flex; align-items:center;
-                        justify-content:center; font-size:0.8rem; font-weight:700; color:#fff;
-                        background:{% if step >= num %}var(--primary){% else %}var(--border){% endif %};">
-                {% if step > num %}<i class="fa-solid fa-check" style="font-size:0.7rem;"></i>
-                {% else %}{{ num }}
-                {% endif %}
+            <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                <div class="step-circle {% if step > num %}done{% elif step == num %}current{% endif %}">
+                    {% if step > num %}
+                        <i class="fa-solid fa-check" style="font-size:0.7rem;"></i>
+                    {% else %}
+                        {{ num }}
+                    {% endif %}
+                </div>
+                <div class="step-label {% if step == num %}current{% endif %}">{{ label }}</div>
             </div>
-            <div style="font-size:0.72rem; margin-top:4px;
-                        font-weight:{% if step == num %}700{% else %}400{% endif %};
-                        color:{% if step == num %}var(--primary){% else %}var(--muted-dim){% endif %};">
-                {{ label }}
-            </div>
-        </div>
-        {% if not forloop.last %}
-        <div style="flex:1; height:2px; margin:0 6px; margin-bottom:18px;
-                    background:{% if step > num %}var(--primary){% else %}var(--border){% endif %};"></div>
-        {% endif %}
+            {% if not forloop.last %}
+                <div class="step-line {% if step > num %}done{% endif %}"></div>
+            {% endif %}
         {% endfor %}
     </div>
 
@@ -63,8 +90,13 @@
 
         {% if step == 1 %}
         <!-- ── STEP 1: Time Slot ── -->
-        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">Select Time Slot</div>
-        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">Choose your start and end time for <strong style="color:var(--text);">{{ resource.name }}</strong>.</p>
+        <div style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:4px;">
+            Select Time Slot
+        </div>
+        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">
+            Choose your start and end time for
+            <strong style="color:var(--text);">{{ resource.name }}</strong>.
+        </p>
 
         {% if time_error %}
         <div class="alert alert-error" style="margin-bottom:1.25rem;">
@@ -77,11 +109,15 @@
             <input type="hidden" name="step" value="1" />
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
                 <div class="form-group">
-                    <label class="form-label"><i class="fa-regular fa-clock" style="margin-right:5px;"></i>Start Time</label>
+                    <label class="form-label">
+                        <i class="fa-regular fa-clock" style="margin-right:5px;"></i>Start Time
+                    </label>
                     <input type="datetime-local" name="start_time" class="form-input" />
                 </div>
                 <div class="form-group">
-                    <label class="form-label"><i class="fa-solid fa-flag-checkered" style="margin-right:5px;"></i>End Time</label>
+                    <label class="form-label">
+                        <i class="fa-solid fa-flag-checkered" style="margin-right:5px;"></i>End Time
+                    </label>
                     <input type="datetime-local" name="end_time" class="form-input" />
                 </div>
             </div>
@@ -97,7 +133,9 @@
         <div style="background:rgba(20,184,166,0.08); border:1px solid rgba(20,184,166,0.25);
                     border-radius:var(--r-sm); padding:1rem; margin-bottom:1.5rem;">
             <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase;
-                        letter-spacing:0.1em; color:var(--muted-dim); margin-bottom:0.75rem;">Order Summary</div>
+                        letter-spacing:0.1em; color:var(--muted-dim); margin-bottom:0.75rem;">
+                Order Summary
+            </div>
             <div style="display:flex; flex-direction:column; gap:5px;">
                 <div style="display:flex; justify-content:space-between; font-size:0.875rem;">
                     <span style="color:var(--muted);">Resource</span>
@@ -122,6 +160,7 @@
         </div>
 
         {% if resource.price == 0 %}
+        <!-- Free resource — confirm directly -->
         <div class="alert alert-success" style="margin-bottom:1.5rem;">
             <i class="fa-solid fa-circle-check"></i>
             <span>This resource is free. Your booking will be confirmed instantly.</span>
@@ -130,19 +169,24 @@
             {% csrf_token %}
             <input type="hidden" name="step" value="2" />
             <input type="hidden" name="sd_start_time" value="{{ session_data.start_time }}" />
-            <input type="hidden" name="sd_end_time" value="{{ session_data.end_time }}" />
+            <input type="hidden" name="sd_end_time"   value="{{ session_data.end_time }}" />
             <div style="display:flex; gap:0.75rem;">
-                <a href="{% url 'booking_create_external' resource.pk %}?step=1" class="btn btn-ghost" style="padding:13px 20px;">
+                <a href="{% url 'booking_create_external' resource.pk %}?step=1"
+                   class="btn btn-ghost" style="padding:13px 20px;">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </a>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
+                <button type="submit" class="btn btn-primary"
+                        style="flex:1; padding:13px; font-size:1rem;">
                     <i class="fa-regular fa-calendar-check"></i> Confirm Booking
                 </button>
             </div>
         </form>
 
         {% else %}
-        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:4px;">Complete Payment</div>
+        <!-- Paid resource — redirect to PayChangu -->
+        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:4px;">
+            Complete Payment
+        </div>
         <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">
             <i class="fa-solid fa-lock" style="margin-right:4px;"></i>
             You'll be redirected to PayChangu's secure checkout.
@@ -151,13 +195,16 @@
             {% csrf_token %}
             <input type="hidden" name="step" value="2" />
             <input type="hidden" name="sd_start_time" value="{{ session_data.start_time }}" />
-            <input type="hidden" name="sd_end_time" value="{{ session_data.end_time }}" />
+            <input type="hidden" name="sd_end_time"   value="{{ session_data.end_time }}" />
             <div style="display:flex; gap:0.75rem;">
-                <a href="{% url 'booking_create_external' resource.pk %}?step=1" class="btn btn-ghost" style="padding:13px 20px;">
+                <a href="{% url 'booking_create_external' resource.pk %}?step=1"
+                   class="btn btn-ghost" style="padding:13px 20px;">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </a>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
-                    <i class="fa-solid fa-credit-card"></i> Pay MWK {{ resource.price|floatformat:0 }} with PayChangu
+                <button type="submit" class="btn btn-primary"
+                        style="flex:1; padding:13px; font-size:1rem;">
+                    <i class="fa-solid fa-credit-card"></i>
+                    Pay MWK {{ resource.price|floatformat:0 }} with PayChangu
                 </button>
             </div>
         </form>

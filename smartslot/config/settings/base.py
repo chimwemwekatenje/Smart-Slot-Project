@@ -1,18 +1,16 @@
-import os
+﻿import os
 from pathlib import Path
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
-    DEBUG=(bool, False)
-)
-
+    DEBUG=(bool, False))
 environ.Env.read_env(BASE_DIR / '.env')
 
-# ========================
-# Django Settings
-# ========================
+# =============================================================================
+# Core Django
+# =============================================================================
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
@@ -24,12 +22,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
     # Third-party
     'crispy_forms',
     'crispy_tailwind',
-    
-    # Local apps — core MUST be first (BaseModel / Organisation FK dependency)
+    # Local apps - core MUST be first (BaseModel / Organisation FK dependency)
     'apps.core.apps.CoreConfig',
     'apps.accounts.apps.AccountsConfig',
     'apps.resources.apps.ResourcesConfig',
@@ -38,11 +34,10 @@ INSTALLED_APPS = [
     'apps.verification.apps.VerificationConfig',
 ]
 
-# Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
-CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
-CRISPY_TEMPLATE_PACK = "tailwind"
+CRISPY_ALLOWED_TEMPLATE_PACKS = 'tailwind'
+CRISPY_TEMPLATE_PACK = 'tailwind'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -76,10 +71,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# =============================================================================
+# Database
+# =============================================================================
+# Reads DATABASE_URL from .env.
+#
 DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
+
+DATABASES['default']['CONN_MAX_AGE'] = 60
+
+
+DATABASES['default']['CONN_HEALTH_CHECKS'] = True
+
+# Required for Supabase / any hosted Postgres — enforce SSL.
+DATABASES['default'].setdefault('OPTIONS', {})
+DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+# =============================================================================
+# Auth & Password
+# =============================================================================
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -87,11 +99,17 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# =============================================================================
+# Internationalisation
+# =============================================================================
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# =============================================================================
+# Static & Media
+# =============================================================================
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
@@ -101,7 +119,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Authentication settings
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/resources/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
@@ -112,15 +129,7 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 SITE_URL = env('SITE_URL', default='https://smartslot-bh9c.onrender.com')
 
 # PayChangu
+# =============================================================================
 PAYCHANGU_SECRET_KEY = env('PAYCHANGU_SECRET_KEY', default='')
 PAYCHANGU_CALLBACK_URL = env('PAYCHANGU_CALLBACK_URL', default='http://127.0.0.1:8000/payments/callback/')
 PAYCHANGU_RETURN_URL = env('PAYCHANGU_RETURN_URL', default='http://127.0.0.1:8000/payments/return/')
-
-# Session expires after 2 minutes of inactivity
-SESSION_COOKIE_AGE = 60 * 2
-# Reset the timer on every request (inactivity timeout)
-SESSION_SAVE_EVERY_REQUEST = True
-# Expire session when browser closes
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-# Store sessions in DB so they can be cleared on restart
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
