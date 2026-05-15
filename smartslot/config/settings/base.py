@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 import environ
 
@@ -89,6 +89,9 @@ DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 # Required for Supabase / any hosted Postgres — enforce SSL.
 DATABASES['default'].setdefault('OPTIONS', {})
 DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+
+SUPABASE_URL = env('SUPABASE_URL', default='')
+SUPABASE_KEY = env('SUPABASE_KEY', default='')
 # =============================================================================
 # Auth & Password
 # =============================================================================
