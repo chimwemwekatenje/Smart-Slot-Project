@@ -16,6 +16,9 @@ class User(AbstractUser):
         default=RoleChoices.EMPLOYEE,
     )
 
+    # Optional phone number — nullable so existing rows without it are valid.
+    phone = models.CharField(max_length=30, blank=True, null=True)
+
     # Scopes OrgAdmin / Receptionist / Employee to a single organisation.
     # PlatformAdmin leaves this NULL (they see everything).
     organisation = models.ForeignKey(

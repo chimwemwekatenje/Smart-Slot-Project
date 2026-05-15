@@ -1,19 +1,23 @@
 from .base import *
+from django.core.exceptions import ImproperlyConfigured
 
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '0.0.0.0', '*']
 
-# Database comes from DATABASE_URL in .env — same Supabase instance as production.
-# This means users, bookings, and resources created locally are immediately
-# visible on the deployed site and vice versa.
-#
-# If you ever need a fully offline/isolated local DB, comment the line above
-# and uncomment this block:
-#
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+# Local development uses the same Supabase Postgres database as production.
+# Set DATABASE_URL in smartslot/.env to your Supabase connection string.
+if not env('DATABASE_URL', default=''):
+    raise ImproperlyConfigured(
+        'DATABASE_URL is required in development. Add your Supabase Postgres '
+        'connection string to smartslot/.env.'
+    )
+
+DATABASES = {
+    'default': env.db('DATABASE_URL'),
+}
+
+# Supabase requires SSL for Postgres connections unless explicitly disabled
+# in the project settings. Preserve sslmode if it is already in DATABASE_URL.
+DATABASES['default'].setdefault('OPTIONS', {})
+DATABASES['default']['OPTIONS'].setdefault('sslmode', 'require')
