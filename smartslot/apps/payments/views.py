@@ -98,12 +98,16 @@ def mobile_money_charge(request, booking_id):
             last_name=last_name,
             email=email,
         )
-        # tx_ref and charge_id are both returned inside charge_data
+        # Log the full response so we can see what PayChangu returns
+        logger.info(f'PayChangu charge response for booking {booking_id}: {charge_data}')
+
         tx_ref    = charge_data.get('tx_ref', '')
+        # PayChangu returns their numeric charge_id in the response data
         charge_id = (
             charge_data.get('charge_id') or
             charge_data.get('chargeId') or
-            tx_ref  # fallback: we sent tx_ref as charge_id
+            charge_data.get('id') or
+            tx_ref
         )
         booking.custom_data['charge_id'] = str(charge_id)
         booking.custom_data['tx_ref']    = tx_ref
@@ -111,7 +115,7 @@ def mobile_money_charge(request, booking_id):
 
         return JsonResponse({
             'status':    'pending',
-            'charge_id': booking.custom_data['charge_id'],
+            'charge_id': str(charge_id),
             'message':   'Payment request sent. Please check your phone and enter your PIN.',
         })
     except Exception as e:
@@ -143,10 +147,12 @@ def mobile_money_status(request, booking_id):
 
     try:
         charge = get_charge_details(charge_id)
+        logger.info(f'Charge status for booking {booking_id}: {charge}')
         charge_status = charge.get('status', '')
 
         if charge_status == 'success':
             _confirm_booking(booking, tx_ref)
+            booking.refresh_from_db()
             return JsonResponse({'status': 'success', 'redirect': f'/payments/return/?tx_ref={tx_ref}'})
         elif charge_status in ('failed', 'cancelled'):
             return JsonResponse({'status': 'failed', 'message': 'Payment was not completed.'})
@@ -154,8 +160,9 @@ def mobile_money_status(request, booking_id):
             return JsonResponse({'status': 'pending', 'message': 'Waiting for payment confirmation...'})
 
     except Exception as e:
-        logger.error(f'Mobile money status poll error: {e}')
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        logger.error(f'Mobile money status poll error for booking {booking_id}: {e}')
+        # Don't return error to frontend — keep polling, the charge may still be processing
+        return JsonResponse({'status': 'pending', 'message': 'Checking payment status...'})
 
 
 # ── Webhook (IPN) ─────────────────────────────────────────────────────────────
@@ -168,17 +175,61 @@ def payment_webhook(request):
     if not verify_webhook_signature(request.body, signature):
         logger.warning('PayChangu webhook: invalid signature')
 
-    tx_ref = request.POST.get('tx_ref') or request.GET.get('tx_ref')
-    if not tx_ref:
-        return HttpResponse('Missing tx_ref', status=400)
+    # PayChangu sends JSON body
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        payload = {}
+
+    logger.info(f'PayChangu webhook payload: {payload}')
+
+    # tx_ref may be in body JSON or query params
+    tx_ref = (
+        payload.get('tx_ref') or
+        payload.get('data', {}).get('tx_ref') or
+        request.POST.get('tx_ref') or
+        request.GET.get('tx_ref')
+    )
+    charge_id = (
+        payload.get('charge_id') or
+        payload.get('data', {}).get('charge_id') or
+        payload.get('chargeId') or
+        payload.get('data', {}).get('chargeId')
+    )
+    event_status = (
+        payload.get('status') or
+        payload.get('data', {}).get('status', '')
+    )
+
+    if not tx_ref and not charge_id:
+        logger.warning('PayChangu webhook: no tx_ref or charge_id in payload')
+        return HttpResponse('OK', status=200)
 
     try:
-        transaction = verify_payment(tx_ref)
-        if transaction.get('status') == 'successful':
-            booking = _booking_from_tx_ref(tx_ref)
+        # For direct charge, confirm if status is successful
+        if event_status in ('successful', 'success'):
+            booking = None
+            if tx_ref:
+                booking = _booking_from_tx_ref(tx_ref)
+            if not booking and charge_id:
+                # Find booking by charge_id stored in custom_data
+                booking = Booking.objects.filter(
+                    custom_data__charge_id=str(charge_id)
+                ).first()
             if booking:
-                _confirm_booking(booking, tx_ref)
+                _confirm_booking(booking, tx_ref or str(charge_id))
                 logger.info(f'Booking {booking.id} confirmed via webhook.')
+            else:
+                logger.warning(f'Webhook: no booking found for tx_ref={tx_ref} charge_id={charge_id}')
+        else:
+            # Verify via API as fallback
+            if tx_ref:
+                transaction = verify_payment(tx_ref)
+                if transaction.get('status') == 'successful':
+                    booking = _booking_from_tx_ref(tx_ref)
+                    if booking:
+                        _confirm_booking(booking, tx_ref)
+                        logger.info(f'Booking {booking.id} confirmed via webhook verify.')
     except Exception as e:
         logger.error(f'PayChangu webhook error: {e}')
 

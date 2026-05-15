@@ -94,12 +94,15 @@ def charge_mobile_money(booking, mobile_number, operator_ref_id,
     )
     data = response.json()
 
+    import logging
+    logging.getLogger(__name__).info(f'PayChangu charge raw response {response.status_code}: {data}')
+
     if response.status_code in (200, 201) and data.get('status') in ('success', 'pending'):
         charge_data = data.get('data', {})
         charge_data['tx_ref'] = tx_ref
         return charge_data
 
-    raise Exception(data.get('message', f'Mobile money charge failed ({response.status_code}).'))
+    raise Exception(data.get('message', f'Mobile money charge failed ({response.status_code}): {data}'))
 
 
 def get_charge_details(charge_id):

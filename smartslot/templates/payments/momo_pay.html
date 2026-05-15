@@ -191,7 +191,7 @@ async function startPayment() {
 
 function startPolling() {
     let attempts = 0;
-    const MAX_ATTEMPTS = 40; // ~2 minutes at 3s intervals
+    const MAX_ATTEMPTS = 60; // ~5 minutes at 5s intervals
 
     pollInterval = setInterval(async () => {
         attempts++;
@@ -223,7 +223,7 @@ function startPolling() {
         } catch(e) {
             // Network hiccup — keep polling
         }
-    }, 3000);
+    }, 5000);  // poll every 5 seconds
 }
 
 function resetButtons() {
