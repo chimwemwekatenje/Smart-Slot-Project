@@ -5,10 +5,11 @@ import hashlib
 import requests
 from django.conf import settings
 
-PAYCHANGU_API_URL      = 'https://api.paychangu.com/payment'
-PAYCHANGU_VERIFY_URL   = 'https://api.paychangu.com/verify-payment'
-PAYCHANGU_MOMO_URL     = 'https://api.paychangu.com/mobile-money'
-PAYCHANGU_MOMO_OPS_URL = 'https://api.paychangu.com/mobile-money'
+PAYCHANGU_API_URL      = 'https://api.paychangu.com/payment'                              # POST — standard checkout
+PAYCHANGU_VERIFY_URL   = 'https://api.paychangu.com/verify-payment'                       # GET  — verify checkout tx
+PAYCHANGU_MOMO_OPS_URL = 'https://api.paychangu.com/mobile-money'                         # GET  — operators list
+PAYCHANGU_MOMO_CHARGE  = 'https://api.paychangu.com/mobile-money/payments/initialize'     # POST — direct charge
+# Verify charge: GET https://api.paychangu.com/mobile-money/payments/{chargeId}/verify
 
 _AUTH_HEADERS = lambda: {
     "Accept":        "application/json",
@@ -69,46 +70,45 @@ def charge_mobile_money(booking, mobile_number, operator_ref_id,
                         first_name, last_name, email):
     """
     Initiates a direct mobile money charge (inline, no redirect).
+    POST /mobile-money/payments
     Returns the charge response data dict or raises an exception.
     """
     tx_ref = f"SMARTSLOT-{booking.id}-{uuid.uuid4().hex[:8].upper()}"
 
     payload = {
-        "mobile":          mobile_number,          # e.g. "0991234567"
-        "amount":          str(booking.resource.price),
-        "currency":        "MWK",
-        "operator":        operator_ref_id,        # ref_id from operators list
-        "tx_ref":          tx_ref,
-        "first_name":      first_name,
-        "last_name":       last_name,
-        "email":           email,
-        "callback_url":    settings.PAYCHANGU_CALLBACK_URL,
-        "meta": {"booking_id": str(booking.id)},
+        "mobile":                      mobile_number,    # customer's phone number
+        "amount":                      str(booking.resource.price),
+        "currency":                    "MWK",
+        "mobile_money_operator_ref_id": operator_ref_id, # ref_id from operators endpoint
+        "charge_id":                   tx_ref,           # unique ID for this transaction
+        "first_name":                  first_name,
+        "last_name":                   last_name,
+        "email":                       email,
     }
 
     response = requests.post(
-        PAYCHANGU_MOMO_URL,
+        PAYCHANGU_MOMO_CHARGE,
         json=payload,
         headers=_AUTH_HEADERS(),
         timeout=30,
     )
     data = response.json()
 
-    if response.status_code == 200 and data.get('status') in ('success', 'pending'):
+    if response.status_code in (200, 201) and data.get('status') in ('success', 'pending'):
         charge_data = data.get('data', {})
         charge_data['tx_ref'] = tx_ref
         return charge_data
 
-    raise Exception(data.get('message', 'Mobile money charge failed.'))
+    raise Exception(data.get('message', f'Mobile money charge failed ({response.status_code}).'))
 
 
 def get_charge_details(charge_id):
     """
-    Polls the status of a mobile money charge by charge_id.
-    Returns the charge data dict or raises an exception.
+    Verifies/polls the status of a mobile money charge.
+    GET /mobile-money/payments/{chargeId}/verify
     """
     response = requests.get(
-        f"https://api.paychangu.com/mobile-money/payments/{charge_id}/details",
+        f"https://api.paychangu.com/mobile-money/payments/{charge_id}/verify",
         headers=_AUTH_HEADERS(),
         timeout=15,
     )

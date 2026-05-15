@@ -98,9 +98,14 @@ def mobile_money_charge(request, booking_id):
             last_name=last_name,
             email=email,
         )
-        # Store charge_id and tx_ref on the booking for polling
-        booking.custom_data['charge_id'] = charge_data.get('charge_id') or charge_data.get('id', '')
-        booking.custom_data['tx_ref']    = charge_data.get('tx_ref', '')
+        # charge_id is what we sent as tx_ref — store it for polling
+        charge_id = (
+            charge_data.get('charge_id') or
+            charge_data.get('chargeId') or
+            tx_ref  # fallback: we sent tx_ref as charge_id
+        )
+        booking.custom_data['charge_id'] = str(charge_id)
+        booking.custom_data['tx_ref']    = tx_ref
         Booking.objects.filter(pk=booking.pk).update(custom_data=booking.custom_data)
 
         return JsonResponse({
