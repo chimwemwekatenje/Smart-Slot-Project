@@ -1,230 +1,254 @@
 {% extends "dashboard/base_dashboard.html" %}
 
 {% block dashboard_content %}
-<div style="max-width:1200px;">
+<div style="max-width:900px;">
 
-    <div style="margin-bottom:2rem;">
-        <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
-            <i class="fa-solid fa-cubes" style="color:var(--primary); margin-right:10px;"></i>
-            Manage Resources
-        </h1>
-        <p style="color:var(--muted-dim); font-size:0.9rem;">
-            Resources for {{ organisation.name }}
-        </p>
+    <!-- Page header -->
+    <div style="display:flex; align-items:center; justify-content:space-between;
+                flex-wrap:wrap; gap:1rem; margin-bottom:2rem;">
+        <div>
+            <h1 style="font-size:1.75rem; font-weight:800; color:var(--text); margin-bottom:4px;">
+                <i class="fa-solid fa-cubes" style="color:var(--primary); margin-right:10px;"></i>
+                Resources
+            </h1>
+            <p style="color:var(--muted-dim); font-size:0.9rem;">{{ organisation.name }}</p>
+        </div>
+        <!-- The only entry point to add a resource -->
+        <button class="btn btn-primary" onclick="openAddForm()" id="add-resource-btn">
+            <i class="fa-solid fa-plus"></i> Add Resource
+        </button>
     </div>
 
-    <div style="display:grid; grid-template-columns:340px 1fr; gap:1.5rem; align-items:start;"
-         class="resource-grid">
-
-        <!-- Add resource form -->
+    <!-- ── Add Resource slide-down form ── -->
+    <div id="add-resource-form" style="display:none; margin-bottom:2rem;">
         <div class="card" style="padding:1.75rem;">
-            <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:1.25rem;">
-                <i class="fa-solid fa-plus" style="color:var(--primary); margin-right:8px;"></i>
-                Add Resource
+            <div style="display:flex; align-items:center; justify-content:space-between;
+                        margin-bottom:1.25rem;">
+                <div style="font-size:1rem; font-weight:700; color:var(--text);">
+                    <i class="fa-solid fa-plus" style="color:var(--primary); margin-right:8px;"></i>
+                    New Resource
+                </div>
+                <button type="button" onclick="closeAddForm()"
+                        style="background:none; border:none; color:var(--muted-dim);
+                               cursor:pointer; font-size:1.1rem; padding:4px 8px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
 
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="create" />
 
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">Name</label>
-                    <input type="text" name="name" class="form-input"
-                           placeholder="e.g. Main Boardroom" required />
-                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"
+                     class="form-two-col">
 
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">Category</label>
-                    <select name="category" class="form-input">
-                        {% for cat in categories %}
-                        <option value="{{ cat }}">{{ cat }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">Description</label>
-                    <textarea name="description" class="form-input" rows="2"
-                              placeholder="Brief description..."
-                              style="resize:vertical;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">Price (MWK) — 0 for free</label>
-                    <input type="number" name="price" class="form-input"
-                           value="0" min="0" step="100" />
-                </div>
-
-                <!-- Photo upload -->
-                <div class="form-group" style="margin-bottom:1.25rem;">
-                    <label class="form-label">Photo <span style="color:var(--muted-dim); font-weight:400;">(optional)</span></label>
-
-                    <!-- Hidden real file input -->
-                    <input type="file" name="photo" id="photo-input"
-                           accept="image/*" style="display:none;"
-                           onchange="previewPhoto(this)" />
-
-                    <!-- Custom upload button -->
-                    <div id="photo-drop-zone"
-                         onclick="document.getElementById('photo-input').click()"
-                         style="border:2px dashed var(--border); border-radius:var(--r-sm);
-                                padding:1.25rem; text-align:center; cursor:pointer;
-                                transition:border-color 0.15s, background 0.15s;">
-                        <div id="photo-placeholder">
-                            <i class="fa-solid fa-image"
-                               style="font-size:1.6rem; color:var(--muted-dim); margin-bottom:0.5rem; display:block;"></i>
-                            <span style="font-size:0.8rem; color:var(--muted-dim);">
-                                Click to upload a photo
-                            </span>
-                        </div>
-                        <img id="photo-preview" src="" alt="Preview"
-                             style="display:none; max-width:100%; max-height:140px;
-                                    border-radius:var(--r-sm); object-fit:cover;" />
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="name" class="form-input"
+                               placeholder="e.g. Main Boardroom" required />
                     </div>
 
-                    <button type="button" id="photo-clear-btn"
-                            onclick="clearPhoto()"
-                            style="display:none; margin-top:0.5rem; background:none;
-                                   border:none; color:var(--error); font-size:0.8rem;
-                                   cursor:pointer; font-family:inherit; padding:0;">
-                        <i class="fa-solid fa-xmark"></i> Remove photo
-                    </button>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-input">
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label class="form-label">Description <span style="color:var(--muted-dim); font-weight:400;">(optional)</span></label>
+                        <textarea name="description" class="form-input" rows="2"
+                                  placeholder="Brief description..."
+                                  style="resize:vertical;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Price (MWK) — 0 for free</label>
+                        <input type="number" name="price" class="form-input"
+                               value="0" min="0" step="100" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Photo <span style="color:var(--muted-dim); font-weight:400;">(optional)</span></label>
+                        <input type="file" name="photo" id="photo-input"
+                               accept="image/*" style="display:none;"
+                               onchange="previewPhoto(this)" />
+                        <div id="photo-drop-zone"
+                             onclick="document.getElementById('photo-input').click()"
+                             style="border:2px dashed var(--border); border-radius:var(--r-sm);
+                                    padding:1rem; text-align:center; cursor:pointer;
+                                    transition:border-color 0.15s, background 0.15s; height:80px;
+                                    display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <div id="photo-placeholder" style="display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-image" style="color:var(--muted-dim); font-size:1.2rem;"></i>
+                                <span style="font-size:0.8rem; color:var(--muted-dim);">Click to upload</span>
+                            </div>
+                            <img id="photo-preview" src="" alt="Preview"
+                                 style="display:none; max-height:60px; border-radius:var(--r-sm); object-fit:cover;" />
+                        </div>
+                        <button type="button" id="photo-clear-btn" onclick="clearPhoto()"
+                                style="display:none; margin-top:4px; background:none; border:none;
+                                       color:var(--error); font-size:0.78rem; cursor:pointer;
+                                       font-family:inherit; padding:0;">
+                            <i class="fa-solid fa-xmark"></i> Remove
+                        </button>
+                    </div>
+
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">
-                    <i class="fa-solid fa-plus"></i> Add Resource
-                </button>
+                <div style="display:flex; gap:0.75rem; margin-top:1.25rem;">
+                    <button type="submit" class="btn btn-primary" style="flex:1; padding:12px;">
+                        <i class="fa-solid fa-plus"></i> Save Resource
+                    </button>
+                    <button type="button" class="btn btn-ghost" onclick="closeAddForm()"
+                            style="padding:12px 20px;">
+                        Cancel
+                    </button>
+                </div>
             </form>
         </div>
-
-        <!-- Resources table -->
-        <div class="card" style="overflow:hidden;">
-            <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
-                        font-size:0.95rem; font-weight:700; color:var(--text);">
-                <i class="fa-solid fa-box" style="color:var(--primary); margin-right:8px;"></i>
-                Resources ({{ resources|length }})
-            </div>
-            <div class="table-wrapper">
-                <table class="dash-table">
-                    <thead>
-                        <tr>
-                            <th style="width:56px;"></th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Price</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for r in resources %}
-                        <tr>
-                            <!-- Thumbnail -->
-                            <td style="padding:8px 12px;">
-                                {% if r.image %}
-                                    <img src="{{ r.image }}" alt="{{ r.name }}"
-                                         style="width:44px; height:44px; object-fit:cover;
-                                                border-radius:var(--r-sm); border:1px solid var(--border);" />
-                                {% else %}
-                                    <div style="width:44px; height:44px; background:var(--border);
-                                                border-radius:var(--r-sm); display:flex;
-                                                align-items:center; justify-content:center;
-                                                color:var(--muted-dim); font-size:1.1rem;">
-                                        <i class="fa-solid fa-image"></i>
-                                    </div>
-                                {% endif %}
-                            </td>
-                            <td style="font-weight:600;">{{ r.name }}</td>
-                            <td><span class="badge badge-primary">{{ r.category }}</span></td>
-                            <td>
-                                {% if r.price == 0 %}
-                                    <span style="color:var(--success); font-weight:600;">Free</span>
-                                {% else %}
-                                    <span style="color:var(--warning); font-weight:700;">
-                                        MWK {{ r.price|floatformat:0 }}
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <form method="post" style="display:inline;"
-                                      onsubmit="return confirm('Delete {{ r.name }}?')">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="delete" />
-                                    <input type="hidden" name="resource_id" value="{{ r.pk }}" />
-                                    <button type="submit" class="btn btn-ghost btn-sm"
-                                            style="color:var(--error); border:1px solid rgba(239,68,68,0.3);">
-                                        <i class="fa-solid fa-trash"></i> Delete
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" style="text-align:center; color:var(--muted-dim); padding:2rem;">
-                                No resources yet. Add one using the form.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
     </div>
+
+    <!-- ── Resource cards ── -->
+    {% if resources %}
+    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        {% for r in resources %}
+        <div class="card" style="display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem;">
+
+            <!-- Thumbnail -->
+            {% if r.image %}
+                <img src="{{ r.image }}" alt="{{ r.name }}"
+                     style="width:56px; height:56px; object-fit:cover;
+                            border-radius:var(--r-sm); flex-shrink:0;
+                            border:1px solid var(--border);" />
+            {% else %}
+                <div style="width:56px; height:56px; background:var(--border);
+                            border-radius:var(--r-sm); flex-shrink:0;
+                            display:flex; align-items:center; justify-content:center;
+                            color:var(--muted-dim); font-size:1.3rem;">
+                    <i class="fa-solid fa-image"></i>
+                </div>
+            {% endif %}
+
+            <!-- Info -->
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:700; color:var(--text); font-size:0.95rem;
+                            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {{ r.name }}
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-top:4px; flex-wrap:wrap;">
+                    <span class="badge badge-primary">{{ r.category }}</span>
+                    {% if r.price == 0 %}
+                        <span style="font-size:0.8rem; color:var(--success); font-weight:600;">Free</span>
+                    {% else %}
+                        <span style="font-size:0.8rem; color:var(--warning); font-weight:700;">
+                            MWK {{ r.price|floatformat:0 }}
+                        </span>
+                    {% endif %}
+                </div>
+                {% if r.description %}
+                <div style="font-size:0.78rem; color:var(--muted-dim); margin-top:4px;
+                            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {{ r.description }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Delete -->
+            <form method="post" style="flex-shrink:0;"
+                  onsubmit="return confirm('Delete {{ r.name }}?')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="resource_id" value="{{ r.pk }}" />
+                <button type="submit" class="btn btn-ghost btn-sm"
+                        style="color:var(--error); border:1px solid rgba(239,68,68,0.3);">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </form>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="card" style="padding:3rem; text-align:center;">
+        <i class="fa-solid fa-box-open"
+           style="font-size:2.5rem; color:var(--muted-dim); margin-bottom:1rem; display:block;"></i>
+        <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:0.5rem;">
+            No resources yet
+        </div>
+        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.5rem;">
+            Add your first resource using the button above.
+        </p>
+        <button class="btn btn-primary" onclick="openAddForm()">
+            <i class="fa-solid fa-plus"></i> Add Resource
+        </button>
+    </div>
+    {% endif %}
+
 </div>
 
 <style>
-@media (max-width: 900px) {
-    .resource-grid { grid-template-columns: 1fr !important; }
+@media (max-width: 600px) {
+    .form-two-col { grid-template-columns: 1fr !important; }
+    .form-two-col > [style*="grid-column"] { grid-column: 1 !important; }
 }
 </style>
 
 <script>
+function openAddForm() {
+    const form = document.getElementById('add-resource-form');
+    const btn  = document.getElementById('add-resource-btn');
+    form.style.display = 'block';
+    btn.style.display  = 'none';
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeAddForm() {
+    const form = document.getElementById('add-resource-form');
+    const btn  = document.getElementById('add-resource-btn');
+    form.style.display = 'none';
+    btn.style.display  = 'inline-flex';
+}
+
 function previewPhoto(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
-        const preview = document.getElementById('photo-preview');
-        const placeholder = document.getElementById('photo-placeholder');
-        const clearBtn = document.getElementById('photo-clear-btn');
-        const dropZone = document.getElementById('photo-drop-zone');
-        preview.src = e.target.result;
-        preview.style.display = 'block';
-        placeholder.style.display = 'none';
-        clearBtn.style.display = 'inline-block';
-        dropZone.style.borderColor = 'var(--primary)';
-        dropZone.style.background = 'rgba(20,184,166,0.04)';
+        document.getElementById('photo-preview').src = e.target.result;
+        document.getElementById('photo-preview').style.display = 'block';
+        document.getElementById('photo-placeholder').style.display = 'none';
+        document.getElementById('photo-clear-btn').style.display = 'inline-block';
+        document.getElementById('photo-drop-zone').style.borderColor = 'var(--primary)';
     };
     reader.readAsDataURL(file);
 }
 
 function clearPhoto() {
-    const input = document.getElementById('photo-input');
-    const preview = document.getElementById('photo-preview');
-    const placeholder = document.getElementById('photo-placeholder');
-    const clearBtn = document.getElementById('photo-clear-btn');
-    const dropZone = document.getElementById('photo-drop-zone');
-    input.value = '';
-    preview.src = '';
-    preview.style.display = 'none';
-    placeholder.style.display = 'block';
-    clearBtn.style.display = 'none';
-    dropZone.style.borderColor = 'var(--border)';
-    dropZone.style.background = '';
+    document.getElementById('photo-input').value = '';
+    document.getElementById('photo-preview').src = '';
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('photo-placeholder').style.display = 'flex';
+    document.getElementById('photo-clear-btn').style.display = 'none';
+    document.getElementById('photo-drop-zone').style.borderColor = 'var(--border)';
 }
 
-// Drag-and-drop support
-const dropZone = document.getElementById('photo-drop-zone');
-dropZone.addEventListener('dragover', e => {
+// Drag-and-drop
+const dz = document.getElementById('photo-drop-zone');
+dz.addEventListener('dragover', e => {
     e.preventDefault();
-    dropZone.style.borderColor = 'var(--primary)';
-    dropZone.style.background = 'rgba(20,184,166,0.06)';
+    dz.style.borderColor = 'var(--primary)';
+    dz.style.background  = 'rgba(20,184,166,0.06)';
 });
-dropZone.addEventListener('dragleave', () => {
-    dropZone.style.borderColor = 'var(--border)';
-    dropZone.style.background = '';
+dz.addEventListener('dragleave', () => {
+    dz.style.borderColor = 'var(--border)';
+    dz.style.background  = '';
 });
-dropZone.addEventListener('drop', e => {
+dz.addEventListener('drop', e => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
@@ -235,5 +259,10 @@ dropZone.addEventListener('drop', e => {
         previewPhoto(input);
     }
 });
+
+// If form was submitted with errors, keep it open
+{% if request.method == 'POST' %}
+openAddForm();
+{% endif %}
 </script>
 {% endblock %}

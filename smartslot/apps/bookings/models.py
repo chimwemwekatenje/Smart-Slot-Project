@@ -9,10 +9,11 @@ from apps.resources.models import Resource
 class Booking(BaseModel):
     class StatusChoices(models.TextChoices):
         BOOKED    = 'Booked',    'Booked'
+        PAID      = 'Paid',      'Paid'
         CANCELLED = 'Cancelled', 'Cancelled'
 
     # Active statuses — used for overlap detection
-    ACTIVE_STATUSES = ['Booked']
+    ACTIVE_STATUSES = ['Booked', 'Paid']
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
