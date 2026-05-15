@@ -98,7 +98,8 @@ def mobile_money_charge(request, booking_id):
             last_name=last_name,
             email=email,
         )
-        # charge_id is what we sent as tx_ref — store it for polling
+        # tx_ref and charge_id are both returned inside charge_data
+        tx_ref    = charge_data.get('tx_ref', '')
         charge_id = (
             charge_data.get('charge_id') or
             charge_data.get('chargeId') or
