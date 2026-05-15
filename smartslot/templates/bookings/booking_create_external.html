@@ -183,14 +183,21 @@
         </form>
 
         {% else %}
-        <!-- Paid resource — redirect to PayChangu -->
+        <!-- Paid resource — submit to create Pending booking, redirect to mobile money page -->
         <div style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:4px;">
             Complete Payment
         </div>
         <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.25rem;">
-            <i class="fa-solid fa-lock" style="margin-right:4px;"></i>
-            You'll be redirected to PayChangu's secure checkout.
+            <i class="fa-solid fa-mobile-screen-button" style="margin-right:4px;"></i>
+            Pay via TNM Mpamba or Airtel Money — no redirect, enter your PIN on your phone.
         </p>
+
+        {% if payment_error %}
+        <div class="alert alert-error" style="margin-bottom:1.25rem;">
+            <i class="fa-solid fa-ban"></i> {{ payment_error }}
+        </div>
+        {% endif %}
+
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="step" value="2" />
@@ -203,8 +210,8 @@
                 </a>
                 <button type="submit" class="btn btn-primary"
                         style="flex:1; padding:13px; font-size:1rem;">
-                    <i class="fa-solid fa-credit-card"></i>
-                    Pay MWK {{ resource.price|floatformat:0 }} with PayChangu
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    Continue to Pay MWK {{ resource.price|floatformat:0 }}
                 </button>
             </div>
         </form>

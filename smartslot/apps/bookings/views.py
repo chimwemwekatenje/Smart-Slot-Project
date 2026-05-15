@@ -14,7 +14,7 @@ class BookingListView(LoginRequiredMixin, ListView):
     template_name = 'bookings/booking_list.html'
     context_object_name = 'bookings'
 
-    STATUSES = ['All', 'Booked', 'Cancelled']
+    STATUSES = ['All', 'Booked', 'Paid', 'Pending', 'Cancelled']
 
     def get_queryset(self):
         qs = Booking.objects.filter(user=self.request.user).order_by('-start_time')
@@ -30,7 +30,7 @@ class BookingListView(LoginRequiredMixin, ListView):
         return ctx
 
 
-def _make_booking(request, resource, custom_data):
+def _make_booking(request, resource, custom_data, status=None):
     """Helper — creates and saves a booking, returns the booking object."""
     start = custom_data.pop('start_time')
     end = custom_data.pop('end_time')
@@ -41,7 +41,7 @@ def _make_booking(request, resource, custom_data):
         start_time=start,
         end_time=end,
         qr_token=str(uuid.uuid4()),
-        status=Booking.StatusChoices.BOOKED,  # auto-confirmed
+        status=status or Booking.StatusChoices.BOOKED,
         custom_data=custom_data,
     )
     booking.save()
@@ -230,34 +230,17 @@ def external_booking_view(request, resource_pk):
                     'receipt_rows': _receipt_rows(booking),
                 })
             else:
-                # Paid — redirect to PayChangu
+                # Paid — create as Pending, redirect to mobile money payment page
                 booking = _make_booking(request, resource, {
                     'start_time':     start, 'end_time': end,
                     'full_name':      saved.get('full_name', ''),
                     'email':          saved.get('email', ''),
                     'phone':          saved.get('phone', ''),
                     'reason':         saved.get('reason', ''),
-                    'payment_method': 'PayChangu',
-                })
+                    'payment_method': 'MobileMoney',
+                }, status=Booking.StatusChoices.PENDING)
                 request.session.pop(session_key, None)
-                from apps.payments.services import initiate_payment
-                name_parts = saved.get('full_name', '').split(' ', 1)
-                try:
-                    checkout_url, tx_ref = initiate_payment(
-                        booking=booking,
-                        customer_email=saved.get('email', ''),
-                        customer_first_name=name_parts[0],
-                        customer_last_name=name_parts[1] if len(name_parts) > 1 else '',
-                    )
-                    booking.custom_data['tx_ref'] = tx_ref
-                    booking.save()
-                    return redirect(checkout_url)
-                except Exception as e:
-                    return render(request, 'bookings/booking_receipt.html', {
-                        'booking': booking,
-                        'receipt_rows': _receipt_rows(booking),
-                        'payment_error': str(e),
-                    })
+                return redirect('momo_pay', booking_id=booking.id)
 
     # GET — start at step 1 (time slot)
     return render(request, 'bookings/booking_create_external.html', {

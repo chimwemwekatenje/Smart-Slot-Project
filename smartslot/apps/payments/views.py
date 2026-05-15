@@ -1,26 +1,239 @@
 """PayChangu payment views for SmartSlot."""
+import json
 import logging
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.http import HttpResponse
+from django.views.decorators.http import require_POST, require_GET
+from django.http import HttpResponse, JsonResponse
+from django.contrib.auth.decorators import login_required
 from apps.bookings.models import Booking
 from .models import Payment
-from .services import verify_payment, verify_webhook_signature
+from .services import (
+    verify_payment, verify_webhook_signature,
+    charge_mobile_money, get_charge_details, get_mobile_money_operators,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def _confirm_booking(booking, tx_ref):
     """Mark a booking as Paid and create/update the Payment record."""
-    if booking.status != Booking.StatusChoices.PAID:
-        booking.status = Booking.StatusChoices.PAID
-        booking.custom_data['tx_ref'] = tx_ref
-        booking.custom_data['payment_status'] = 'paid'
-        # Use update() to skip full_clean overlap check on status change
+    if booking.status not in (Booking.StatusChoices.PAID,):
         Booking.objects.filter(pk=booking.pk).update(
             status=Booking.StatusChoices.PAID,
-            custom_data=booking.custom_data,
+            custom_data={**booking.custom_data, 'tx_ref': tx_ref, 'payment_status': 'paid'},
+        )
+    Payment.objects.get_or_create(
+        booking=booking,
+        paychangu_reference=tx_ref,
+        defaults={
+            'amount': booking.resource.price,
+            'status': Payment.StatusChoices.SUCCESS,
+        },
+    )
+
+
+def _booking_from_tx_ref(tx_ref):
+    """Extract booking from tx_ref format SMARTSLOT-{id}-{random}."""
+    try:
+        parts = tx_ref.split('-')
+        if len(parts) >= 2:
+            return Booking.objects.filter(id=int(parts[1])).first()
+    except (ValueError, IndexError):
+        pass
+    return None
+
+
+# ── Mobile Money operators (JSON) ─────────────────────────────────────────────
+
+@require_GET
+def mobile_money_operators(request):
+    """Returns supported operators as JSON for the inline payment form."""
+    try:
+        operators = get_mobile_money_operators()
+        return JsonResponse({'status': 'success', 'data': operators})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+# ── Mobile Money charge (inline, no redirect) ─────────────────────────────────
+
+@login_required
+@require_POST
+def mobile_money_charge(request, booking_id):
+    """
+    Initiates a direct mobile money charge for a pending booking.
+    Called via AJAX from the payment step.
+    Returns JSON with charge_id for polling.
+    """
+    booking = Booking.objects.filter(id=booking_id, user=request.user).first()
+    if not booking:
+        return JsonResponse({'status': 'error', 'message': 'Booking not found.'}, status=404)
+
+    if booking.status == Booking.StatusChoices.PAID:
+        return JsonResponse({'status': 'already_paid'})
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        body = {}
+
+    mobile_number   = body.get('mobile_number', '').strip()
+    operator_ref_id = body.get('operator_ref_id', '').strip()
+
+    if not mobile_number or not operator_ref_id:
+        return JsonResponse({'status': 'error', 'message': 'Mobile number and operator are required.'}, status=400)
+
+    user = request.user
+    first_name = user.first_name or user.username
+    last_name  = user.last_name or ''
+    email      = user.email or ''
+
+    try:
+        charge_data = charge_mobile_money(
+            booking=booking,
+            mobile_number=mobile_number,
+            operator_ref_id=operator_ref_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+        )
+        # Store charge_id and tx_ref on the booking for polling
+        booking.custom_data['charge_id'] = charge_data.get('charge_id') or charge_data.get('id', '')
+        booking.custom_data['tx_ref']    = charge_data.get('tx_ref', '')
+        Booking.objects.filter(pk=booking.pk).update(custom_data=booking.custom_data)
+
+        return JsonResponse({
+            'status':    'pending',
+            'charge_id': booking.custom_data['charge_id'],
+            'message':   'Payment request sent. Please check your phone and enter your PIN.',
+        })
+    except Exception as e:
+        logger.error(f'Mobile money charge error: {e}')
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+# ── Poll charge status ────────────────────────────────────────────────────────
+
+@login_required
+@require_GET
+def mobile_money_status(request, booking_id):
+    """
+    Polls the status of a mobile money charge.
+    Called repeatedly by the frontend until success or failure.
+    """
+    booking = Booking.objects.filter(id=booking_id, user=request.user).first()
+    if not booking:
+        return JsonResponse({'status': 'error', 'message': 'Booking not found.'}, status=404)
+
+    if booking.status == Booking.StatusChoices.PAID:
+        return JsonResponse({'status': 'success', 'redirect': f'/bookings/'})
+
+    charge_id = booking.custom_data.get('charge_id', '')
+    tx_ref    = booking.custom_data.get('tx_ref', '')
+
+    if not charge_id:
+        return JsonResponse({'status': 'error', 'message': 'No charge in progress.'}, status=400)
+
+    try:
+        charge = get_charge_details(charge_id)
+        charge_status = charge.get('status', '')
+
+        if charge_status == 'success':
+            _confirm_booking(booking, tx_ref)
+            return JsonResponse({'status': 'success', 'redirect': f'/payments/return/?tx_ref={tx_ref}'})
+        elif charge_status in ('failed', 'cancelled'):
+            return JsonResponse({'status': 'failed', 'message': 'Payment was not completed.'})
+        else:
+            return JsonResponse({'status': 'pending', 'message': 'Waiting for payment confirmation...'})
+
+    except Exception as e:
+        logger.error(f'Mobile money status poll error: {e}')
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+# ── Webhook (IPN) ─────────────────────────────────────────────────────────────
+
+@csrf_exempt
+@require_POST
+def payment_webhook(request):
+    """PayChangu server-to-server IPN. URL: /payments/webhook/"""
+    signature = request.headers.get('X-Paychangu-Signature', '')
+    if not verify_webhook_signature(request.body, signature):
+        logger.warning('PayChangu webhook: invalid signature')
+
+    tx_ref = request.POST.get('tx_ref') or request.GET.get('tx_ref')
+    if not tx_ref:
+        return HttpResponse('Missing tx_ref', status=400)
+
+    try:
+        transaction = verify_payment(tx_ref)
+        if transaction.get('status') == 'successful':
+            booking = _booking_from_tx_ref(tx_ref)
+            if booking:
+                _confirm_booking(booking, tx_ref)
+                logger.info(f'Booking {booking.id} confirmed via webhook.')
+    except Exception as e:
+        logger.error(f'PayChangu webhook error: {e}')
+
+    return HttpResponse('OK', status=200)
+
+
+# ── Callback (legacy fallback) ────────────────────────────────────────────────
+
+@csrf_exempt
+def payment_callback(request):
+    """Fallback callback. URL: /payments/callback/"""
+    tx_ref = request.GET.get('tx_ref') or request.POST.get('tx_ref')
+    if not tx_ref:
+        return HttpResponse('Missing tx_ref', status=400)
+    try:
+        transaction = verify_payment(tx_ref)
+        if transaction.get('status') == 'successful':
+            booking = _booking_from_tx_ref(tx_ref)
+            if booking:
+                _confirm_booking(booking, tx_ref)
+    except Exception as e:
+        logger.error(f'PayChangu callback error: {e}')
+    return HttpResponse('OK', status=200)
+
+
+# ── Return (user redirect after payment) ─────────────────────────────────────
+
+def payment_return(request):
+    """User lands here after PayChangu redirect. URL: /payments/return/"""
+    tx_ref = request.GET.get('tx_ref')
+    status = request.GET.get('status')
+
+    if status == 'failed' or not tx_ref:
+        return render(request, 'payments/payment_failed.html')
+
+    try:
+        transaction = verify_payment(tx_ref)
+        if transaction.get('status') == 'successful':
+            booking = _booking_from_tx_ref(tx_ref)
+            if booking:
+                _confirm_booking(booking, tx_ref)
+                # Refresh from DB
+                booking.refresh_from_db()
+                from apps.bookings.views import _receipt_rows
+                return render(request, 'bookings/booking_receipt.html', {
+                    'booking':      booking,
+                    'receipt_rows': _receipt_rows(booking),
+                })
+    except Exception as e:
+        logger.error(f'PayChangu return error: {e}')
+
+    return render(request, 'payments/payment_failed.html')
+
+
+def _confirm_booking(booking, tx_ref):
+    """Mark a booking as Paid and create/update the Payment record."""
+    if booking.status not in (Booking.StatusChoices.PAID,):
+        # Update via queryset to skip full_clean overlap check
+        Booking.objects.filter(pk=booking.pk).update(
+            status=Booking.StatusChoices.PAID,
+            custom_data={**booking.custom_data, 'tx_ref': tx_ref, 'payment_status': 'paid'},
         )
 
     # Create a Payment record if one doesn't exist yet
@@ -141,3 +354,30 @@ def payment_return(request):
         logger.error(f'PayChangu return error: {e}')
 
     return render(request, 'payments/payment_failed.html')
+
+
+# ── Mobile Money payment page ─────────────────────────────────────────────────
+
+@login_required
+def momo_pay(request, booking_id):
+    """
+    Dedicated mobile money payment page shown after booking is created as Pending.
+    User selects operator, enters phone, and we charge inline.
+    URL: /payments/momo/pay/<booking_id>/
+    """
+    from django.shortcuts import get_object_or_404
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+
+    # Already paid — show receipt
+    if booking.status == Booking.StatusChoices.PAID:
+        from apps.bookings.views import _receipt_rows
+        return render(request, 'bookings/booking_receipt.html', {
+            'booking':      booking,
+            'receipt_rows': _receipt_rows(booking),
+        })
+
+    # Cancelled or wrong status
+    if booking.status == Booking.StatusChoices.CANCELLED:
+        return render(request, 'payments/payment_failed.html')
+
+    return render(request, 'payments/momo_pay.html', {'booking': booking})

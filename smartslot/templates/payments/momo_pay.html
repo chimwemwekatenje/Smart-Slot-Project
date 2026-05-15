@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width:520px; margin:0 auto;">
+
+    <!-- Booking summary -->
+    <div class="card" style="padding:1.25rem 1.5rem; margin-bottom:1.5rem;
+                              display:flex; align-items:center; gap:1rem;">
+        <div style="width:48px; height:48px; background:rgba(20,184,166,0.1);
+                    border-radius:var(--r-sm); display:flex; align-items:center;
+                    justify-content:center; font-size:1.3rem; color:var(--primary); flex-shrink:0;">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <div style="flex:1;">
+            <div style="font-weight:700; color:var(--text);">{{ booking.resource.name }}</div>
+            <div style="font-size:0.8rem; color:var(--muted-dim);">{{ booking.organisation.name }}</div>
+        </div>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--primary); flex-shrink:0;">
+            MWK {{ booking.resource.price|floatformat:0 }}
+        </div>
+    </div>
+
+    <!-- Payment card -->
+    <div class="card" style="padding:2rem;">
+        <div style="font-size:1.1rem; font-weight:700; color:var(--text); margin-bottom:4px;">
+            Mobile Money Payment
+        </div>
+        <p style="color:var(--muted-dim); font-size:0.875rem; margin-bottom:1.5rem;">
+            Select your operator and enter your mobile number. You'll receive a PIN prompt on your phone.
+        </p>
+
+        <!-- Operator selection -->
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label">Select Operator</label>
+            <div id="operator-loading" style="color:var(--muted-dim); font-size:0.875rem; padding:8px 0;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading operators...
+            </div>
+            <div id="operator-buttons" style="display:none; gap:0.75rem; flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Mobile number -->
+        <div class="form-group" style="margin-bottom:1.5rem;">
+            <label class="form-label">Mobile Number</label>
+            <input type="tel" id="mobile-number" class="form-input"
+                   placeholder="e.g. 0991234567" maxlength="15" />
+            <div style="font-size:0.75rem; color:var(--muted-dim); margin-top:4px;">
+                Enter the number registered with your mobile money account.
+            </div>
+        </div>
+
+        <!-- Status message -->
+        <div id="momo-status" style="display:none; margin-bottom:1rem;"></div>
+
+        <!-- Actions -->
+        <div style="display:flex; gap:0.75rem;">
+            <a href="/bookings/" class="btn btn-ghost" style="padding:13px 20px;" id="cancel-btn">
+                Cancel
+            </a>
+            <button type="button" id="pay-btn" onclick="startPayment()"
+                    class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+                Pay MWK {{ booking.resource.price|floatformat:0 }}
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const BOOKING_ID = {{ booking.id }};
+let selectedOperatorRefId = null;
+let pollInterval = null;
+
+// Load operators
+fetch('/payments/momo/operators/')
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('operator-loading').style.display = 'none';
+        const container = document.getElementById('operator-buttons');
+        container.style.display = 'flex';
+        if (data.status === 'success' && data.data.length) {
+            data.data.forEach(op => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.innerHTML = `<i class="fa-solid fa-sim-card" style="margin-right:6px;"></i>${op.name}`;
+                btn.dataset.refId = op.ref_id;
+                btn.style.cssText = `
+                    padding:10px 18px; border-radius:var(--r-sm); font-size:0.875rem;
+                    font-weight:600; cursor:pointer; border:1.5px solid var(--border);
+                    background:var(--surface); color:var(--muted); font-family:inherit;
+                    transition:all 0.15s; display:flex; align-items:center;
+                `;
+                btn.onclick = () => selectOperator(btn, op.ref_id);
+                container.appendChild(btn);
+            });
+        } else {
+            container.innerHTML = '<span style="color:var(--error); font-size:0.875rem;">Could not load operators. Please refresh.</span>';
+        }
+    })
+    .catch(() => {
+        document.getElementById('operator-loading').textContent = 'Could not load operators. Please refresh.';
+    });
+
+function selectOperator(btn, refId) {
+    selectedOperatorRefId = refId;
+    document.querySelectorAll('#operator-buttons button').forEach(b => {
+        b.style.borderColor = 'var(--border)';
+        b.style.color = 'var(--muted)';
+        b.style.background = 'var(--surface)';
+    });
+    btn.style.borderColor = 'var(--primary)';
+    btn.style.color = 'var(--primary)';
+    btn.style.background = 'rgba(20,184,166,0.08)';
+}
+
+function showStatus(msg, type) {
+    const el = document.getElementById('momo-status');
+    const styles = {
+        info:    ['rgba(20,184,166,0.1)', 'rgba(20,184,166,0.3)', 'var(--primary)'],
+        success: ['rgba(34,197,94,0.1)',  'rgba(34,197,94,0.3)',  'var(--success)'],
+        error:   ['rgba(239,68,68,0.1)',  'rgba(239,68,68,0.3)',  'var(--error)'],
+        warning: ['rgba(245,158,11,0.1)', 'rgba(245,158,11,0.3)', 'var(--warning)'],
+    };
+    const [bg, border, color] = styles[type] || styles.info;
+    el.style.cssText = `display:flex; align-items:center; gap:10px; padding:12px 16px;
+        border-radius:var(--r-sm); background:${bg}; border:1px solid ${border};
+        color:${color}; font-size:0.875rem; margin-bottom:1rem;`;
+    el.innerHTML = msg;
+}
+
+function getCsrf() {
+    return document.cookie.split(';')
+        .find(c => c.trim().startsWith('csrftoken='))
+        ?.split('=')[1] || '';
+}
+
+async function startPayment() {
+    if (!selectedOperatorRefId) {
+        showStatus('<i class="fa-solid fa-ban"></i>&nbsp; Please select a mobile operator.', 'error');
+        return;
+    }
+    const mobile = document.getElementById('mobile-number').value.trim();
+    if (!mobile || mobile.length < 9) {
+        showStatus('<i class="fa-solid fa-ban"></i>&nbsp; Please enter a valid mobile number.', 'error');
+        return;
+    }
+
+    const payBtn    = document.getElementById('pay-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    payBtn.disabled = true;
+    payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Sending request...';
+    cancelBtn.style.pointerEvents = 'none';
+    cancelBtn.style.opacity = '0.5';
+
+    showStatus('<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Initiating payment...', 'info');
+
+    try {
+        const resp = await fetch(`/payments/momo/charge/${BOOKING_ID}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrf(),
+            },
+            body: JSON.stringify({
+                mobile_number:   mobile,
+                operator_ref_id: selectedOperatorRefId,
+            }),
+        });
+        const data = await resp.json();
+
+        if (data.status === 'pending' || data.status === 'success') {
+            showStatus(
+                '<i class="fa-solid fa-mobile-screen-button"></i>&nbsp; ' +
+                'Request sent! Check your phone and enter your PIN to complete payment.',
+                'warning'
+            );
+            payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Waiting for PIN...';
+            startPolling();
+        } else if (data.status === 'already_paid') {
+            showStatus('<i class="fa-solid fa-circle-check"></i>&nbsp; Already paid!', 'success');
+            setTimeout(() => window.location.href = '/bookings/', 1500);
+        } else {
+            showStatus(`<i class="fa-solid fa-ban"></i>&nbsp; ${data.message || 'Payment failed.'}`, 'error');
+            resetButtons();
+        }
+    } catch(e) {
+        showStatus('<i class="fa-solid fa-ban"></i>&nbsp; Network error. Please try again.', 'error');
+        resetButtons();
+    }
+}
+
+function startPolling() {
+    let attempts = 0;
+    const MAX_ATTEMPTS = 40; // ~2 minutes at 3s intervals
+
+    pollInterval = setInterval(async () => {
+        attempts++;
+        if (attempts > MAX_ATTEMPTS) {
+            clearInterval(pollInterval);
+            showStatus(
+                '<i class="fa-solid fa-clock"></i>&nbsp; Payment timed out. ' +
+                'If you completed the payment, <a href="/bookings/" style="color:inherit; font-weight:700;">check My Bookings</a>.',
+                'warning'
+            );
+            resetButtons();
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/payments/momo/status/${BOOKING_ID}/`);
+            const data = await resp.json();
+
+            if (data.status === 'success') {
+                clearInterval(pollInterval);
+                showStatus('<i class="fa-solid fa-circle-check"></i>&nbsp; Payment confirmed!', 'success');
+                setTimeout(() => window.location.href = data.redirect || '/bookings/', 1000);
+            } else if (data.status === 'failed') {
+                clearInterval(pollInterval);
+                showStatus(`<i class="fa-solid fa-circle-xmark"></i>&nbsp; ${data.message || 'Payment failed.'}`, 'error');
+                resetButtons();
+            }
+            // 'pending' — keep polling
+        } catch(e) {
+            // Network hiccup — keep polling
+        }
+    }, 3000);
+}
+
+function resetButtons() {
+    const payBtn    = document.getElementById('pay-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    payBtn.disabled = false;
+    payBtn.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i>&nbsp; Pay MWK {{ booking.resource.price|floatformat:0 }}';
+    cancelBtn.style.pointerEvents = '';
+    cancelBtn.style.opacity = '';
+}
+</script>
+{% endblock %}
