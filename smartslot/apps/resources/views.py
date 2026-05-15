@@ -47,32 +47,44 @@ class ResourceListView(ListView):
         now  = timezone.now()
         soon = now + timezone.timedelta(minutes=30)
 
-        booked_ids = set(
-            Booking.objects
-            .filter(
-                status__in=Booking.ACTIVE_STATUSES,
-                start_time__lte=now,
-                end_time__gt=now,
-            )
-            .values_list('resource_id', flat=True)
-        )
-        upcoming_ids = set(
-            Booking.objects
-            .filter(
-                status__in=Booking.ACTIVE_STATUSES,
-                start_time__gt=now,
-                start_time__lte=soon,
-            )
-            .values_list('resource_id', flat=True)
-        )
+        # Get current active bookings (happening right now)
+        booked_now_qs = Booking.objects.filter(
+            status__in=Booking.ACTIVE_STATUSES,
+            start_time__lte=now,
+            end_time__gt=now,
+        ).select_related('resource')
+
+        booked_ids = set(b.resource_id for b in booked_now_qs)
+
+        # Map resource_id → booking for tooltip info
+        booked_info = {
+            b.resource_id: b for b in booked_now_qs
+        }
+
+        upcoming_qs = Booking.objects.filter(
+            status__in=Booking.ACTIVE_STATUSES,
+            start_time__gt=now,
+            start_time__lte=soon,
+        ).select_related('resource')
+
+        upcoming_ids = set(b.resource_id for b in upcoming_qs)
+        upcoming_info = {b.resource_id: b for b in upcoming_qs}
 
         for resource in ctx['resources']:
             if resource.pk in booked_ids:
                 resource.availability = 'booked'
+                b = booked_info[resource.pk]
+                resource.booked_until = b.end_time
+                resource.booked_from  = b.start_time
             elif resource.pk in upcoming_ids:
                 resource.availability = 'soon'
+                b = upcoming_info[resource.pk]
+                resource.booked_from  = b.start_time
+                resource.booked_until = b.end_time
             else:
                 resource.availability = 'available'
+                resource.booked_from  = None
+                resource.booked_until = None
 
         return ctx
 
