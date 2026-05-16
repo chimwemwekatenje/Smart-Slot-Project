@@ -130,16 +130,21 @@
                         <span class="btn btn-ghost" style="padding:8px 20px; font-size:0.85rem; cursor:not-allowed; opacity:0.5;">
                             <i class="fa-solid fa-lock"></i> Unavailable
                         </span>
-                    {% else %}
-                        <a href="{% if not is_authenticated %}{% url 'login' %}?next={{ request.path }}{% elif is_external %}{% url 'booking_create_external' resource.pk %}{% else %}{% url 'booking_create_internal' resource.pk %}{% endif %}"
+                    {% elif not is_authenticated %}
+                        {# Guest: redirect to login with a message via the redirect view #}
+                        <a href="{% url 'resource_book_redirect' resource.pk %}"
                            class="btn btn-primary" style="padding:8px 20px; font-size:0.85rem;">
-                            {% if not is_authenticated %}
-                                <i class="fa-regular fa-calendar-check"></i> Book Now
-                            {% elif is_external %}
-                                <i class="fa-solid fa-credit-card"></i> Book & Pay
-                            {% else %}
-                                <i class="fa-regular fa-calendar-check"></i> Book Now
-                            {% endif %}
+                            <i class="fa-regular fa-calendar-check"></i> Book Now
+                        </a>
+                    {% elif is_external %}
+                        <a href="{% url 'booking_create_external' resource.pk %}"
+                           class="btn btn-primary" style="padding:8px 20px; font-size:0.85rem;">
+                            <i class="fa-solid fa-credit-card"></i> Book &amp; Pay
+                        </a>
+                    {% else %}
+                        <a href="{% url 'booking_create_internal' resource.pk %}"
+                           class="btn btn-primary" style="padding:8px 20px; font-size:0.85rem;">
+                            <i class="fa-regular fa-calendar-check"></i> Book Now
                         </a>
                     {% endif %}
                 </div>
