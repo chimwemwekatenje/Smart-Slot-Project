@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<style>
+@keyframes shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position:  400px 0; }
+}
+</style>
 <div style="max-width:520px; margin:0 auto;">
 
     <!-- Booking summary -->
@@ -32,8 +38,17 @@
         <!-- Operator selection -->
         <div class="form-group" style="margin-bottom:1rem;">
             <label class="form-label">Select Operator</label>
-            <div id="operator-loading" style="color:var(--muted-dim); font-size:0.875rem; padding:8px 0;">
-                <i class="fa-solid fa-spinner fa-spin"></i> Loading operators...
+            <div id="operator-loading"
+                 style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <!-- Skeleton operator buttons -->
+                <div style="height:42px; width:140px; border-radius:var(--r-sm);
+                            background:linear-gradient(90deg,var(--border) 25%,var(--surface) 50%,var(--border) 75%);
+                            background-size:400px 100%;
+                            animation:shimmer 1.4s infinite linear;"></div>
+                <div style="height:42px; width:120px; border-radius:var(--r-sm);
+                            background:linear-gradient(90deg,var(--border) 25%,var(--surface) 50%,var(--border) 75%);
+                            background-size:400px 100%;
+                            animation:shimmer 1.4s infinite linear;"></div>
             </div>
             <div id="operator-buttons" style="display:none; gap:0.75rem; flex-wrap:wrap;"></div>
         </div>
@@ -197,10 +212,15 @@ function startPolling() {
         attempts++;
         if (attempts > MAX_ATTEMPTS) {
             clearInterval(pollInterval);
+            // Cancel the booking on timeout
+            fetch(`/payments/momo/cancel/${BOOKING_ID}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrf() },
+            }).catch(() => {});
             showStatus(
-                '<i class="fa-solid fa-clock"></i>&nbsp; Payment timed out. ' +
-                'If you completed the payment, <a href="/bookings/" style="color:inherit; font-weight:700;">check My Bookings</a>.',
-                'warning'
+                '<i class="fa-solid fa-clock"></i>&nbsp; Payment timed out. Your booking has been cancelled. ' +
+                '<a href="/resources/" style="color:inherit; font-weight:700;">Try again</a>.',
+                'error'
             );
             resetButtons();
             return;

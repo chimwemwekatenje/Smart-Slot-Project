@@ -8,13 +8,11 @@ from apps.resources.models import Resource
 
 class Booking(BaseModel):
     class StatusChoices(models.TextChoices):
-        PENDING   = 'Pending',   'Pending'
         BOOKED    = 'Booked',    'Booked'
-        PAID      = 'Paid',      'Paid'
         CANCELLED = 'Cancelled', 'Cancelled'
 
     # Active statuses — used for overlap detection
-    ACTIVE_STATUSES = ['Booked', 'Paid']
+    ACTIVE_STATUSES = ['Booked']
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -39,7 +37,6 @@ class Booking(BaseModel):
     custom_data = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        # DB-level index speeds up overlap queries
         indexes = [
             models.Index(fields=['resource', 'start_time', 'end_time']),
         ]
@@ -47,9 +44,6 @@ class Booking(BaseModel):
     def __str__(self):
         return f"Booking #{self.id} — {self.resource.name} by {self.user.username}"
 
-    # ------------------------------------------------------------------
-    # Double-booking prevention
-    # ------------------------------------------------------------------
     def clean(self):
         """Raise ValidationError if this booking overlaps an existing active one."""
         if not self.start_time or not self.end_time:
@@ -65,7 +59,7 @@ class Booking(BaseModel):
                 start_time__lt=self.end_time,
                 end_time__gt=self.start_time,
             )
-            .exclude(pk=self.pk)   # allow editing own booking
+            .exclude(pk=self.pk)
         )
         if overlapping.exists():
             conflict = overlapping.first()
@@ -80,16 +74,12 @@ class Booking(BaseModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    # ------------------------------------------------------------------
-    # Convenience helpers
-    # ------------------------------------------------------------------
     @property
     def is_active(self):
         return self.status in self.ACTIVE_STATUSES
 
     @classmethod
     def is_resource_booked_now(cls, resource):
-        """Return True if the resource has an active booking right now."""
         now = timezone.now()
         return cls.objects.filter(
             resource=resource,

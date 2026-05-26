@@ -17,7 +17,11 @@ class BookingListView(LoginRequiredMixin, ListView):
     STATUSES = ['All', 'Booked', 'Cancelled']
 
     def get_queryset(self):
-        qs = Booking.objects.filter(user=self.request.user).order_by('-start_time')
+        # Only show confirmed (Booked) and Cancelled — never show Pending
+        qs = Booking.objects.filter(
+            user=self.request.user,
+            status__in=['Booked', 'Cancelled'],
+        ).order_by('-start_time')
         status = self.request.GET.get('status', 'All')
         if status and status != 'All':
             qs = qs.filter(status=status)

@@ -402,7 +402,7 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         qs = _build_analysis_qs(self.request)
 
-        ctx['total_bookings']      = qs.count()
+        ctx['total_bookings']      = qs.filter(status__in=['Booked', 'Cancelled']).count()
         ctx['active_bookings']     = qs.filter(status='Booked').count()
         ctx['completed_bookings']  = qs.filter(status='Booked').count()
         ctx['cancelled_bookings']  = qs.filter(status='Cancelled').count()

@@ -262,16 +262,12 @@
                             {{ b.start_time|date:"d M Y H:i" }}
                         </td>
                         <td style="padding:10px 16px;">
-                            {% if b.status == 'Pending' %}
-                                <span class="badge badge-warning">{{ b.status }}</span>
-                            {% elif b.status == 'Issued' %}
-                                <span class="badge badge-primary">{{ b.status }}</span>
-                            {% elif b.status == 'Verified' %}
-                                <span class="badge badge-success">{{ b.status }}</span>
-                            {% elif b.status == 'Completed' %}
-                                <span class="badge badge-muted">{{ b.status }}</span>
+                            {% if b.status == 'Booked' %}
+                                <span class="badge badge-success">Booked</span>
+                            {% elif b.status == 'Cancelled' %}
+                                <span class="badge badge-error">Cancelled</span>
                             {% else %}
-                                <span class="badge badge-error">{{ b.get_status_display }}</span>
+                                <span class="badge badge-muted">{{ b.status }}</span>
                             {% endif %}
                         </td>
                     </tr>
