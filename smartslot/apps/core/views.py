@@ -562,6 +562,71 @@ def dashboard_organisation_application_detail_view(request, pk):
             messages.success(request, 'Application approved for payment and notification email queued.')
             return redirect('dashboard_org_application_detail', pk=application.pk)
 
+        if action == 'activate':
+            # ── Final activation step ──────────────────────────────────
+            # 1. Create or reuse the linked Organisation and mark it approved.
+            # 2. Create Resource records for every verified ApplicationResource.
+            # 3. Mark the application as Completed.
+            from apps.resources.models import Resource as ResourceModel
+            now = timezone.now()
+
+            if application.created_organisation:
+                org = application.created_organisation
+            else:
+                org = Organisation.objects.create(
+                    name=application.organisation_name,
+                    logo=application.logo or None,
+                )
+                application.created_organisation = org
+
+            if not org.is_approved:
+                org.is_approved = True
+                org.approved_at = now
+                org.save(update_fields=['is_approved', 'approved_at', 'updated_at'])
+
+            # Create Resource records for verified ApplicationResources (skip duplicates)
+            existing_names = set(
+                ResourceModel.objects.filter(organisation=org)
+                .values_list('name', flat=True)
+            )
+            created_count = 0
+            for app_res in application.resources.filter(
+                status=ApplicationResource.StatusChoices.VERIFIED
+            ):
+                if app_res.name not in existing_names:
+                    ResourceModel.objects.create(
+                        organisation=org,
+                        name=app_res.name,
+                        category=app_res.category,
+                        description=app_res.description,
+                        price=app_res.price,
+                        is_active=True,
+                    )
+                    created_count += 1
+
+            application.status = OrganisationApplication.StatusChoices.COMPLETED
+            application.reviewed_at = application.reviewed_at or now
+            application.save(update_fields=[
+                'status', 'reviewed_at', 'created_organisation', 'updated_at'
+            ])
+
+            _send_application_email(
+                application,
+                subject='Your SmartSlot organisation is now active',
+                message=(
+                    f'Hello {application.contact_name},\n\n'
+                    f'Great news! {application.organisation_name} has been fully activated on SmartSlot. '
+                    f'{created_count} resource(s) are now live and visible to users.\n\n'
+                    'Your organisation admin account will be set up shortly by the SmartSlot team.'
+                ),
+            )
+            messages.success(
+                request,
+                f'Organisation "{org.name}" activated. '
+                f'{created_count} resource(s) created and made live.'
+            )
+            return redirect('dashboard_org_application_detail', pk=application.pk)
+
         if action == 'reject':
             reason = request.POST.get('rejection_reason', '').strip()
             if not reason:
@@ -690,6 +755,9 @@ def dashboard_org_resources_view(request):
                     description=description,
                     price=price_value,
                     organisation=org,
+                    # Active immediately if the org is already approved;
+                    # otherwise stays inactive until the org is approved.
+                    is_active=org.is_approved if org else False,
                 )
                 if photo:
                     resource.photo = photo

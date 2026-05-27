@@ -1,0 +1,202 @@
+/* Registration Page Styles */
+
+/* Main container */
+.registration-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 1rem 0 3rem;
+}
+
+.registration-wrapper {
+    width: 100%;
+    max-width: 560px;
+}
+
+/* Header */
+.registration-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.registration-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.registration-subtitle {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-top: 4px;
+}
+
+/* Card styles */
+.registration-card {
+    padding: 2rem;
+}
+
+.registration-section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+}
+
+/* Account type selector */
+.account-type-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.type-card {
+    padding: 1.1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.type-card.active {
+    border: 2px solid var(--primary);
+    background: rgba(20, 184, 166, 0.1);
+}
+
+.type-card.active .type-icon {
+    color: var(--primary);
+}
+
+.type-card.active .type-title {
+    color: var(--primary);
+}
+
+.type-icon {
+    font-size: 1.6rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.type-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.type-description {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+/* Organisation signup link */
+.org-signup-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 700;
+    margin-bottom: 1.75rem;
+    background: rgba(20, 184, 166, 0.06);
+}
+
+/* Form groups */
+.registration-form-group {
+    margin-bottom: 1.1rem;
+}
+
+.registration-form-group.last {
+    margin-bottom: 1.5rem;
+}
+
+.registration-form-group.org-section {
+    display: none;
+    margin-bottom: 1.5rem;
+}
+
+.registration-form-group.org-section.visible {
+    display: block;
+}
+
+/* Name row */
+.registration-name-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.1rem;
+}
+
+/* Form label icons */
+.form-label i {
+    margin-right: 5px;
+}
+
+.form-label .optional-text {
+    color: var(--muted-dim);
+    font-weight: 400;
+}
+
+/* Password field container */
+.password-field-wrapper {
+    position: relative;
+}
+
+.password-field-wrapper .form-input {
+    padding-right: 44px;
+}
+
+/* Password toggle button */
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted-dim);
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.password-toggle-btn:hover {
+    color: var(--primary);
+}
+
+/* Alert styles */
+.registration-alert {
+    margin-bottom: 1.25rem;
+}
+
+/* Submit button */
+.registration-submit-btn {
+    width: 100%;
+    padding: 13px;
+    font-size: 1rem;
+}
+
+/* Footer */
+.registration-footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 1.25rem;
+}
+
+.registration-footer a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}

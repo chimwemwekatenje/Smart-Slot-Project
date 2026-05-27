@@ -15,7 +15,7 @@ class HomeView(TemplateView):
 
 def signup_view(request):
     from apps.core.models import Organisation
-    organisations = Organisation.objects.all()
+    organisations = Organisation.objects.filter(is_approved=True)
 
     if request.method == 'POST':
         form = SignupForm(request.POST)

@@ -110,7 +110,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("End time must be after start time.")
         conflict = Booking.objects.filter(
             resource=data['resource'],
-            status__in=['Pending', 'Issued', 'Verified'],
+            status__in=Booking.ACTIVE_STATUSES,
             start_time__lt=end,
             end_time__gt=start,
         ).exists()
@@ -124,8 +124,8 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['user'] = user
         validated_data['organisation'] = validated_data['resource'].organisation
-        # All bookings are issued immediately upon creation
-        validated_data['status'] = 'Issued'
+        # API bookings are confirmed immediately; paid web bookings may start Pending.
+        validated_data['status'] = Booking.StatusChoices.BOOKED
         instance = super().create(validated_data)
         return instance
 

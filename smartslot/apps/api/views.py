@@ -152,6 +152,10 @@ class BookingUpdateView(generics.UpdateAPIView):
                 })
             else:
                 return Response({'detail': result['message']}, status=status.HTTP_400_BAD_REQUEST)
+        if new_status == Booking.StatusChoices.CANCELLED and instance.status in Booking.ACTIVE_STATUSES:
+            instance.status = Booking.StatusChoices.CANCELLED
+            instance.save()
+            return Response(BookingSerializer(instance).data)
         return Response({'detail': 'Not allowed.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -217,7 +221,7 @@ class ResourceScheduleView(APIView):
 
         bookings = Booking.objects.filter(
             resource_id=pk,
-            status__in=['Pending', 'Issued', 'Verified'],
+            status__in=Booking.ACTIVE_STATUSES,
             start_time__lt=week_end,
             end_time__gt=week_start,
         ).values('id', 'start_time', 'end_time', 'status')

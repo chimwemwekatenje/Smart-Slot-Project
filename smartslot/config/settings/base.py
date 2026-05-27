@@ -93,6 +93,8 @@ DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
     DATABASES['default'].setdefault('OPTIONS', {})
     DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+else:
+    DATABASES['default'].get('OPTIONS', {}).pop('sslmode', None)
 
 # Supabase Storage — for persistent image uploads
 SUPABASE_URL = env('SUPABASE_URL', default='')

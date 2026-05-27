@@ -17,7 +17,10 @@ DATABASES = {
     'default': env.db('DATABASE_URL'),
 }
 
-# Supabase requires SSL for Postgres connections unless explicitly disabled
-# in the project settings. Preserve sslmode if it is already in DATABASE_URL.
-DATABASES['default'].setdefault('OPTIONS', {})
-DATABASES['default']['OPTIONS'].setdefault('sslmode', 'require')
+# Supabase requires SSL for Postgres connections. Keep local SQLite overrides
+# free of Postgres-only connection options.
+if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS'].setdefault('sslmode', 'require')
+else:
+    DATABASES['default'].get('OPTIONS', {}).pop('sslmode', None)

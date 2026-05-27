@@ -2,10 +2,14 @@ import uuid
 from django.db import models
 
 class Organisation(models.Model):
-    name = models.CharField(max_length=255)
-    logo = models.ImageField(upload_to='organisation_logos/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name        = models.CharField(max_length=255)
+    logo        = models.ImageField(upload_to='organisation_logos/', null=True, blank=True)
+    # Set to True when the Super Admin approves the organisation application.
+    # Only approved organisations (and their resources) are visible to users.
+    is_approved = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Organisation"
@@ -13,6 +17,46 @@ class Organisation(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields', None)
+        is_approved_changed = None  # True if approved, False if revoked, None if no change
+        if self.pk:
+            try:
+                old_org = Organisation.objects.get(pk=self.pk)
+                if self.is_approved and not old_org.is_approved:
+                    is_approved_changed = True
+                elif not self.is_approved and old_org.is_approved:
+                    is_approved_changed = False
+            except Organisation.DoesNotExist:
+                pass
+        else:
+            if self.is_approved:
+                is_approved_changed = True
+
+        if is_approved_changed is True:
+            if not self.approved_at:
+                from django.utils import timezone
+                self.approved_at = timezone.now()
+                if update_fields is not None:
+                    update_fields = set(update_fields)
+                    update_fields.add('approved_at')
+                    kwargs['update_fields'] = list(update_fields)
+        elif is_approved_changed is False:
+            self.approved_at = None
+            if update_fields is not None:
+                update_fields = set(update_fields)
+                update_fields.add('approved_at')
+                kwargs['update_fields'] = list(update_fields)
+
+        super().save(*args, **kwargs)
+
+        if is_approved_changed is True:
+            from apps.resources.models import Resource
+            Resource.objects.filter(organisation=self).update(is_active=True)
+        elif is_approved_changed is False:
+            from apps.resources.models import Resource
+            Resource.objects.filter(organisation=self).update(is_active=False)
 
 
 class OrganisationApplication(models.Model):

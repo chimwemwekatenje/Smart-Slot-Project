@@ -31,18 +31,31 @@ def _upload_to_supabase(file_field, folder: str) -> str:
 
 
 class ResourceQuerySet(models.QuerySet):
+    def active(self):
+        """Only resources that are active AND belong to an approved organisation."""
+        return self.filter(is_active=True, organisation__is_approved=True)
+
     def visible_to(self, user):
+        """
+        Scope resources by role, then restrict to active/approved only.
+        Superusers and PlatformAdmins see everything (including inactive/unapproved)
+        so they can manage the full catalogue.
+        """
         if not user or not user.is_authenticated:
-            return self
-        if user.is_superuser:
-            return self
-        if user.role == 'PlatformAdmin':
-            return self
+            # Unauthenticated visitors only see active resources from approved orgs
+            return self.active()
+        if user.is_superuser or user.role == 'PlatformAdmin':
+            return self  # full visibility for admins
         if user.role == 'External':
-            return self
+            return self.active()
         if user.role in _ORG_SCOPED_ROLES:
             if user.organisation_id:
-                return self.filter(organisation_id=user.organisation_id)
+                # Org-scoped staff see their own org's resources (active or not)
+                # so they can manage them, but only if the org is approved
+                return self.filter(
+                    organisation_id=user.organisation_id,
+                    organisation__is_approved=True,
+                )
             return self.none()
         return self.none()
 
@@ -65,10 +78,18 @@ class Resource(BaseModel):
     price         = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
     category      = models.CharField(max_length=255)
     custom_fields = models.JSONField(default=dict, blank=True)
+    # Activated automatically when the parent organisation is approved.
+    # Org admins can also deactivate individual resources manually.
+    is_active     = models.BooleanField(default=False)
 
     objects = ResourceManager()
 
     def save(self, *args, **kwargs):
+        # Auto-activate resource if its organisation is already approved and it's new
+        if not self.pk:
+            if self.organisation and self.organisation.is_approved:
+                self.is_active = True
+
         # If a new photo file has been attached, upload it to Supabase Storage
         if self.photo and hasattr(self.photo, 'file'):
             try:
