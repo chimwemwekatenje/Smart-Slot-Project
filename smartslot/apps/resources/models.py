@@ -60,6 +60,7 @@ class Resource(BaseModel):
     description   = models.TextField(blank=True)
     photo         = models.ImageField(upload_to='resources_photos/', null=True, blank=True)
     # Stores the permanent Supabase Storage public URL after upload
+    image_url     = models.URLField(max_length=600, blank=True, null=True)
     photo_url     = models.URLField(max_length=600, blank=True, null=True)
     price         = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
     category      = models.CharField(max_length=255)
@@ -71,7 +72,9 @@ class Resource(BaseModel):
         # If a new photo file has been attached, upload it to Supabase Storage
         if self.photo and hasattr(self.photo, 'file'):
             try:
-                self.photo_url = _upload_to_supabase(self.photo.file, 'resources')
+                public_url = _upload_to_supabase(self.photo.file, 'resources')
+                self.image_url = public_url
+                self.photo_url = public_url
                 # Clear the local file field so we don't store it on disk
                 self.photo = None
             except Exception as e:
@@ -82,12 +85,15 @@ class Resource(BaseModel):
 
     @property
     def image(self):
-        """Returns the best available image URL — Supabase first, local fallback."""
+        """Returns the best available image URL — Supabase first, local fallback, placeholder default."""
+        from django.conf import settings
+        if self.image_url:
+            return self.image_url
         if self.photo_url:
             return self.photo_url
         if self.photo:
             return self.photo.url
-        return None
+        return f"{settings.STATIC_URL}img/placeholder.png"
 
     def __str__(self):
         return self.name

@@ -20,10 +20,13 @@ class ResourceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price = double.tryParse(resource['price']?.toString() ?? '0') ?? 0;
+    final String? dbImageUrl = resource['image_url'] ?? resource['photo_url'];
     final photoPath = resource['photo'];
-    final photoUrl = photoPath != null && photoPath.toString().isNotEmpty
-        ? '${ApiService.baseUrl}/media/$photoPath'
-        : null;
+    final photoUrl = dbImageUrl != null && dbImageUrl.isNotEmpty
+        ? dbImageUrl
+        : (photoPath != null && photoPath.toString().isNotEmpty
+            ? '${ApiService.baseUrl}/media/$photoPath'
+            : null);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
