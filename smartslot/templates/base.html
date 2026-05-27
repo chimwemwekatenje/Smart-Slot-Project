@@ -461,6 +461,28 @@
         </main>
     </div>
 
+    <!-- ── Footer ── -->
+    <footer style="background:var(--surface); border-top:1px solid var(--border); padding:1.25rem 1.5rem; margin-top:auto;">
+        <div style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <!-- Branding -->
+            <div>
+                <span style="font-weight:800; color:var(--primary); font-size:1rem; letter-spacing:0.5px;">SmartSlot</span>
+                <span style="color:var(--muted-dim); font-size:0.78rem; margin-left:10px;">&copy; 2026 All rights reserved.</span>
+            </div>
+            <!-- Links -->
+            <nav style="display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap;">
+                <a href="/" style="color:var(--muted); text-decoration:none; font-size:0.85rem; font-weight:500; transition:color 0.15s;"
+                   onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
+                    About SmartSlot
+                </a>
+                <a href="/policy/refunds/" style="color:var(--muted); text-decoration:none; font-size:0.85rem; font-weight:500; transition:color 0.15s;"
+                   onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--muted)'">
+                    <i class="fa-solid fa-file-contract" style="margin-right:4px; font-size:0.78rem;"></i>Refund Policy
+                </a>
+            </nav>
+        </div>
+    </footer>
+
 <script>
     // ── Page loading bar ──────────────────────────────────────────────────────
     const loader = document.getElementById('page-loader');
