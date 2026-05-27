@@ -116,7 +116,7 @@ def get_charge_details(charge_id):
         timeout=15,
     )
     data = response.json()
-    if response.status_code == 200 and data.get('status') == 'success':
+    if response.status_code == 200 and data.get('status') in ('success', 'successful'):
         return data.get('data', {})
     raise Exception(data.get('message', 'Could not retrieve charge details.'))
 
