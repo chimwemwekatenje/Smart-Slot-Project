@@ -6,17 +6,18 @@ from .models import Resource
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
     list_display       = ('photo_preview', 'name', 'category',
-                          'price_display', 'organisation', 'created_at')
+                          'price_display', 'organisation', 'active_badge', 'created_at')
     list_display_links = ('name',)
-    list_filter        = ('category', 'organisation', 'created_at')
+    list_filter        = ('is_active', 'category', 'organisation', 'created_at')
     search_fields      = ('name', 'description', 'category')
     ordering           = ('-created_at',)
     readonly_fields    = ('photo_preview', 'created_at', 'updated_at')
     autocomplete_fields = ('organisation',)
+    actions            = ('activate_resources', 'deactivate_resources')
 
     fieldsets = (
         (None, {
-            'fields': ('organisation', 'name', 'category', 'price', 'description'),
+            'fields': ('organisation', 'name', 'category', 'price', 'description', 'is_active'),
         }),
         ('Photo', {
             'fields': ('photo', 'photo_preview'),
@@ -77,3 +78,28 @@ class ResourceAdmin(admin.ModelAdmin):
             '<span style="color:#f59e0b;font-weight:600;">MWK {}</span>',
             '{:,}'.format(price_int),
         )
+
+    @admin.display(description='Active', boolean=False)
+    def active_badge(self, obj):
+        if obj.is_active:
+            return format_html(
+                '<span style="background:#22c55e;color:#fff;padding:2px 8px;'
+                'border-radius:10px;font-size:0.72rem;font-weight:700;">Active</span>'
+            )
+        return format_html(
+            '<span style="background:#64748b;color:#fff;padding:2px 8px;'
+            'border-radius:10px;font-size:0.72rem;font-weight:700;">Inactive</span>'
+        )
+
+    # ------------------------------------------------------------------
+    # Bulk actions
+    # ------------------------------------------------------------------
+    @admin.action(description='Activate selected resources')
+    def activate_resources(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'{updated} resource(s) activated.')
+
+    @admin.action(description='Deactivate selected resources')
+    def deactivate_resources(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'{updated} resource(s) deactivated.')
