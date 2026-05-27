@@ -89,9 +89,10 @@ DATABASES = {
 DATABASES['default']['CONN_MAX_AGE'] = 60
 DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 
-# Required for Supabase / any hosted Postgres — enforce SSL.
-DATABASES['default'].setdefault('OPTIONS', {})
-DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+# Required for Supabase / any hosted Postgres: enforce SSL.
+if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
 
 # Supabase Storage — for persistent image uploads
 SUPABASE_URL = env('SUPABASE_URL', default='')
