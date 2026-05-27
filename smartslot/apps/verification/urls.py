@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import VerifyBookingView, CompleteBookingView, BookingDetailByTokenView
+from .views import VerifyBookingView, CompleteBookingView, BookingDetailByTokenView, PublicReceiptView
 
 urlpatterns = [
     path('verify/', VerifyBookingView.as_view(), name='verify-booking'),

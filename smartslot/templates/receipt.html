@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Receipt – SmartSlot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .card {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      padding: 28px 28px 20px;
+      color: #fff;
+    }
+    .header h1 { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; }
+    .header p  { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+    /* ── Status banner ── */
+    .status-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .status-banner.confirmed { background: #dcfce7; color: #16a34a; }
+    .status-banner.verified  { background: #dcfce7; color: #16a34a; }
+    .status-banner.issued    { background: #dbeafe; color: #1d4ed8; }
+    .status-banner.completed { background: #f1f5f9; color: #475569; }
+    .status-banner.cancelled { background: #fee2e2; color: #dc2626; }
+    .status-icon { font-size: 20px; }
+
+    /* ── QR section ── */
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .qr-section img {
+      width: 180px; height: 180px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px;
+      background: #fff;
+    }
+    .qr-section .booking-id {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .qr-section .qr-hint {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    /* ── Details ── */
+    .details { padding: 20px 28px; }
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      margin-top: 18px;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    .row {
+      display: flex;
+      padding: 5px 0;
+      font-size: 13px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .row:last-child { border-bottom: none; }
+    .row .label {
+      width: 120px;
+      flex-shrink: 0;
+      color: #64748b;
+    }
+    .row .value {
+      font-weight: 600;
+      color: #1e293b;
+      flex: 1;
+    }
+    .value.success { color: #16a34a; }
+    .value.primary { color: #0f766e; }
+
+    /* ── Print button ── */
+    .actions {
+      padding: 16px 28px 28px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary { background: #14b8a6; color: #fff; }
+    .btn-outline { background: #fff; color: #0f766e; border: 1.5px solid #14b8a6; }
+    .btn:hover { opacity: 0.88; }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 14px 28px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    /* ── Not found ── */
+    .not-found {
+      max-width: 400px;
+      margin: 60px auto;
+      text-align: center;
+      padding: 40px 24px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .not-found .icon { font-size: 48px; margin-bottom: 16px; }
+    .not-found h2 { font-size: 20px; margin-bottom: 8px; }
+    .not-found p  { color: #64748b; font-size: 14px; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .card { box-shadow: none; border-radius: 0; }
+      .actions { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+{% if booking %}
+  {% with status=booking.status|lower %}
+  <div class="card">
+
+    <!-- Header -->
+    <div class="header">
+      <h1>SmartSlot</h1>
+      <p>Resource Booking Receipt</p>
+    </div>
+
+    <!-- Status banner -->
+    <div class="status-banner {{ status }}">
+      <span class="status-icon">
+        {% if status == 'verified' or status == 'completed' %}✅
+        {% elif status == 'issued' %}🔵
+        {% elif status == 'cancelled' %}❌
+        {% else %}📋
+        {% endif %}
+      </span>
+      Booking {{ booking.status }}
+    </div>
+
+    <!-- QR Code -->
+    <div class="qr-section">
+      <img src="{{ qr_image_url }}" alt="Booking QR Code" />
+      <p class="booking-id">Booking #{{ booking.id }}</p>
+      <p class="qr-hint">Show this QR code at the entrance for check-in</p>
+    </div>
+
+    <!-- Details -->
+    <div class="details">
+
+      <p class="section-title">Resource Details</p>
+      <div class="row"><span class="label">Resource</span><span class="value">{{ booking.resource.name }}</span></div>
+      <div class="row"><span class="label">Category</span><span class="value">{{ booking.resource.category }}</span></div>
+      <div class="row"><span class="label">Organisation</span><span class="value">{{ booking.organisation.name }}</span></div>
+
+      <p class="section-title">Booking Details</p>
+      <div class="row"><span class="label">Booked By</span><span class="value">{{ booked_by }}</span></div>
+      {% if department %}
+      <div class="row"><span class="label">Department</span><span class="value">{{ department }}</span></div>
+      {% endif %}
+      {% if reason %}
+      <div class="row"><span class="label">Reason</span><span class="value">{{ reason }}</span></div>
+      {% endif %}
+
+      <p class="section-title">Time Slot</p>
+      <div class="row"><span class="label">From</span><span class="value">{{ booking.start_time|date:"D j M Y, H:i" }}</span></div>
+      <div class="row"><span class="label">To</span><span class="value">{{ booking.end_time|date:"H:i" }}</span></div>
+
+      <p class="section-title">Status</p>
+      <div class="row">
+        <span class="label">Status</span>
+        <span class="value {% if status == 'verified' or status == 'completed' or status == 'issued' %}success{% endif %}">
+          {{ booking.status }}
+        </span>
+      </div>
+      {% if booking.verified_at %}
+      <div class="row"><span class="label">Verified At</span><span class="value">{{ booking.verified_at|date:"D j M Y, H:i" }}</span></div>
+      {% endif %}
+
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
+      <button class="btn btn-outline" onclick="window.history.back()">← Go Back</button>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      Generated by SmartSlot &nbsp;•&nbsp; {{ generated_at }}
+    </div>
+
+  </div>
+  {% endwith %}
+
+{% else %}
+  <div class="not-found">
+    <div class="icon">🔍</div>
+    <h2>Booking Not Found</h2>
+    <p>The QR code you scanned does not match any booking in our system.</p>
+  </div>
+{% endif %}
+
+</body>
+</html>

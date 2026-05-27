@@ -7,7 +7,7 @@
             "type": "dart",
             "program": "C:/Users/HP/Desktop/Android App/smartslot_android_app/lib/main.dart",
             "cwd": "C:/Users/HP/Desktop/Android App/smartslot_android_app",
-            "args": ["--dart-define=API_URL=http://10.91.252.84:8000"]
+            "args": ["--dart-define=API_URL=http://10.242.232.84:8000"]
         },
         {
             "name": "SmartSlot Android App (WiFi)",

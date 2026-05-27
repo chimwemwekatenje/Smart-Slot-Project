@@ -1,9 +1,60 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.shortcuts import render
+from django.utils import timezone
+import qrcode
+import qrcode.image.svg
+import io
+import base64
 from .services import VerificationService
 from apps.api.serializers import BookingSerializer
+
+
+class PublicReceiptView(APIView):
+    """
+    Public web page showing a booking receipt when someone scans the QR code.
+    GET /receipt/<qr_token>/
+    No authentication required — the token itself is the secret.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, qr_token):
+        from apps.bookings.models import Booking
+
+        try:
+            booking = Booking.objects.select_related(
+                'resource', 'user', 'organisation'
+            ).get(qr_token=qr_token)
+        except Booking.DoesNotExist:
+            return render(request, 'receipt.html', {'booking': None})
+
+        # Build QR code as base64 PNG to embed in the page
+        receipt_url = request.build_absolute_uri(f'/receipt/{qr_token}/')
+        qr = qrcode.QRCode(version=1, box_size=8, border=2)
+        qr.add_data(receipt_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='black', back_color='white')
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_b64 = base64.b64encode(buffer.getvalue()).decode()
+        qr_image_url = f'data:image/png;base64,{qr_b64}'
+
+        # Extract custom data
+        custom = booking.custom_data or {}
+        user = booking.user
+        full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+
+        context = {
+            'booking': booking,
+            'booked_by': full_name,
+            'department': custom.get('department', ''),
+            'reason': custom.get('reason', ''),
+            'qr_image_url': qr_image_url,
+            'generated_at': timezone.now().strftime('%d %b %Y, %H:%M'),
+        }
+        return render(request, 'receipt.html', context)
 
 
 class VerifyBookingView(APIView):
