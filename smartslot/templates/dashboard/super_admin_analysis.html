@@ -336,14 +336,14 @@
         },
     });
 
-    // ── Status doughnut ─────────────────────────────────────────────
+    // ── Status doughnut (Booked + Cancelled only) ───────────────────
     new Chart(document.getElementById('statusChart'), {
         type: 'doughnut',
         data: {
-            labels: {{ status_labels|safe }},
+            labels: {{ status_labels|safe }},  // ["Booked", "Cancelled"]
             datasets: [{
                 data: {{ status_counts|safe }},
-                backgroundColor: [AMBER, BLUE, TEAL, GREEN, RED, MUTED],
+                backgroundColor: [GREEN, RED],  // Booked = green, Cancelled = red
                 borderWidth: 2,
                 borderColor: SURFACE,
             }],
