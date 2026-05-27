@@ -13,3 +13,6 @@ Thumbs.db
 # Local Android platform tools/downloads
 smartslot/platform-tools.zip
 smartslot/platform-tools/
+
+# Generated Django static output
+smartslot/staticfiles/
