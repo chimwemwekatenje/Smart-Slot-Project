@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from apps.accounts.views import HomeView
 from apps.verification.views import PublicReceiptView
+from apps.bookings.views import refund_policy_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -17,6 +18,7 @@ urlpatterns = [
     path('api/verification/', include('apps.verification.urls')),
     # Public receipt page — scanned by anyone with the QR code
     path('receipt/<str:qr_token>/', PublicReceiptView.as_view(), name='public-receipt'),
+    path('policy/refunds/', refund_policy_view, name='refund_policy'),
     path('', HomeView.as_view(), name='home'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
