@@ -5,7 +5,6 @@ import '../theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -38,18 +37,10 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'SmartSlot',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontSize: 42,
-                    letterSpacing: 1.5,
-                  ),
-            ),
+            Text('SmartSlot',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 42, letterSpacing: 1.5)),
             const SizedBox(height: 8),
-            Text(
-              'Resource Booking System',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text('Resource Booking System', style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 48),
             const CircularProgressIndicator(color: AppColors.primary),
           ],

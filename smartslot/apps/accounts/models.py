@@ -13,11 +13,8 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=20,
         choices=RoleChoices.choices,
-        default=RoleChoices.EMPLOYEE,
+        default=RoleChoices.EXTERNAL,
     )
-
-    # Optional phone number — nullable so existing rows without it are valid.
-    phone = models.CharField(max_length=30, blank=True, null=True)
 
     # Scopes OrgAdmin / Receptionist / Employee to a single organisation.
     # PlatformAdmin leaves this NULL (they see everything).
@@ -28,6 +25,9 @@ class User(AbstractUser):
         blank=True,
         related_name='members',
     )
+
+    # Optional phone number — nullable so existing rows without it are valid.
+    phone = models.CharField(max_length=30, blank=True, null=True)
 
     # Resolve related_name clashes with auth.User
     groups = models.ManyToManyField(
@@ -55,3 +55,4 @@ class User(AbstractUser):
     @property
     def is_org_admin(self):
         return self.role == self.RoleChoices.ORGANISATION_ADMIN
+

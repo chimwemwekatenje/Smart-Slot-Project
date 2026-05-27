@@ -9,3 +9,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Android platform tools/downloads
+smartslot/platform-tools.zip
+smartslot/platform-tools/
