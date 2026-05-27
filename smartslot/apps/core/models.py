@@ -2,10 +2,14 @@ import uuid
 from django.db import models
 
 class Organisation(models.Model):
-    name = models.CharField(max_length=255)
-    logo = models.ImageField(upload_to='organisation_logos/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name        = models.CharField(max_length=255)
+    logo        = models.ImageField(upload_to='organisation_logos/', null=True, blank=True)
+    # Set to True when the Super Admin approves the organisation application.
+    # Only approved organisations (and their resources) are visible to users.
+    is_approved = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Organisation"
