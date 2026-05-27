@@ -416,9 +416,17 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             .annotate(count=Count('id')).order_by('-count')[:8]
         )
 
-        status_data = qs.values('status').annotate(count=Count('id')).order_by('-count')
-        ctx['status_labels'] = json.dumps([s['status'] for s in status_data])
-        ctx['status_counts'] = json.dumps([s['count'] for s in status_data])
+        # Only show Booked and Cancelled in the status chart
+        CHART_STATUSES = ['Booked', 'Cancelled']
+        status_data = (
+            qs.filter(status__in=CHART_STATUSES)
+            .values('status')
+            .annotate(count=Count('id'))
+            .order_by('status')  # consistent order: Booked, Cancelled
+        )
+        status_map = {s['status']: s['count'] for s in status_data}
+        ctx['status_labels'] = json.dumps(CHART_STATUSES)
+        ctx['status_counts'] = json.dumps([status_map.get(s, 0) for s in CHART_STATUSES])
 
         thirty_days_ago = today - timezone.timedelta(days=29)
         trend = (
