@@ -292,16 +292,24 @@ def booking_pdf_view(request, booking_id):
 def cancel_booking_view(request, booking_pk):
     from django.shortcuts import get_object_or_404
     from django.contrib import messages
+    from .services import cancel_booking
 
     booking = get_object_or_404(Booking, pk=booking_pk, user=request.user)
 
     if request.method == 'POST':
-        if booking.status == Booking.StatusChoices.BOOKED:
-            booking.status = Booking.StatusChoices.CANCELLED
-            # Skip full_clean on cancel — no overlap check needed
-            Booking.objects.filter(pk=booking.pk).update(status=Booking.StatusChoices.CANCELLED)
-            messages.success(request, f'Booking for {booking.resource.name} has been cancelled. The slot is now available.')
+        result = cancel_booking(booking, request.user, action_source='user')
+        if result['success']:
+            messages.success(request, result['message'])
+        else:
+            messages.error(request, result['message'])
         return redirect('booking_list')
 
     return redirect('booking_list')
+
+
+# ── Refund Policy ────────────────────────────────────────────────────────────
+
+def refund_policy_view(request):
+    return render(request, 'bookings/refund_policy.html')
+
 

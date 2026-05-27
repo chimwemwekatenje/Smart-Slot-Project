@@ -1,4 +1,5 @@
 from django.urls import path
+from apps.payments.views import payment_webhook
 from .views import (
     RegisterView, LoginView,
     OrganisationListView,
@@ -20,4 +21,5 @@ urlpatterns = [
     path('bookings/<int:pk>/delete/', BookingDeleteView.as_view(), name='api-booking-delete'),
     path('org/resources/', OrgResourceListView.as_view(), name='api-org-resources'),
     path('org/bookings/', OrgBookingListView.as_view(), name='api-org-bookings'),
+    path('payments/webhook/', payment_webhook, name='api-payment-webhook'),
 ]

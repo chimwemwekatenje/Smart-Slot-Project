@@ -141,10 +141,17 @@ class BookingUpdateView(generics.UpdateAPIView):
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         new_status = request.data.get('status')
-        if new_status == 'Cancelled' and instance.status in ['Pending', 'Issued']:
-            instance.status = 'Cancelled'
-            instance.save()
-            return Response(BookingSerializer(instance).data)
+        if new_status == 'Cancelled':
+            from apps.bookings.services import cancel_booking
+            result = cancel_booking(instance, request.user, action_source='user')
+            if result['success']:
+                instance.refresh_from_db()
+                return Response({
+                    'booking': BookingSerializer(instance, context=self.context).data,
+                    'message': result['message']
+                })
+            else:
+                return Response({'detail': result['message']}, status=status.HTTP_400_BAD_REQUEST)
         return Response({'detail': 'Not allowed.'}, status=status.HTTP_400_BAD_REQUEST)
 
 

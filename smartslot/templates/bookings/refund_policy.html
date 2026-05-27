@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width:720px; margin:0 auto; padding: 2rem 1rem;">
+
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <h1 style="font-size:2.5rem; font-weight:800; color:var(--text); margin-bottom: 0.5rem; background: linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Refund & Cancellation Policy</h1>
+        <p style="color:var(--muted); font-size:1.1rem; max-width: 500px; margin: 0 auto;">Standard booking terms, rules, and reimbursement guides for SmartSlot reservations.</p>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:24px;">
+        <!-- Rule 1 -->
+        <div class="card" style="padding:24px; position: relative; border-left: 4px solid var(--primary); transition: transform 0.2s;">
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+                <div style="background: rgba(20,184,166,0.1); color: var(--primary); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;">1</div>
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom: 8px;">Cancellations More Than 24 Hours in Advance</h3>
+                    <p style="color:var(--muted); font-size:0.95rem; line-height: 1.6;">If you cancel your booking more than 24 hours prior to the scheduled start time, the booking status will be updated to <strong>Cancelled</strong>, your payment status will be updated to <strong>Refunded</strong>, and you will receive a full refund processed back to your payment source within 3 to 5 business days.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule 2 -->
+        <div class="card" style="padding:24px; position: relative; border-left: 4px solid #f59e0b; transition: transform 0.2s;">
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+                <div style="background: rgba(245,158,11,0.1); color: #f59e0b; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;">2</div>
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom: 8px;">Late Cancellations (Within 24 Hours)</h3>
+                    <p style="color:var(--muted); font-size:0.95rem; line-height: 1.6;">If you cancel your booking within 24 hours of the scheduled start time, the slot is freed and marked as <strong>Cancelled</strong>, but no refund will be issued. We enforce this to protect resource providers from late-stage empty slots.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule 3 -->
+        <div class="card" style="padding:24px; position: relative; border-left: 4px solid #ef4444; transition: transform 0.2s;">
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+                <div style="background: rgba(239,68,68,0.1); color: #ef4444; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;">3</div>
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom: 8px;">Cancellation by Resource Provider / Organisation</h3>
+                    <p style="color:var(--muted); font-size:0.95rem; line-height: 1.6;">If the hosting Organisation cancels the booking or marks the resource as unavailable, the booking will be immediately <strong>Cancelled</strong>, a full refund will be initiated, and an automated email apology including complete payment refund details will be sent to the user.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule 4 -->
+        <div class="card" style="padding:24px; position: relative; border-left: 4px solid #10b981; transition: transform 0.2s;">
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+                <div style="background: rgba(16,185,129,0.1); color: #10b981; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;">4</div>
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom: 8px;">Free Resource Bookings</h3>
+                    <p style="color:var(--muted); font-size:0.95rem; line-height: 1.6;">For any free resources (price = MWK 0), booking cancellations do not involve any payment operations. The booking status will simply be set to <strong>Cancelled</strong> and the slot will be immediately freed for other users.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule 5 -->
+        <div class="card" style="padding:24px; position: relative; border-left: 4px solid #6b7280; transition: transform 0.2s;">
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+                <div style="background: rgba(107,114,128,0.1); color: #6b7280; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold;">5</div>
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom: 8px;">No Shows</h3>
+                    <p style="color:var(--muted); font-size:0.95rem; line-height: 1.6;">If a user fails to attend their reserved slot, an administrator can mark the booking status as <strong>No Show</strong>. Once marked, no refunds are available for that transaction.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 3rem;">
+        <a href="{% url 'booking_list' %}" class="btn btn-ghost" style="padding: 10px 24px; font-weight: 600;">
+            ← Back to My Bookings
+        </a>
+    </div>
+
+</div>
+{% endblock %}
