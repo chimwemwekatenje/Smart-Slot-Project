@@ -477,7 +477,9 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['cat_values'] = json.dumps([c['count'] for c in cat_data])
 
         ctx['organisations']      = Organisation.objects.all()
-        ctx['categories']         = Resource.objects.values_list('category', flat=True).distinct()
+        # Use the model's choices list — same source of truth as the Resources page.
+        # This guarantees clean, deduplicated, consistently-cased options.
+        ctx['categories']         = [value for value, _ in Resource.CategoryChoices.choices]
         ctx['selected_org']       = org_id
         ctx['selected_category']  = category
         ctx['selected_date_from'] = date_from
@@ -964,7 +966,7 @@ def dashboard_org_resources_view(request):
     return render(request, 'dashboard/org_resources.html', {
         'resources':    qs,
         'organisation': org,
-        'categories':   ['Boardroom', 'Vehicle', 'Equipment', 'Other'],
+        'categories':   [value for value, _ in Resource.CategoryChoices.choices],
     })
 
 

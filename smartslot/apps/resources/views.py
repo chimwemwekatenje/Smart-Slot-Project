@@ -37,12 +37,9 @@ class ResourceListView(ListView):
         ctx['is_external']      = is_external
         ctx['is_authenticated'] = user.is_authenticated
 
-        ctx['categories'] = ['All'] + list(
-            Resource.objects.visible_to(user)
-            .values_list('category', flat=True)
-            .distinct()
-            .order_by('category')
-        )
+        # Build category list from the model's choices — always clean, never duplicated,
+        # regardless of what inconsistent values may exist in the database.
+        ctx['categories'] = ['All'] + [value for value, _ in Resource.CategoryChoices.choices]
 
         now  = timezone.now()
         soon = now + timezone.timedelta(minutes=30)

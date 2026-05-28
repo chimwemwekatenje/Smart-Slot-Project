@@ -70,6 +70,16 @@ class ResourceManager(models.Manager):
 
 
 class Resource(BaseModel):
+    class CategoryChoices(models.TextChoices):
+        BOARDROOM      = 'Boardroom',       'Boardroom'
+        EQUIPMENT      = 'Equipment',       'Equipment'
+        VEHICLE        = 'Vehicle',         'Vehicle'
+        WORKSPACE      = 'Workspace',       'Workspace'
+        IT_TECHNOLOGY  = 'IT & Technology', 'IT & Technology'
+        FACILITY       = 'Facility',        'Facility'
+        CATERING       = 'Catering',        'Catering'
+        OTHER          = 'Other',           'Other'
+
     name          = models.CharField(max_length=255)
     description   = models.TextField(blank=True)
     photo         = models.ImageField(upload_to='resources_photos/', null=True, blank=True)
@@ -79,7 +89,10 @@ class Resource(BaseModel):
     photo_data    = models.TextField(blank=True)
     photo_mime    = models.CharField(max_length=100, blank=True)
     price         = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
-    category      = models.CharField(max_length=255)
+    category      = models.CharField(
+        max_length=255,
+        choices=CategoryChoices.choices,
+    )
     custom_fields = models.JSONField(default=dict, blank=True)
     # Activated automatically when the parent organisation is approved.
     # Org admins can also deactivate individual resources manually.
