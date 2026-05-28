@@ -106,6 +106,7 @@ else:
 # Supabase Storage — for persistent image uploads
 SUPABASE_URL = env('SUPABASE_URL', default='')
 SUPABASE_KEY = env('SUPABASE_KEY', default='')
+SUPABASE_SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY', default=SUPABASE_KEY)
 
 # =============================================================================
 # Auth & Password

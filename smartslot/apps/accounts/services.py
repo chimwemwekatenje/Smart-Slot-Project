@@ -12,6 +12,45 @@ import logging
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
+
+def _send_supabase_invite_email(application, redirect_url):
+    """Send an organisation admin setup invite through Supabase Auth."""
+    supabase_url = getattr(settings, 'SUPABASE_URL', '')
+    service_key = (
+        getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
+        or getattr(settings, 'SUPABASE_KEY', '')
+    )
+    if not (supabase_url and service_key and application.contact_email):
+        return False
+
+    try:
+        from supabase import create_client
+
+        client = create_client(supabase_url, service_key)
+        client.auth.admin.invite_user_by_email(
+            application.contact_email,
+            {
+                'redirect_to': redirect_url,
+                'data': {
+                    'email_kind': 'organisation_admin_setup',
+                    'application_id': application.pk,
+                    'organisation_name': application.organisation_name,
+                    'contact_name': application.contact_name,
+                    'setup_url': redirect_url,
+                },
+            },
+        )
+        return True
+    except Exception as exc:
+        logger.error(
+            'Supabase setup invite failed for application %s to %s: %s',
+            application.pk,
+            application.contact_email,
+            exc,
+        )
+        return False
+
+
 @transaction.atomic
 def onboard_organisation(application):
     """
@@ -133,6 +172,9 @@ def onboard_organisation(application):
         f"Thank you,\n"
         f"SmartSlot Support"
     )
+
+    if _send_supabase_invite_email(application, setup_url):
+        return admin_user, setup_url, True
 
     try:
         sent = send_mail(

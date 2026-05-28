@@ -15,7 +15,7 @@ from django import forms as dj_forms
 from apps.resources.models import Resource
 from apps.bookings.models import Booking
 from apps.core.models import ApplicationResource, Organisation, OrganisationApplication
-from apps.core.mixins import OrgScopedMixin, is_platform_level
+from apps.core.mixins import OrgScopedMixin, is_organisation_admin, is_platform_level
 import json
 
 
@@ -564,7 +564,7 @@ class DashboardOrganisationApplicationListView(LoginRequiredMixin, UserPassesTes
     raise_exception = False
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.role == 'PlatformAdmin'
+        return is_platform_level(self.request.user)
 
     def handle_no_permission(self):
         return redirect('org_admin_dashboard')
@@ -879,6 +879,17 @@ def _send_approval_email(application, payment_link):
         f'The SmartSlot Team'
     )
 
+    if _send_supabase_invite_email(
+        application=application,
+        redirect_url=payment_link,
+        email_kind='approved_for_payment',
+    ):
+        logger.info(
+            f'Supabase approval invite sent to {application.contact_email} '
+            f'for app {application.pk}.'
+        )
+        return True
+
     try:
         from django.core.mail import send_mail
         sent = send_mail(
@@ -894,6 +905,48 @@ def _send_approval_email(application, payment_link):
         logger.error(
             f'Failed to send approval email to {application.contact_email} '
             f'for app {application.pk}: {exc}'
+        )
+        return False
+
+
+def _send_supabase_invite_email(application, redirect_url=None, email_kind='notification'):
+    """
+    Send via Supabase Auth invite email using the server-side service role key.
+    The invite redirects the recipient to the payment/setup URL when supplied.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    supabase_url = getattr(settings, 'SUPABASE_URL', '')
+    service_key = (
+        getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
+        or getattr(settings, 'SUPABASE_KEY', '')
+    )
+    if not (supabase_url and service_key and application.contact_email):
+        return False
+
+    try:
+        from supabase import create_client
+
+        options = {
+            'data': {
+                'email_kind': email_kind,
+                'application_id': application.pk,
+                'organisation_name': application.organisation_name,
+                'contact_name': application.contact_name,
+                'payment_link': redirect_url or '',
+            }
+        }
+        if redirect_url:
+            options['redirect_to'] = redirect_url
+
+        client = create_client(supabase_url, service_key)
+        client.auth.admin.invite_user_by_email(application.contact_email, options)
+        return True
+    except Exception as exc:
+        logger.error(
+            f'Supabase invite email failed for {application.contact_email} '
+            f'on app {application.pk}: {exc}'
         )
         return False
 
@@ -929,11 +982,12 @@ def dashboard_org_users_view(request):
     User = get_user_model()
 
     user = request.user
-    if not (user.is_superuser or user.role in ('PlatformAdmin', 'OrganisationAdmin')):
+    if not (is_platform_level(user) or is_organisation_admin(user)):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied
 
-    org = user.organisation if user.role == 'OrganisationAdmin' else None
+    is_org_admin = is_organisation_admin(user)
+    org = user.organisation if is_org_admin else None
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -960,7 +1014,9 @@ def dashboard_org_users_view(request):
         return redirect('dashboard_org_users')
 
     qs = User.objects.select_related('organisation')
-    if org:
+    if is_org_admin and org is None:
+        qs = qs.none()
+    elif org:
         qs = qs.filter(organisation=org)
     qs = qs.exclude(pk=request.user.pk).order_by('role', 'username')
 
@@ -978,11 +1034,12 @@ def dashboard_org_resources_view(request):
     from django.contrib import messages
     user = request.user
 
-    if not (user.is_superuser or user.role in ('PlatformAdmin', 'OrganisationAdmin')):
+    if not (is_platform_level(user) or is_organisation_admin(user)):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied
 
-    org = user.organisation if user.role == 'OrganisationAdmin' else None
+    is_org_admin = is_organisation_admin(user)
+    org = user.organisation if is_org_admin else None
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1029,7 +1086,9 @@ def dashboard_org_resources_view(request):
             return redirect('dashboard_org_resources')
 
     qs = Resource.objects.select_related('organisation')
-    if org:
+    if is_org_admin and org is None:
+        qs = qs.none()
+    elif org:
         qs = qs.filter(organisation=org)
     qs = qs.order_by('name')
 
