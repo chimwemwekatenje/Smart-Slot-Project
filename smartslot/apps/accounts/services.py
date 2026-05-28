@@ -3,12 +3,16 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import transaction
 from apps.core.models import Organisation, OrganisationApplication, ApplicationResource
 from apps.resources.models import Resource
 from django.utils import timezone
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
+@transaction.atomic
 def onboard_organisation(application):
     """
     Onboards an organization whose application registration payment is successful:
@@ -22,23 +26,43 @@ def onboard_organisation(application):
         name=application.organisation_name,
         defaults={'logo': application.logo}
     )
+    if not org.is_approved:
+        org.is_approved = True
+        org.approved_at = timezone.now()
+        org.save(update_fields=['is_approved', 'approved_at', 'updated_at'])
 
     # Update application with created organization reference
     application.created_organisation = org
     application.status = OrganisationApplication.StatusChoices.COMPLETED
-    application.save(update_fields=['created_organisation', 'status'])
+    application.reviewed_at = application.reviewed_at or timezone.now()
+    application.save(update_fields=['created_organisation', 'status', 'reviewed_at', 'updated_at'])
 
     # 2. Replicate verified resources in apps.resources
-    for app_res in application.resources.all():
-        Resource.objects.get_or_create(
+    for app_res in application.resources.filter(
+        status=ApplicationResource.StatusChoices.VERIFIED
+    ):
+        resource, _ = Resource.objects.get_or_create(
             organisation=org,
             name=app_res.name,
             defaults={
                 'category': app_res.category,
                 'description': app_res.description,
                 'price': app_res.price,
+                'is_active': True,
+                'photo_data': app_res.image_data,
+                'photo_mime': app_res.image_mime,
             }
         )
+        updates = []
+        if not resource.is_active:
+            resource.is_active = True
+            updates.append('is_active')
+        if app_res.image_data and not resource.photo_data:
+            resource.photo_data = app_res.image_data
+            resource.photo_mime = app_res.image_mime
+            updates.extend(['photo_data', 'photo_mime'])
+        if updates:
+            resource.save(update_fields=updates + ['updated_at'])
 
     # 3. Create Organisation Admin User (inactive or randomized temp password)
     admin_username = application.contact_email.split('@')[0]
@@ -64,6 +88,22 @@ def onboard_organisation(application):
             'is_active': True,
         }
     )
+    if user_created:
+        admin_user.set_unusable_password()
+        admin_user.save(update_fields=['password'])
+    else:
+        changed = []
+        if admin_user.organisation_id != org.id:
+            admin_user.organisation = org
+            changed.append('organisation')
+        if admin_user.role != User.RoleChoices.ORGANISATION_ADMIN:
+            admin_user.role = User.RoleChoices.ORGANISATION_ADMIN
+            changed.append('role')
+        if not admin_user.is_active:
+            admin_user.is_active = True
+            changed.append('is_active')
+        if changed:
+            admin_user.save(update_fields=changed)
 
     # 4. Generate Password Set Link
     token_generator = PasswordResetTokenGenerator()
@@ -94,12 +134,20 @@ def onboard_organisation(application):
         f"SmartSlot Support"
     )
 
-    send_mail(
-        subject=subject,
-        message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL or 'support@smartslot.com',
-        recipient_list=[application.contact_email],
-        fail_silently=True
-    )
+    try:
+        sent = send_mail(
+            subject=subject,
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL or 'support@smartslot.com',
+            recipient_list=[application.contact_email],
+            fail_silently=False,
+        )
+    except Exception as exc:
+        logger.error(
+            'Failed to send organisation admin setup email for application %s: %s',
+            application.pk,
+            exc,
+        )
+        sent = 0
 
-    return admin_user
+    return admin_user, setup_url, bool(sent)

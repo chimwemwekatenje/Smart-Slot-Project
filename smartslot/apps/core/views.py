@@ -551,18 +551,24 @@ def dashboard_organisation_application_detail_view(request, pk):
             # ── Generate a real PayChangu payment link ─────────────────
             payment_link = _create_org_payment_link(application)
 
-            _send_approval_email(application, payment_link)
+            email_sent = _send_approval_email(application, payment_link)
 
-            if payment_link:
+            if payment_link and email_sent:
                 messages.success(
                     request,
                     f'Application approved. Payment link generated and email sent to {application.contact_email}.'
                 )
-            else:
+            elif payment_link:
                 messages.warning(
                     request,
+                    'Application approved and payment link generated, but the email could not be sent. '
+                    'Check EMAIL_HOST_USER and EMAIL_HOST_PASSWORD in Render.'
+                )
+            else:
+                messages.error(
+                    request,
                     'Application approved but the payment link could not be generated. '
-                    'Check PAYCHANGU_SECRET_KEY in settings. Email was still sent without the link.'
+                    'Check PAYCHANGU_SECRET_KEY and PayChangu callback/return URLs in Render.'
                 )
             return redirect('dashboard_org_application_detail', pk=application.pk)
 
@@ -679,14 +685,28 @@ def _create_org_payment_link(application):
         logger.warning('PAYCHANGU_SECRET_KEY is not set — cannot generate payment link.')
         return None
 
-    tx_ref       = f"ORGAPP-{application.pk}-{uuid.uuid4().hex[:8].upper()}"
-    site_url     = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
-    callback_url = getattr(settings, 'PAYCHANGU_CALLBACK_URL', f'{site_url}/payments/callback/')
-    return_url   = getattr(settings, 'PAYCHANGU_RETURN_URL',   f'{site_url}/payments/return/')
+    tx_ref   = f"ORGAPP-{application.pk}-{uuid.uuid4().hex[:8].upper()}"
+    site_url = getattr(settings, 'SITE_URL', 'https://smartslot-bh9c.onrender.com').rstrip('/')
+
+    def public_url(configured, fallback_path):
+        value = (configured or '').strip()
+        if not value or 'localhost' in value or '127.0.0.1' in value:
+            return f'{site_url}{fallback_path}'
+        return value
+
+    callback_url = public_url(
+        getattr(settings, 'PAYCHANGU_CALLBACK_URL', ''),
+        '/payments/callback/',
+    )
+    return_url = public_url(
+        getattr(settings, 'PAYCHANGU_RETURN_URL', ''),
+        '/payments/return/',
+    )
 
     payload = {
         'amount':      '200000',
         'currency':    'MWK',
+        'secret_key':  secret_key,
         'email':       application.contact_email,
         'first_name':  application.contact_name.split()[0],
         'last_name':   ' '.join(application.contact_name.split()[1:]) or application.contact_name,
@@ -713,8 +733,10 @@ def _create_org_payment_link(application):
         data = response.json()
         logger.info(f'PayChangu org payment link response for app {application.pk}: {data}')
 
-        if response.status_code == 200 and data.get('status') == 'success':
-            return data['data']['checkout_url']
+        if response.status_code in (200, 201) and data.get('status') == 'success':
+            checkout_url = data.get('data', {}).get('checkout_url')
+            if checkout_url:
+                return checkout_url
 
         logger.error(
             f'PayChangu payment link failed for app {application.pk}: '
@@ -737,7 +759,7 @@ def _send_approval_email(application, payment_link):
 
     if not application.contact_email:
         logger.warning(f'No contact email for application {application.pk} — skipping approval email.')
-        return
+        return False
 
     if payment_link:
         payment_section = (
@@ -766,7 +788,7 @@ def _send_approval_email(application, payment_link):
 
     try:
         from django.core.mail import send_mail
-        send_mail(
+        sent = send_mail(
             subject='SmartSlot — Your organisation has been approved',
             message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -774,11 +796,13 @@ def _send_approval_email(application, payment_link):
             fail_silently=False,   # raise on error so we can log it
         )
         logger.info(f'Approval email sent to {application.contact_email} for app {application.pk}.')
+        return bool(sent)
     except Exception as exc:
         logger.error(
             f'Failed to send approval email to {application.contact_email} '
             f'for app {application.pk}: {exc}'
         )
+        return False
 
 
 def _send_application_email(application, subject, message):
