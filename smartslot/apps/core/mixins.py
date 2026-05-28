@@ -8,7 +8,13 @@ def is_platform_level(user):
     Both Django superusers and users with the PlatformAdmin role are treated
     identically — they see all organisations with no data restrictions.
     """
-    return user.is_authenticated and (user.is_superuser or user.role == 'PlatformAdmin')
+    return bool(
+        getattr(user, 'is_authenticated', False)
+        and (
+            getattr(user, 'is_superuser', False)
+            or getattr(user, 'role', None) == 'PlatformAdmin'
+        )
+    )
 
 
 class OrgScopedMixin(LoginRequiredMixin, UserPassesTestMixin):
