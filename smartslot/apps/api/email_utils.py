@@ -51,7 +51,7 @@ def generate_booking_pdf(booking, resource, guest_name, guest_phone, guest_email
     price_str = 'Free' if price == 0 else f"MWK {price:,.2f}"
     booking_id = booking.get('id', 'N/A')
     qr_token = booking.get('qr_token', '')
-    status = booking.get('status', 'Issued')
+    status = booking.get('status', 'Booked')
     start = _fmt_dt(booking.get('start_time'))
     end_raw = booking.get('end_time', '')
     end_time = '-'

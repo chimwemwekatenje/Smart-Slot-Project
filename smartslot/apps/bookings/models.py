@@ -8,11 +8,16 @@ from apps.resources.models import Resource
 
 class Booking(BaseModel):
     class StatusChoices(models.TextChoices):
+        PENDING   = 'Pending',   'Pending'
         BOOKED    = 'Booked',    'Booked'
+        ISSUED    = 'Issued',    'Issued'
+        VERIFIED  = 'Verified',  'Verified'
+        COMPLETED = 'Completed', 'Completed'
         CANCELLED = 'Cancelled', 'Cancelled'
+        NO_SHOW   = 'no_show',   'No Show'
 
     # Active statuses — used for overlap detection
-    ACTIVE_STATUSES = ['Booked']
+    ACTIVE_STATUSES = ['Booked', 'Issued', 'Verified', 'Pending']
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

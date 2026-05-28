@@ -210,13 +210,33 @@ def payment_webhook(request):
         return HttpResponse('OK', status=200)
 
     try:
-        # For direct charge, confirm if status is successful
+        # Check if this is an Organisation Application payment
+        is_org_app = False
+        app_id = None
+        
+        if tx_ref and tx_ref.startswith('ORGAPP-'):
+            is_org_app = True
+            try:
+                app_id = int(tx_ref.split('-')[1])
+            except (ValueError, IndexError):
+                pass
+
         if event_status in ('successful', 'success'):
+            if is_org_app and app_id:
+                from apps.core.models import OrganisationApplication
+                from apps.accounts.services import onboard_organisation
+                app = OrganisationApplication.objects.filter(id=app_id).first()
+                if app and app.status == OrganisationApplication.StatusChoices.APPROVED_FOR_PAYMENT:
+                    app.status = OrganisationApplication.StatusChoices.PAID
+                    app.save(update_fields=['status'])
+                    onboard_organisation(app)
+                    logger.info(f'Organisation Application {app_id} onboarded successfully via webhook.')
+                return HttpResponse('OK', status=200)
+
             booking = None
             if tx_ref:
                 booking = _booking_from_tx_ref(tx_ref)
             if not booking and charge_id:
-                # Find booking by charge_id stored in custom_data
                 booking = Booking.objects.filter(
                     custom_data__charge_id=str(charge_id)
                 ).first()
@@ -230,6 +250,17 @@ def payment_webhook(request):
             if tx_ref:
                 transaction = verify_payment(tx_ref)
                 if transaction.get('status') == 'successful':
+                    if is_org_app and app_id:
+                        from apps.core.models import OrganisationApplication
+                        from apps.accounts.services import onboard_organisation
+                        app = OrganisationApplication.objects.filter(id=app_id).first()
+                        if app and app.status == OrganisationApplication.StatusChoices.APPROVED_FOR_PAYMENT:
+                            app.status = OrganisationApplication.StatusChoices.PAID
+                            app.save(update_fields=['status'])
+                            onboard_organisation(app)
+                            logger.info(f'Organisation Application {app_id} onboarded successfully via webhook verification.')
+                        return HttpResponse('OK', status=200)
+
                     booking = _booking_from_tx_ref(tx_ref)
                     if booking:
                         _confirm_booking(booking, tx_ref)

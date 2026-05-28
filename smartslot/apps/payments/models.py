@@ -6,6 +6,7 @@ class Payment(models.Model):
         PENDING = 'Pending', 'Pending'
         SUCCESS = 'Success', 'Success'
         FAILED = 'Failed', 'Failed'
+        REFUNDED = 'Refunded', 'Refunded'
         
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=14, decimal_places=2)

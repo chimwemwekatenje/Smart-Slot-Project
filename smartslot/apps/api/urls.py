@@ -1,4 +1,6 @@
 from django.urls import path
+from apps.payments.views import payment_webhook
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     RegisterView, LoginView,
     OrganisationListView,
@@ -11,6 +13,7 @@ from .views import (
 urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='api-register'),
     path('auth/login/', LoginView.as_view(), name='api-login'),
+    path('auth/refresh/', TokenRefreshView.as_view(), name='api-token-refresh'),
     path('organisations/', OrganisationListView.as_view(), name='api-organisations'),
     path('resources/', ResourceListView.as_view(), name='api-resources'),
     path('resources/<int:pk>/schedule/', ResourceScheduleView.as_view(), name='api-resource-schedule'),
@@ -20,4 +23,5 @@ urlpatterns = [
     path('bookings/<int:pk>/delete/', BookingDeleteView.as_view(), name='api-booking-delete'),
     path('org/resources/', OrgResourceListView.as_view(), name='api-org-resources'),
     path('org/bookings/', OrgBookingListView.as_view(), name='api-org-bookings'),
+    path('payments/webhook/', payment_webhook, name='api-payment-webhook'),
 ]

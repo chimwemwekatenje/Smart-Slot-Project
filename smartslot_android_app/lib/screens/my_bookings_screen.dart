@@ -57,8 +57,50 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
       ),
     );
     if (confirm != true) return;
-    final res = await ApiService.patch('/api/bookings/$id/', {'status': 'Cancelled'});
-    if (res.statusCode == 200) _load();
+    try {
+      final res = await ApiService.patch('/api/bookings/$id/', {'status': 'Cancelled'});
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final String msg = data['message'] ?? 'Booking cancelled successfully.';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        _load();
+      } else {
+        String errMsg = 'Failed to cancel booking';
+        try {
+          final errData = jsonDecode(res.body);
+          if (errData['detail'] != null) {
+            errMsg = errData['detail'];
+          }
+        } catch (_) {}
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errMsg),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection error while cancelling booking.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _delete(int id) async {

@@ -14,11 +14,8 @@ from apps.api.serializers import BookingSerializer
 
 STATUS_COLORS = {
     'Pending':   '#F59E0B',
-    'Issued':    '#14B8A6',
-    'Verified':  '#22C55E',
-    'Completed': '#22C55E',
+    'Booked':    '#14B8A6',
     'Cancelled': '#EF4444',
-    'NoShow':    '#EF4444',
 }
 
 

@@ -31,7 +31,7 @@ class VerificationService:
             }
         
         # Check if booking is in a verifiable state
-        if booking.status not in ['Issued', 'Pending']:
+        if booking.status not in Booking.ACTIVE_STATUSES:
             VerificationLog.objects.create(
                 booking=booking,
                 verified_by=verified_by_user,
@@ -77,8 +77,8 @@ class VerificationService:
                     'message': 'You can only verify bookings from your organisation.',
                 }
         
-        # All checks passed - verify the booking
-        booking.status = 'Verified'
+        # All checks passed - mark the booking as verified without using a
+        # status value that is no longer part of the Booking model choices.
         booking.verified_at = timezone.now()
         booking.save()
         
@@ -121,14 +121,14 @@ class VerificationService:
             }
         
         # Check if booking is verified
-        if booking.status != 'Verified':
+        if booking.verified_at is None:
             VerificationLog.objects.create(
                 booking=booking,
                 verified_by=completed_by_user,
                 action='Complete',
                 qr_token=qr_token,
                 success=False,
-                notes=f'Booking status is {booking.status}, must be Verified',
+                notes=f'Booking status is {booking.status}, not yet verified',
             )
             return {
                 'success': False,
@@ -167,8 +167,7 @@ class VerificationService:
                     'message': 'You can only complete bookings from your organisation.',
                 }
         
-        # Mark as completed
-        booking.status = 'Completed'
+        # Keep the valid booking status and rely on verified_at/logs for audit.
         booking.save()
         
         # Log completion
