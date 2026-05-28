@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
-from smartslot.apps.core.models import (
+from apps.core.models import (
     ApplicationResource,
     Organisation,
     OrganisationApplication,
