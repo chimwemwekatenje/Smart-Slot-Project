@@ -50,13 +50,18 @@ class ResourceQuerySet(models.QuerySet):
         if user.role == 'External':
             return self.active()
         if user.role in _ORG_SCOPED_ROLES:
-            if user.organisation_id:
-                # Org-scoped staff see their own org's resources (active or not)
-                # so they can manage them, but only if the org is approved
-                return self.filter(
-                    organisation_id=user.organisation_id,
-                    organisation__is_approved=True,
-                )
+            organisation_id = getattr(user, 'organisation_id', None)
+            if not organisation_id and user.role == 'OrganisationAdmin':
+                try:
+                    from apps.core.mixins import get_user_organisation
+                    organisation = get_user_organisation(user)
+                    organisation_id = getattr(organisation, 'id', None)
+                except Exception:
+                    organisation_id = None
+            if organisation_id:
+                # Org-scoped staff see their own resources even before the
+                # organisation is fully activated, so admins can manage them.
+                return self.filter(organisation_id=organisation_id)
             return self.none()
         return self.none()
 

@@ -326,7 +326,7 @@
     </style>
 </head>
 <body>
-    {% with active_org=organisation|default:user.organisation %}
+    {% with active_org=organisation|default:dashboard_organisation|default:user.organisation %}
 
     <!-- Page loading bar -->
     <div id="dash-page-loader" style="position:fixed; top:0; left:0; width:0; height:3px;
