@@ -15,15 +15,48 @@ from .services import (
 
 logger = logging.getLogger(__name__)
 
+SUCCESS_STATUSES = {'success', 'successful'}
+FAILED_STATUSES = {'failed', 'cancelled', 'canceled'}
+
+
+def _normalise_status(status):
+    return str(status or '').strip().lower()
+
+
+def _is_successful_status(status):
+    return _normalise_status(status) in SUCCESS_STATUSES
+
+
+def _is_failed_status(status):
+    return _normalise_status(status) in FAILED_STATUSES
+
+
+def _render_booking_receipt(request, booking):
+    from apps.bookings.views import _receipt_rows
+    return render(request, 'bookings/booking_receipt.html', {
+        'booking':      booking,
+        'receipt_rows': _receipt_rows(booking),
+    })
+
 
 def _confirm_booking(booking, tx_ref):
     """Mark a booking as Booked and create/update the Payment record."""
+    custom_data = {
+        **(booking.custom_data or {}),
+        'tx_ref': tx_ref,
+        'payment_status': 'paid',
+    }
     if booking.status != Booking.StatusChoices.BOOKED:
         Booking.objects.filter(pk=booking.pk).update(
             status=Booking.StatusChoices.BOOKED,
-            custom_data={**booking.custom_data, 'tx_ref': tx_ref, 'payment_status': 'paid'},
+            custom_data=custom_data,
         )
-    Payment.objects.get_or_create(
+        booking.status = Booking.StatusChoices.BOOKED
+    else:
+        Booking.objects.filter(pk=booking.pk).update(custom_data=custom_data)
+
+    booking.custom_data = custom_data
+    Payment.objects.update_or_create(
         booking=booking,
         paychangu_reference=tx_ref,
         defaults={
@@ -163,9 +196,10 @@ def mobile_money_charge(request, booking_id):
             charge_data.get('id') or
             tx_ref
         )
-        booking.custom_data['charge_id'] = str(charge_id)
-        booking.custom_data['tx_ref']    = tx_ref
-        Booking.objects.filter(pk=booking.pk).update(custom_data=booking.custom_data)
+        custom_data = booking.custom_data or {}
+        custom_data['charge_id'] = str(charge_id)
+        custom_data['tx_ref']    = tx_ref
+        Booking.objects.filter(pk=booking.pk).update(custom_data=custom_data)
 
         return JsonResponse({
             'status':    'pending',
@@ -193,8 +227,9 @@ def mobile_money_status(request, booking_id):
     if booking.status == Booking.StatusChoices.BOOKED:
         return JsonResponse({'status': 'success', 'redirect': f'/bookings/'})
 
-    charge_id = booking.custom_data.get('charge_id', '')
-    tx_ref    = booking.custom_data.get('tx_ref', '')
+    custom_data = booking.custom_data or {}
+    charge_id = custom_data.get('charge_id', '')
+    tx_ref    = custom_data.get('tx_ref', '')
 
     if not charge_id:
         return JsonResponse({'status': 'error', 'message': 'No charge in progress.'}, status=400)
@@ -202,13 +237,13 @@ def mobile_money_status(request, booking_id):
     try:
         charge = get_charge_details(charge_id)
         logger.info(f'Charge status for booking {booking_id}: {charge}')
-        charge_status = charge.get('status', '')
+        charge_status = _normalise_status(charge.get('status', ''))
 
-        if charge_status == 'success':
+        if _is_successful_status(charge_status):
             _confirm_booking(booking, tx_ref)
             booking.refresh_from_db()
-            return JsonResponse({'status': 'success', 'redirect': f'/payments/return/?tx_ref={tx_ref}'})
-        elif charge_status in ('failed', 'cancelled'):
+            return JsonResponse({'status': 'success', 'redirect': f'/payments/momo/pay/{booking.id}/'})
+        elif _is_failed_status(charge_status):
             # Cancel the pending booking so the slot is freed
             Booking.objects.filter(pk=booking.pk).update(
                 status=Booking.StatusChoices.CANCELLED
@@ -238,25 +273,27 @@ def payment_webhook(request):
         payload = json.loads(request.body)
     except json.JSONDecodeError:
         payload = {}
+    payload_data = payload.get('data') or {}
 
     logger.info(f'PayChangu webhook payload: {payload}')
 
     # tx_ref may be in body JSON or query params
     tx_ref = (
         payload.get('tx_ref') or
-        payload.get('data', {}).get('tx_ref') or
+        payload_data.get('tx_ref') or
         request.POST.get('tx_ref') or
         request.GET.get('tx_ref')
     )
     charge_id = (
         payload.get('charge_id') or
-        payload.get('data', {}).get('charge_id') or
+        payload_data.get('charge_id') or
         payload.get('chargeId') or
-        payload.get('data', {}).get('chargeId')
+        payload_data.get('chargeId')
     )
-    event_status = (
+    event_status = _normalise_status(
+        payload_data.get('status') or
         payload.get('status') or
-        payload.get('data', {}).get('status', '')
+        ''
     )
 
     if not tx_ref and not charge_id:
@@ -273,7 +310,7 @@ def payment_webhook(request):
                 logger.warning(message)
             return HttpResponse('OK', status=200)
 
-        if event_status in ('successful', 'success'):
+        if _is_successful_status(event_status):
             booking = None
             if tx_ref:
                 booking = _booking_from_tx_ref(tx_ref)
@@ -290,7 +327,7 @@ def payment_webhook(request):
             # Verify via API as fallback
             if tx_ref:
                 transaction = verify_payment(tx_ref)
-                if transaction.get('status') == 'successful':
+                if _is_successful_status(transaction.get('status')):
                     booking = _booking_from_tx_ref(tx_ref)
                     if booking:
                         _confirm_booking(booking, tx_ref)
@@ -316,7 +353,7 @@ def payment_callback(request):
 
     try:
         transaction = verify_payment(tx_ref)
-        if transaction.get('status') == 'successful':
+        if _is_successful_status(transaction.get('status')):
             booking = _booking_from_tx_ref(tx_ref)
             if booking:
                 _confirm_booking(booking, tx_ref)
@@ -339,19 +376,17 @@ def payment_return(request):
         ok, message = _confirm_organisation_application_payment(tx_ref)
         return HttpResponse(message, status=200 if ok else 400)
 
+    booking = _booking_from_tx_ref(tx_ref)
+    if booking and booking.status == Booking.StatusChoices.BOOKED:
+        return _render_booking_receipt(request, booking)
+
     try:
         transaction = verify_payment(tx_ref)
-        if transaction.get('status') == 'successful':
-            booking = _booking_from_tx_ref(tx_ref)
+        if _is_successful_status(transaction.get('status')):
             if booking:
                 _confirm_booking(booking, tx_ref)
-                # Refresh from DB
                 booking.refresh_from_db()
-                from apps.bookings.views import _receipt_rows
-                return render(request, 'bookings/booking_receipt.html', {
-                    'booking':      booking,
-                    'receipt_rows': _receipt_rows(booking),
-                })
+                return _render_booking_receipt(request, booking)
     except Exception as e:
         logger.error(f'PayChangu return error: {e}')
 
@@ -373,11 +408,7 @@ def momo_pay(request, booking_id):
 
     # Already confirmed — show receipt
     if booking.status == Booking.StatusChoices.BOOKED:
-        from apps.bookings.views import _receipt_rows
-        return render(request, 'bookings/booking_receipt.html', {
-            'booking':      booking,
-            'receipt_rows': _receipt_rows(booking),
-        })
+        return _render_booking_receipt(request, booking)
 
     # Cancelled
     if booking.status == Booking.StatusChoices.CANCELLED:
