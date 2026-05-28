@@ -163,14 +163,15 @@ class OrganisationRegistrationForm(forms.Form):
             if not name or not category:
                 continue
 
-            resource = ApplicationResource.objects.create(
+            resource = ApplicationResource(
                 application=application,
                 name=name,
                 category=category,
                 description=d.get(f'resource_{index}_description', ''),
                 price=d.get(f'resource_{index}_price') or 0,
-                image=d.get(f'resource_{index}_image'),
             )
+            resource.set_image_file(d.get(f'resource_{index}_image'))
+            resource.save()
 
         return application
 

@@ -1,4 +1,5 @@
 import uuid
+import base64
 from django.db import models
 
 class Organisation(models.Model):
@@ -122,12 +123,8 @@ class ApplicationResource(models.Model):
     category = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
-    image = models.ImageField(
-        upload_to='application_resources/',
-        null=True,
-        blank=True,
-        help_text='Photo of the resource (JPEG, PNG, WebP — max 5 MB)',
-    )
+    image_data = models.TextField(blank=True)
+    image_mime = models.CharField(max_length=100, blank=True)
     status = models.CharField(
         max_length=20,
         choices=StatusChoices.choices,
@@ -148,6 +145,22 @@ class ApplicationResource(models.Model):
     @property
     def is_verified(self):
         return self.status == self.StatusChoices.VERIFIED
+
+    @property
+    def image_src(self):
+        if not self.image_data or not self.image_mime:
+            return ''
+        return f"data:{self.image_mime};base64,{self.image_data}"
+
+    def set_image_file(self, image_file):
+        if not image_file:
+            self.image_data = ''
+            self.image_mime = ''
+            return
+        if hasattr(image_file, 'seek'):
+            image_file.seek(0)
+        self.image_data = base64.b64encode(image_file.read()).decode('ascii')
+        self.image_mime = getattr(image_file, 'content_type', '') or 'image/jpeg'
 
 
 class BaseModel(models.Model):

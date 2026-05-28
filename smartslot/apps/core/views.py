@@ -602,9 +602,10 @@ def dashboard_organisation_application_detail_view(request, pk):
                         price=app_res.price,
                         is_active=True,
                     )
-                    # Carry over the uploaded image from the application resource
-                    if app_res.image:
-                        new_resource.photo = app_res.image
+                    # Carry over the uploaded image from the application resource.
+                    if app_res.image_data and app_res.image_mime:
+                        new_resource.photo_data = app_res.image_data
+                        new_resource.photo_mime = app_res.image_mime
                     new_resource.save()
                     created_count += 1
 

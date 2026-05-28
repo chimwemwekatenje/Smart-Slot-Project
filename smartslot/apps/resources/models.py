@@ -3,6 +3,7 @@ from apps.core.models import BaseModel
 import uuid
 import os
 import mimetypes
+import base64
 
 # Roles that are scoped to a single organisation.
 _ORG_SCOPED_ROLES = {'Employee', 'Receptionist', 'OrganisationAdmin'}
@@ -75,6 +76,8 @@ class Resource(BaseModel):
     # Stores the permanent Supabase Storage public URL after upload
     image_url     = models.URLField(max_length=600, blank=True, null=True)
     photo_url     = models.URLField(max_length=600, blank=True, null=True)
+    photo_data    = models.TextField(blank=True)
+    photo_mime    = models.CharField(max_length=100, blank=True)
     price         = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
     category      = models.CharField(max_length=255)
     custom_fields = models.JSONField(default=dict, blank=True)
@@ -90,24 +93,31 @@ class Resource(BaseModel):
             if self.organisation and self.organisation.is_approved:
                 self.is_active = True
 
-        # If a new photo file has been attached, upload it to Supabase Storage
+        # Store uploaded images in the database so they survive Render deploys
+        # without depending on local disk or external storage configuration.
         if self.photo and hasattr(self.photo, 'file'):
             try:
-                public_url = _upload_to_supabase(self.photo.file, 'resources')
-                self.image_url = public_url
-                self.photo_url = public_url
-                # Clear the local file field so we don't store it on disk
+                file_obj = self.photo.file
+                if hasattr(file_obj, 'seek'):
+                    file_obj.seek(0)
+                self.photo_data = base64.b64encode(file_obj.read()).decode('ascii')
+                self.photo_mime = (
+                    getattr(file_obj, 'content_type', '')
+                    or mimetypes.guess_type(self.photo.name)[0]
+                    or 'image/jpeg'
+                )
                 self.photo = None
             except Exception as e:
-                # Log but don't crash — fall back to local storage
                 import logging
-                logging.getLogger(__name__).warning(f'Supabase upload failed: {e}')
+                logging.getLogger(__name__).warning(f'Database image storage failed: {e}')
         super().save(*args, **kwargs)
 
     @property
     def image(self):
         """Returns the best available image URL — Supabase first, local fallback, placeholder default."""
         from django.conf import settings
+        if self.photo_data and self.photo_mime:
+            return f"data:{self.photo_mime};base64,{self.photo_data}"
         if self.image_url:
             return self.image_url
         if self.photo_url:

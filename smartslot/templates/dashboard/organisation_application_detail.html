@@ -47,10 +47,10 @@
                         <span class="badge badge-warning">Pending</span>
                     {% endif %}
                 </div>
-                {% if resource.image %}
+                {% if resource.image_src %}
                 <div style="margin-bottom:1rem;">
-                    <a href="{{ resource.image.url }}" target="_blank">
-                        <img src="{{ resource.image.url }}" alt="{{ resource.name }}"
+                    <a href="{{ resource.image_src }}" target="_blank">
+                        <img src="{{ resource.image_src }}" alt="{{ resource.name }}"
                              style="max-height:180px; max-width:100%; border-radius:8px;
                                     object-fit:cover; box-shadow:0 2px 8px rgba(0,0,0,0.12);
                                     cursor:pointer; transition:transform 0.15s;"

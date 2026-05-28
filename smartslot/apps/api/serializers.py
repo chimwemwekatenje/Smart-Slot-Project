@@ -58,8 +58,10 @@ class ResourceSerializer(serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
 
     def get_photo_url(self, obj):
+        if obj.photo_data and obj.photo_mime:
+            return obj.image
         if not obj.photo:
-            return None
+            return obj.image if obj.image_url or obj.photo_url else None
         request = self.context.get('request')
         if request:
             # Build absolute URL using the request's host so the app can fetch it
