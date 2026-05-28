@@ -297,8 +297,14 @@
             .content-area { padding: 1rem; }
         }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
+
+    <!-- Page loading bar -->
+    <div id="page-loader" style="position:fixed; top:0; left:0; width:0; height:3px;
+         background:var(--primary); z-index:9999; transition:width 0.3s ease, opacity 0.4s ease;
+         opacity:0;"></div>
 
     <!-- Navbar -->
     <nav class="navbar">
@@ -456,7 +462,44 @@
     </div>
 
 <script>
-    // ── Theme ──────────────────────────────────────────────────────
+    // ── Page loading bar ──────────────────────────────────────────────────────
+    const loader = document.getElementById('page-loader');
+    let loaderTimer;
+
+    function startLoader() {
+        clearTimeout(loaderTimer);
+        loader.style.opacity = '1';
+        loader.style.width = '0';
+        // Animate to 80% quickly, then stall waiting for page load
+        requestAnimationFrame(() => {
+            loader.style.transition = 'width 0.8s ease';
+            loader.style.width = '80%';
+        });
+    }
+
+    function finishLoader() {
+        loader.style.transition = 'width 0.2s ease';
+        loader.style.width = '100%';
+        loaderTimer = setTimeout(() => {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.width = '0'; }, 400);
+        }, 200);
+    }
+
+    // Trigger on link clicks and form submits
+    document.addEventListener('click', e => {
+        const a = e.target.closest('a[href]');
+        if (a && !a.target && !a.href.startsWith('#') &&
+            !a.href.startsWith('javascript') &&
+            !a.href.startsWith('mailto')) {
+            startLoader();
+        }
+    });
+    document.addEventListener('submit', () => startLoader());
+
+    // Finish when page is fully loaded
+    window.addEventListener('pageshow', finishLoader);
+    window.addEventListener('load', finishLoader);
     const html  = document.documentElement;
     const THEME_KEY = 'smartslot-theme';
 

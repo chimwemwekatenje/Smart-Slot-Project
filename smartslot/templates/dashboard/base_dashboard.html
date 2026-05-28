@@ -327,6 +327,11 @@
 </head>
 <body>
 
+    <!-- Page loading bar -->
+    <div id="dash-page-loader" style="position:fixed; top:0; left:0; width:0; height:3px;
+         background:var(--primary); z-index:9999; transition:width 0.8s ease, opacity 0.4s ease;
+         opacity:0;"></div>
+
     <!-- Mobile top bar -->
     <header class="dash-topbar">
         <span class="dash-topbar-brand">
@@ -444,6 +449,32 @@
     </div><!-- /.dash-layout -->
 
 <script>
+    // ── Page loading bar ──────────────────────────────────────────────────────
+    const dashLoader = document.getElementById('dash-page-loader');
+    let dashLoaderTimer;
+    function startDashLoader() {
+        clearTimeout(dashLoaderTimer);
+        dashLoader.style.opacity = '1';
+        dashLoader.style.width = '0';
+        requestAnimationFrame(() => { dashLoader.style.width = '80%'; });
+    }
+    function finishDashLoader() {
+        dashLoader.style.width = '100%';
+        dashLoaderTimer = setTimeout(() => {
+            dashLoader.style.opacity = '0';
+            setTimeout(() => { dashLoader.style.width = '0'; }, 400);
+        }, 200);
+    }
+    document.addEventListener('click', e => {
+        const a = e.target.closest('a[href]');
+        if (a && !a.target && !a.href.startsWith('#') && !a.href.startsWith('javascript')) {
+            startDashLoader();
+        }
+    });
+    document.addEventListener('submit', () => startDashLoader());
+    window.addEventListener('pageshow', finishDashLoader);
+    window.addEventListener('load', finishDashLoader);
+
     // ── Theme ──────────────────────────────────────────────────────
     const dashHtml = document.documentElement;
     const DASH_KEY = 'smartslot-theme';

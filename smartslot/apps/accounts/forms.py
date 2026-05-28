@@ -20,7 +20,7 @@ class SignupForm(forms.Form):
     password2     = forms.CharField(widget=forms.PasswordInput, label='Confirm Password')
     role          = forms.ChoiceField(choices=[('Employee', 'Employee'), ('External', 'External')])
     organisation  = forms.ModelChoiceField(
-        queryset=Organisation.objects.all(),
+        queryset=Organisation.objects.filter(is_approved=True),
         required=False,
         empty_label='Select your organisation',
     )

@@ -1,52 +1,47 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registration.css' %}">
+{% endblock %}
 
 {% block content %}
-<div style="display:flex; align-items:flex-start; justify-content:center; padding:1rem 0 3rem;">
-<div style="width:100%; max-width:560px;">
+<div class="registration-container">
+<div class="registration-wrapper">
 
     <!-- Header -->
-    <div style="text-align:center; margin-bottom:2rem;">
-        <div style="font-size:2.2rem; font-weight:800; color:var(--primary);">SmartSlot</div>
-        <div style="color:var(--muted); font-size:1rem; margin-top:4px;">Create your account</div>
+    <div class="registration-header">
+        <div class="registration-title">SmartSlot</div>
+        <div class="registration-subtitle">Create your account</div>
     </div>
 
-    <div class="card" style="padding:2rem;">
+    <div class="card registration-card">
 
-        <div style="font-size:1.4rem; font-weight:700; color:var(--text); margin-bottom:1.5rem;">
+        <div class="registration-section-title">
             I am signing up as...
         </div>
 
         <!-- Account type selector — mirrors _AccountTypeSelector -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-            <div class="type-card" id="card-external" onclick="selectType('External')"
-                 style="padding:1.1rem; border-radius:10px; border:2px solid var(--primary);
-                        background:rgba(20,184,166,0.1); cursor:pointer; text-align:center;
-                        transition:all 0.2s;">
-                <i class="fa-solid fa-globe" style="font-size:1.6rem; color:var(--primary); margin-bottom:8px; display:block;"></i>
-                <div style="font-weight:700; font-size:0.95rem; color:var(--primary);">External User</div>
-                <div style="font-size:0.8rem; color:var(--muted); margin-top:4px;">Browse &amp; contact organisations</div>
+        <div class="account-type-selector">
+            <div class="type-card active" id="card-external" onclick="selectType('External')">
+                <i class="fa-solid fa-globe type-icon"></i>
+                <div class="type-title">External User</div>
+                <div class="type-description">Browse &amp; contact organisations</div>
             </div>
-            <div class="type-card" id="card-employee" onclick="selectType('Employee')"
-                 style="padding:1.1rem; border-radius:10px; border:1px solid var(--border);
-                        background:var(--surface); cursor:pointer; text-align:center;
-                        transition:all 0.2s;">
-                <i class="fa-solid fa-id-badge" style="font-size:1.6rem; color:var(--muted); margin-bottom:8px; display:block;"></i>
-                <div style="font-weight:700; font-size:0.95rem; color:var(--text);">Employee</div>
-                <div style="font-size:0.8rem; color:var(--muted); margin-top:4px;">Book resources at my organisation</div>
+            <div class="type-card" id="card-employee" onclick="selectType('Employee')">
+                <i class="fa-solid fa-id-badge type-icon"></i>
+                <div class="type-title">Employee</div>
+                <div class="type-description">Book resources at my organisation</div>
             </div>
         </div>
-        <a href="{% url 'organisation_signup' %}"
-           style="display:flex; align-items:center; justify-content:center; gap:10px;
-                  border:1px solid var(--border); border-radius:10px; padding:1rem;
-                  color:var(--primary); text-decoration:none; font-weight:700;
-                  margin-bottom:1.75rem; background:rgba(20,184,166,0.06);">
+        <a href="{% url 'organisation_signup' %}" class="org-signup-link">
             <i class="fa-solid fa-building-circle-check"></i>
             Register an organisation for verification
         </a>
         <input type="hidden" name="role" id="role-input" value="External" form="signup-form" />
 
         {% if form.errors %}
-        <div class="alert alert-error" style="margin-bottom:1.25rem;">
+        <div class="alert alert-error registration-alert">
             <i class="fa-solid fa-triangle-exclamation"></i>
             <div>
                 {% for field in form %}
@@ -66,9 +61,9 @@
             <input type="hidden" name="role" id="role-field" value="External" />
 
             <!-- Name row -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1.1rem;">
+            <div class="registration-name-row">
                 <div class="form-group">
-                    <label class="form-label"><i class="fa-regular fa-user" style="margin-right:5px;"></i>First Name</label>
+                    <label class="form-label"><i class="fa-regular fa-user"></i>First Name</label>
                     <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}"
                            class="form-input {% if form.first_name.errors %}is-error{% endif %}"
                            placeholder="First name" />
@@ -84,8 +79,8 @@
             </div>
 
             <!-- Username -->
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-solid fa-at" style="margin-right:5px;"></i>Username</label>
+            <div class="form-group registration-form-group">
+                <label class="form-label"><i class="fa-solid fa-at"></i>Username</label>
                 <input type="text" name="username" value="{{ form.username.value|default:'' }}"
                        class="form-input {% if form.username.errors %}is-error{% endif %}"
                        placeholder="Choose a username" autocomplete="username" />
@@ -93,8 +88,8 @@
             </div>
 
             <!-- Email -->
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-regular fa-envelope" style="margin-right:5px;"></i>Email</label>
+            <div class="form-group registration-form-group">
+                <label class="form-label"><i class="fa-regular fa-envelope"></i>Email</label>
                 <input type="email" name="email" value="{{ form.email.value|default:'' }}"
                        class="form-input {% if form.email.errors %}is-error{% endif %}"
                        placeholder="your@email.com" autocomplete="email" />
@@ -102,22 +97,20 @@
             </div>
 
             <!-- Phone -->
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-solid fa-phone" style="margin-right:5px;"></i>Phone <span style="color:var(--muted-dim); font-weight:400;">(optional)</span></label>
+            <div class="form-group registration-form-group">
+                <label class="form-label"><i class="fa-solid fa-phone"></i>Phone <span class="optional-text">(optional)</span></label>
                 <input type="tel" name="phone" value="{{ form.phone.value|default:'' }}"
                        class="form-input" placeholder="+265 999 000 000" />
             </div>
 
             <!-- Password -->
-            <div class="form-group" style="margin-bottom:1.1rem;">
-                <label class="form-label"><i class="fa-solid fa-lock" style="margin-right:5px;"></i>Password</label>
-                <div style="position:relative;">
+            <div class="form-group registration-form-group">
+                <label class="form-label"><i class="fa-solid fa-lock"></i>Password</label>
+                <div class="password-field-wrapper">
                     <input type="password" name="password" id="id_password"
                            class="form-input {% if form.password.errors %}is-error{% endif %}"
-                           placeholder="Min. 8 characters" style="padding-right:44px;" />
-                    <button type="button" onclick="togglePwd()"
-                        style="position:absolute; right:12px; top:50%; transform:translateY(-50%);
-                               background:none; border:none; color:var(--muted-dim); cursor:pointer; font-size:0.95rem;">
+                           placeholder="Min. 8 characters" />
+                    <button type="button" onclick="togglePwd()" class="password-toggle-btn" title="Toggle password visibility" aria-label="Toggle password visibility">
                         <i class="fa-regular fa-eye" id="pwd-icon"></i>
                     </button>
                 </div>
@@ -125,7 +118,7 @@
             </div>
 
             <!-- Confirm Password -->
-            <div class="form-group" style="margin-bottom:1.5rem;">
+            <div class="form-group registration-form-group last">
                 <label class="form-label">Confirm Password</label>
                 <input type="password" name="password2"
                        class="form-input {% if form.password2.errors %}is-error{% endif %}"
@@ -134,9 +127,9 @@
             </div>
 
             <!-- Organisation (shown only for employee) -->
-            <div id="org-section" style="display:none; margin-bottom:1.5rem;">
+            <div id="org-section" class="registration-form-group org-section">
                 <div class="form-group">
-                    <label class="form-label"><i class="fa-solid fa-building" style="margin-right:5px;"></i>Your Organisation</label>
+                    <label class="form-label"><i class="fa-solid fa-building"></i>Your Organisation</label>
                     <select name="organisation"
                             class="form-input {% if form.organisation.errors %}is-error{% endif %}">
                         <option value="">Select your organisation</option>
@@ -151,15 +144,15 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width:100%; padding:13px; font-size:1rem;">
+            <button type="submit" class="btn btn-primary registration-submit-btn">
                 <i class="fa-solid fa-user-plus"></i> Create Account
             </button>
         </form>
     </div>
 
-    <p style="text-align:center; color:var(--muted); font-size:0.95rem; margin-top:1.25rem;">
+    <p class="registration-footer">
         Already have an account?
-        <a href="{% url 'login' %}" style="color:var(--primary); font-weight:600; text-decoration:none;">
+        <a href="{% url 'login' %}">
             Sign In
         </a>
     </p>
@@ -181,29 +174,13 @@ function selectType(type) {
     const orgSection = document.getElementById('org-section');
 
     if (type === 'External') {
-        extCard.style.border = '2px solid var(--primary)';
-        extCard.style.background = 'rgba(20,184,166,0.1)';
-        extCard.querySelector('i').style.color = 'var(--primary)';
-        extCard.querySelector('div').style.color = 'var(--primary)';
-
-        empCard.style.border = '1px solid var(--border)';
-        empCard.style.background = 'var(--surface)';
-        empCard.querySelector('i').style.color = 'var(--muted)';
-        empCard.querySelector('div').style.color = 'var(--text)';
-
-        orgSection.style.display = 'none';
+        extCard.classList.add('active');
+        empCard.classList.remove('active');
+        orgSection.classList.remove('visible');
     } else {
-        empCard.style.border = '2px solid var(--primary)';
-        empCard.style.background = 'rgba(20,184,166,0.1)';
-        empCard.querySelector('i').style.color = 'var(--primary)';
-        empCard.querySelector('div').style.color = 'var(--primary)';
-
-        extCard.style.border = '1px solid var(--border)';
-        extCard.style.background = 'var(--surface)';
-        extCard.querySelector('i').style.color = 'var(--muted)';
-        extCard.querySelector('div').style.color = 'var(--text)';
-
-        orgSection.style.display = 'block';
+        empCard.classList.add('active');
+        extCard.classList.remove('active');
+        orgSection.classList.add('visible');
     }
 }
 

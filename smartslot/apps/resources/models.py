@@ -85,6 +85,11 @@ class Resource(BaseModel):
     objects = ResourceManager()
 
     def save(self, *args, **kwargs):
+        # Auto-activate resource if its organisation is already approved and it's new
+        if not self.pk:
+            if self.organisation and self.organisation.is_approved:
+                self.is_active = True
+
         # If a new photo file has been attached, upload it to Supabase Storage
         if self.photo and hasattr(self.photo, 'file'):
             try:
