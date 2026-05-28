@@ -33,8 +33,8 @@ def _upload_to_supabase(file_field, folder: str) -> str:
 
 class ResourceQuerySet(models.QuerySet):
     def active(self):
-        """Only resources that are active AND belong to an approved organisation."""
-        return self.filter(is_active=True, organisation__is_approved=True)
+        """Resources visible in the booking catalogue."""
+        return self.filter(is_active=True)
 
     def visible_to(self, user):
         """
@@ -106,10 +106,10 @@ class Resource(BaseModel):
     objects = ResourceManager()
 
     def save(self, *args, **kwargs):
-        # Auto-activate resource if its organisation is already approved and it's new
+        # For now, organisation admins can add resources directly without an
+        # approval step. Approval gating can be reintroduced later.
         if not self.pk:
-            if self.organisation and self.organisation.is_approved:
-                self.is_active = True
+            self.is_active = True
 
         # Store uploaded images in the database so they survive Render deploys
         # without depending on local disk or external storage configuration.

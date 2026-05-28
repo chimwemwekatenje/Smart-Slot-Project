@@ -56,9 +56,6 @@ class Organisation(models.Model):
         if is_approved_changed is True:
             from apps.resources.models import Resource
             Resource.objects.filter(organisation=self).update(is_active=True)
-        elif is_approved_changed is False:
-            from apps.resources.models import Resource
-            Resource.objects.filter(organisation=self).update(is_active=False)
 
 
 class OrganisationApplication(models.Model):

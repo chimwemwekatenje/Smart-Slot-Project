@@ -1069,9 +1069,9 @@ def dashboard_org_resources_view(request):
                     description=description,
                     price=price_value,
                     organisation=org,
-                    # Active immediately if the org is already approved;
-                    # otherwise stays inactive until the org is approved.
-                    is_active=org.is_approved if org else False,
+                    # Active immediately; organisation approval gating will be
+                    # added later.
+                    is_active=True,
                 )
                 if photo:
                     resource.photo = photo
