@@ -594,7 +594,7 @@ def dashboard_organisation_application_detail_view(request, pk):
                 status=ApplicationResource.StatusChoices.VERIFIED
             ):
                 if app_res.name not in existing_names:
-                    ResourceModel.objects.create(
+                    new_resource = ResourceModel(
                         organisation=org,
                         name=app_res.name,
                         category=app_res.category,
@@ -602,6 +602,10 @@ def dashboard_organisation_application_detail_view(request, pk):
                         price=app_res.price,
                         is_active=True,
                     )
+                    # Carry over the uploaded image from the application resource
+                    if app_res.image:
+                        new_resource.photo = app_res.image
+                    new_resource.save()
                     created_count += 1
 
             application.status = OrganisationApplication.StatusChoices.COMPLETED

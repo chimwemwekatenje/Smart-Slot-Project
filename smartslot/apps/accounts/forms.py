@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
-from apps.core.models import (
+from smartslot.apps.core.models import (
     ApplicationResource,
     Organisation,
     OrganisationApplication,
@@ -60,6 +60,8 @@ class CustomLoginForm(AuthenticationForm):
 
 class OrganisationRegistrationForm(forms.Form):
     RESOURCE_SLOTS = range(1, 11)
+    MAX_IMAGE_SIZE_MB = 5
+    ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
     organisation_name = forms.CharField(max_length=255)
     contact_name = forms.CharField(max_length=255)
@@ -91,6 +93,9 @@ class OrganisationRegistrationForm(forms.Form):
                 required=False,
                 initial=0,
             )
+            self.fields[f'resource_{index}_image'] = forms.ImageField(
+                required=False,
+            )
 
     def clean_organisation_name(self):
         name = self.cleaned_data['organisation_name'].strip()
@@ -110,7 +115,8 @@ class OrganisationRegistrationForm(forms.Form):
             category = cleaned.get(f'resource_{index}_category')
             description = cleaned.get(f'resource_{index}_description')
             price = cleaned.get(f'resource_{index}_price')
-            has_any = any([name, category, description, price])
+            image = cleaned.get(f'resource_{index}_image')
+            has_any = any([name, category, description, price, image])
 
             if not has_any:
                 continue
@@ -120,6 +126,20 @@ class OrganisationRegistrationForm(forms.Form):
                 self.add_error(f'resource_{index}_name', 'Resource name is required.')
             if not category:
                 self.add_error(f'resource_{index}_category', 'Category is required.')
+
+            # Validate image file size and type
+            if image:
+                max_bytes = self.MAX_IMAGE_SIZE_MB * 1024 * 1024
+                if image.size > max_bytes:
+                    self.add_error(
+                        f'resource_{index}_image',
+                        f'Image must be under {self.MAX_IMAGE_SIZE_MB} MB (got {image.size / 1024 / 1024:.1f} MB).',
+                    )
+                if hasattr(image, 'content_type') and image.content_type not in self.ALLOWED_IMAGE_TYPES:
+                    self.add_error(
+                        f'resource_{index}_image',
+                        'Only JPEG, PNG, WebP and GIF images are allowed.',
+                    )
 
         if resource_count == 0:
             raise forms.ValidationError('Add at least one resource for staff verification.')
@@ -149,6 +169,8 @@ class OrganisationRegistrationForm(forms.Form):
                 category=category,
                 description=d.get(f'resource_{index}_description', ''),
                 price=d.get(f'resource_{index}_price') or 0,
+                image=d.get(f'resource_{index}_image'),
             )
 
         return application
+

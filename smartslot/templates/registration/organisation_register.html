@@ -90,9 +90,32 @@
                                    value="0" min="0" step="100" />
                         </div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="margin-bottom:1rem;">
                         <label class="form-label">Description</label>
                         <textarea class="form-input" name="resource_1_description" rows="2"></textarea>
+                    </div>
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">Photo (optional)</label>
+                        <div class="img-upload-zone" id="upload-zone-1"
+                             onclick="document.getElementById('resource_1_image').click()">
+                            <input type="file" name="resource_1_image" id="resource_1_image"
+                                   accept="image/jpeg,image/png,image/webp,image/gif"
+                                   style="display:none;"
+                                   onchange="handleImagePreview(this, 1)" />
+                            <div class="img-upload-placeholder" id="placeholder-1">
+                                <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.5rem; color:var(--primary); margin-bottom:6px;"></i>
+                                <div style="font-weight:600; color:var(--text); font-size:0.88rem;">Click or drag an image here</div>
+                                <div style="color:var(--muted-dim); font-size:0.78rem; margin-top:2px;">JPEG, PNG, WebP or GIF — Max 5 MB</div>
+                            </div>
+                            <div class="img-preview-wrap" id="preview-wrap-1" style="display:none;">
+                                <img id="preview-img-1" class="img-preview" alt="Preview" />
+                                <button type="button" class="img-remove-btn" onclick="removeImage(event, 1)" title="Remove image">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="img-upload-error" id="img-error-1"></div>
                     </div>
                 </div>
             </div>
@@ -114,76 +137,6 @@
                 Maximum 10 resources reached.
             </p>
 
-            <script>
-            let resourceCount = 1;
-            const MAX_RESOURCES = 10;
-
-            function addResourceCard() {
-                if (resourceCount >= MAX_RESOURCES) return;
-                resourceCount++;
-                const n = resourceCount;
-                const card = document.createElement('div');
-                card.className = 'resource-card card';
-                card.dataset.index = n;
-                card.style.cssText = 'padding:1.25rem; background:var(--bg); position:relative;';
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                        <div style="font-weight:700; color:var(--primary);">Resource ${n}</div>
-                        <button type="button" onclick="removeResourceCard(this, ${n})"
-                                style="background:none; border:none; color:var(--muted-dim);
-                                       cursor:pointer; font-size:1rem; padding:4px 8px;">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1rem;">
-                        <div class="form-group">
-                            <label class="form-label">Name</label>
-                            <input class="form-input" type="text" name="resource_${n}_name" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Category</label>
-                            <input class="form-input" type="text" name="resource_${n}_category"
-                                   placeholder="Boardroom, Vehicle, Equipment" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Price (MWK)</label>
-                            <input class="form-input" type="number" name="resource_${n}_price"
-                                   value="0" min="0" step="100" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-input" name="resource_${n}_description" rows="2"></textarea>
-                    </div>
-                `;
-                document.getElementById('resource-cards').appendChild(card);
-
-                if (resourceCount >= MAX_RESOURCES) {
-                    document.getElementById('add-resource-btn').style.display = 'none';
-                    document.getElementById('resource-limit-msg').style.display = 'block';
-                }
-            }
-
-            function removeResourceCard(btn, index) {
-                const card = btn.closest('.resource-card');
-                card.remove();
-                resourceCount--;
-                // Renumber remaining cards
-                document.querySelectorAll('.resource-card').forEach((c, i) => {
-                    const num = i + 1;
-                    c.dataset.index = num;
-                    const title = c.querySelector('[style*="color:var(--primary)"]');
-                    if (title) title.textContent = `Resource ${num}`;
-                    // Rename inputs
-                    c.querySelectorAll('input, textarea').forEach(inp => {
-                        inp.name = inp.name.replace(/resource_\d+_/, `resource_${num}_`);
-                    });
-                });
-                document.getElementById('add-resource-btn').style.display = 'flex';
-                document.getElementById('resource-limit-msg').style.display = 'none';
-            }
-            </script>
-
             <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1.5rem;">
                 <button type="submit" class="btn btn-primary">
                     <i class="fa-solid fa-paper-plane"></i> Submit For Verification
@@ -194,4 +147,258 @@
     </div>
 </div>
 </div>
+
+<!-- ── Styles for the image upload zone ────────────────────────────────── -->
+<style>
+.img-upload-zone {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: var(--r, 8px);
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.img-upload-zone:hover,
+.img-upload-zone.drag-over {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.04);
+}
+.img-upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.img-preview-wrap {
+    position: relative;
+    display: inline-block;
+}
+.img-preview {
+    max-height: 140px;
+    max-width: 100%;
+    border-radius: 6px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.img-remove-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: var(--error, #EF4444);
+    color: #fff;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    transition: transform 0.15s;
+}
+.img-remove-btn:hover {
+    transform: scale(1.15);
+}
+.img-upload-error {
+    color: var(--error, #EF4444);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    min-height: 1.2em;
+}
+</style>
+
+<!-- ── JavaScript for dynamic resource cards + image preview ──────────── -->
+<script>
+let resourceCount = 1;
+const MAX_RESOURCES = 10;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+function buildImageUploadHTML(n) {
+    return `
+        <div class="form-group">
+            <label class="form-label">Photo (optional)</label>
+            <div class="img-upload-zone" id="upload-zone-${n}"
+                 onclick="document.getElementById('resource_${n}_image').click()">
+                <input type="file" name="resource_${n}_image" id="resource_${n}_image"
+                       accept="image/jpeg,image/png,image/webp,image/gif"
+                       style="display:none;"
+                       onchange="handleImagePreview(this, ${n})" />
+                <div class="img-upload-placeholder" id="placeholder-${n}">
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.5rem; color:var(--primary); margin-bottom:6px;"></i>
+                    <div style="font-weight:600; color:var(--text); font-size:0.88rem;">Click or drag an image here</div>
+                    <div style="color:var(--muted-dim); font-size:0.78rem; margin-top:2px;">JPEG, PNG, WebP or GIF — Max 5 MB</div>
+                </div>
+                <div class="img-preview-wrap" id="preview-wrap-${n}" style="display:none;">
+                    <img id="preview-img-${n}" class="img-preview" alt="Preview" />
+                    <button type="button" class="img-remove-btn" onclick="removeImage(event, ${n})" title="Remove image">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="img-upload-error" id="img-error-${n}"></div>
+        </div>
+    `;
+}
+
+function addResourceCard() {
+    if (resourceCount >= MAX_RESOURCES) return;
+    resourceCount++;
+    const n = resourceCount;
+    const card = document.createElement('div');
+    card.className = 'resource-card card';
+    card.dataset.index = n;
+    card.style.cssText = 'padding:1.25rem; background:var(--bg); position:relative;';
+    card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <div style="font-weight:700; color:var(--primary);">Resource ${n}</div>
+            <button type="button" onclick="removeResourceCard(this, ${n})"
+                    style="background:none; border:none; color:var(--muted-dim);
+                           cursor:pointer; font-size:1rem; padding:4px 8px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1rem;">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input class="form-input" type="text" name="resource_${n}_name" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <input class="form-input" type="text" name="resource_${n}_category"
+                       placeholder="Boardroom, Vehicle, Equipment" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Price (MWK)</label>
+                <input class="form-input" type="number" name="resource_${n}_price"
+                       value="0" min="0" step="100" />
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" name="resource_${n}_description" rows="2"></textarea>
+        </div>
+        ${buildImageUploadHTML(n)}
+    `;
+    document.getElementById('resource-cards').appendChild(card);
+    initDragAndDrop(n);
+
+    if (resourceCount >= MAX_RESOURCES) {
+        document.getElementById('add-resource-btn').style.display = 'none';
+        document.getElementById('resource-limit-msg').style.display = 'block';
+    }
+}
+
+function removeResourceCard(btn, index) {
+    const card = btn.closest('.resource-card');
+    card.remove();
+    resourceCount--;
+    // Renumber remaining cards
+    document.querySelectorAll('.resource-card').forEach((c, i) => {
+        const num = i + 1;
+        const oldIndex = c.dataset.index;
+        c.dataset.index = num;
+        const title = c.querySelector('[style*="color:var(--primary)"]');
+        if (title) title.textContent = `Resource ${num}`;
+        // Rename inputs, textareas, and file inputs
+        c.querySelectorAll('input, textarea').forEach(inp => {
+            if (inp.name) inp.name = inp.name.replace(/resource_\d+_/, `resource_${num}_`);
+            if (inp.id) inp.id = inp.id.replace(/resource_\d+_/, `resource_${num}_`);
+        });
+        // Update IDs for preview elements
+        const zone = c.querySelector('.img-upload-zone');
+        if (zone) zone.id = `upload-zone-${num}`;
+        const placeholder = c.querySelector('.img-upload-placeholder');
+        if (placeholder) placeholder.id = `placeholder-${num}`;
+        const previewWrap = c.querySelector('.img-preview-wrap');
+        if (previewWrap) previewWrap.id = `preview-wrap-${num}`;
+        const previewImg = c.querySelector('.img-preview');
+        if (previewImg) previewImg.id = `preview-img-${num}`;
+        const errorEl = c.querySelector('.img-upload-error');
+        if (errorEl) errorEl.id = `img-error-${num}`;
+        // Update onclick for zone
+        if (zone) {
+            const fileInput = c.querySelector('input[type="file"][name*="image"]');
+            zone.onclick = () => fileInput && fileInput.click();
+        }
+        // Update remove button onclick
+        const removeBtn = c.querySelector('.img-remove-btn');
+        if (removeBtn) {
+            removeBtn.onclick = (e) => removeImage(e, num);
+        }
+    });
+    document.getElementById('add-resource-btn').style.display = 'flex';
+    document.getElementById('resource-limit-msg').style.display = 'none';
+}
+
+/* ── Image preview handling ────────────────────────────────────────── */
+
+function handleImagePreview(input, index) {
+    const errorEl = document.getElementById(`img-error-${index}`);
+    errorEl.textContent = '';
+
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    // Validate type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+        errorEl.textContent = 'Only JPEG, PNG, WebP and GIF images are allowed.';
+        input.value = '';
+        return;
+    }
+    // Validate size
+    if (file.size > MAX_IMAGE_SIZE) {
+        errorEl.textContent = `Image must be under 5 MB (got ${(file.size / 1024 / 1024).toFixed(1)} MB).`;
+        input.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById(`placeholder-${index}`).style.display = 'none';
+        const wrap = document.getElementById(`preview-wrap-${index}`);
+        wrap.style.display = 'inline-block';
+        document.getElementById(`preview-img-${index}`).src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage(event, index) {
+    event.stopPropagation();
+    const input = document.getElementById(`resource_${index}_image`);
+    if (input) input.value = '';
+    document.getElementById(`preview-wrap-${index}`).style.display = 'none';
+    document.getElementById(`placeholder-${index}`).style.display = 'flex';
+    document.getElementById(`img-error-${index}`).textContent = '';
+}
+
+/* ── Drag-and-drop support ─────────────────────────────────────────── */
+
+function initDragAndDrop(index) {
+    const zone = document.getElementById(`upload-zone-${index}`);
+    if (!zone) return;
+    ['dragenter', 'dragover'].forEach(evt =>
+        zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('drag-over'); })
+    );
+    ['dragleave', 'drop'].forEach(evt =>
+        zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.remove('drag-over'); })
+    );
+    zone.addEventListener('drop', e => {
+        const input = document.getElementById(`resource_${index}_image`);
+        if (e.dataTransfer.files.length && input) {
+            input.files = e.dataTransfer.files;
+            handleImagePreview(input, index);
+        }
+    });
+}
+
+// Init drag-and-drop for the first resource card
+document.addEventListener('DOMContentLoaded', () => initDragAndDrop(1));
+</script>
 {% endblock %}

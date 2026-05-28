@@ -15,6 +15,27 @@ def clear_sessions():
 
 def main():
     """Run administrative tasks."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+    # Import hook to redirect smartslot.apps.* to apps.*
+    # This prevents Django from registering duplicate conflicting models.
+    class SmartslotRedirector:
+        def find_spec(self, fullname, path, target=None):
+            if fullname.startswith('smartslot.'):
+                underlying = fullname[len('smartslot.'):]
+                try:
+                    import importlib
+                    module = importlib.import_module(underlying)
+                    sys.modules[fullname] = module
+                    return module.__spec__
+                except Exception:
+                    pass
+            return None
+
+    sys.meta_path.insert(0, SmartslotRedirector())
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
     try:
         from django.core.management import execute_from_command_line

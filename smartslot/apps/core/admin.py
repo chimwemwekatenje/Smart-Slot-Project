@@ -96,8 +96,24 @@ class OrganisationAdmin(admin.ModelAdmin):
 class ApplicationResourceInline(admin.TabularInline):
     model = ApplicationResource
     extra = 0
-    readonly_fields = ('verified_at', 'created_at', 'updated_at')
+    readonly_fields = ('image_preview', 'verified_at', 'created_at', 'updated_at')
+    fields = (
+        'name', 'category', 'price', 'description',
+        'image', 'image_preview',
+        'status', 'admin_notes', 'verified_at',
+    )
     show_change_link = True
+
+    @admin.display(description='Preview')
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<a href="{}" target="_blank">'
+                '<img src="{}" style="height:60px;max-width:100px;object-fit:cover;'
+                'border-radius:6px;border:1px solid #334155;" /></a>',
+                obj.image.url, obj.image.url,
+            )
+        return '—'
 
 
 @admin.register(OrganisationApplication)
