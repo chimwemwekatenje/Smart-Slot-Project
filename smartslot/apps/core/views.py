@@ -15,7 +15,12 @@ from django import forms as dj_forms
 from apps.resources.models import Resource
 from apps.bookings.models import Booking
 from apps.core.models import ApplicationResource, Organisation, OrganisationApplication
-from apps.core.mixins import OrgScopedMixin, is_organisation_admin, is_platform_level
+from apps.core.mixins import (
+    OrgScopedMixin,
+    get_user_organisation,
+    is_organisation_admin,
+    is_platform_level,
+)
 import json
 
 
@@ -394,7 +399,7 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if not is_platform_level(user) and user.role == 'OrganisationAdmin':
             # Return the organisation (may be None if misconfigured, but we
             # handle that in get_context_data via is_org_admin flag)
-            return user.organisation
+            return get_user_organisation(user)
         return None  # platform-level: no restriction
 
     def _is_org_admin(self):
@@ -987,7 +992,7 @@ def dashboard_org_users_view(request):
         raise PermissionDenied
 
     is_org_admin = is_organisation_admin(user)
-    org = user.organisation if is_org_admin else None
+    org = get_user_organisation(user) if is_org_admin else None
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1039,7 +1044,7 @@ def dashboard_org_resources_view(request):
         raise PermissionDenied
 
     is_org_admin = is_organisation_admin(user)
-    org = user.organisation if is_org_admin else None
+    org = get_user_organisation(user) if is_org_admin else None
 
     if request.method == 'POST':
         action = request.POST.get('action')

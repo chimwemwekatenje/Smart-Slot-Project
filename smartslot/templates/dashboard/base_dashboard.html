@@ -326,6 +326,7 @@
     </style>
 </head>
 <body>
+    {% with active_org=organisation|default:user.organisation %}
 
     <!-- Page loading bar -->
     <div id="dash-page-loader" style="position:fixed; top:0; left:0; width:0; height:3px;
@@ -335,7 +336,7 @@
     <!-- Mobile top bar -->
     <header class="dash-topbar">
         <span class="dash-topbar-brand">
-            {% if organisation %}{{ organisation.name }}{% else %}SmartSlot{% endif %}
+            {% if active_org %}{{ active_org.name }}{% else %}SmartSlot{% endif %}
         </span>
         <div class="dash-topbar-actions">
             <button class="icon-btn" onclick="toggleDashTheme()" title="Toggle theme">
@@ -356,11 +357,11 @@
         <aside class="sidebar" id="dash-sidebar">
             <!-- Brand -->
             <div class="sidebar-brand">
-                {% if organisation and organisation.logo %}
-                    <img src="{{ organisation.logo.url }}" alt="{{ organisation.name }}" />
+                {% if active_org and active_org.logo %}
+                    <img src="{{ active_org.logo.url }}" alt="{{ active_org.name }}" />
                 {% endif %}
                 <span class="sidebar-brand-name">
-                    {% if organisation %}{{ organisation.name }}{% else %}SmartSlot{% endif %}
+                    {% if active_org %}{{ active_org.name }}{% else %}SmartSlot{% endif %}
                 </span>
                 <button class="sidebar-close" onclick="closeSidebar()">
                     <i class="fa-solid fa-xmark"></i>
@@ -451,6 +452,7 @@
         </div>
 
     </div><!-- /.dash-layout -->
+    {% endwith %}
 
 <script>
     // ── Page loading bar ──────────────────────────────────────────────────────

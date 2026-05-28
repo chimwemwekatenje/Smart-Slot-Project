@@ -25,6 +25,55 @@ def is_organisation_admin(user):
     )
 
 
+def get_user_organisation(user):
+    """
+    Return an organisation admin's organisation.
+    Older admin accounts may not have organisation_id set, so repair that link
+    from their approved application email when possible.
+    """
+    if is_platform_level(user) or not is_organisation_admin(user):
+        return None
+
+    organisation = getattr(user, 'organisation', None)
+    if organisation is not None:
+        return organisation
+
+    email = (getattr(user, 'email', '') or '').strip()
+    if not email:
+        return None
+
+    from apps.core.models import OrganisationApplication
+
+    application = (
+        OrganisationApplication.objects
+        .filter(contact_email__iexact=email)
+        .select_related('created_organisation')
+        .order_by('-updated_at')
+        .first()
+    )
+    if not application:
+        return None
+
+    organisation = application.created_organisation
+    if organisation is None:
+        from apps.core.models import Organisation
+        organisation = (
+            Organisation.objects
+            .filter(name__iexact=application.organisation_name)
+            .order_by('-is_approved', '-updated_at')
+            .first()
+        )
+    if organisation is None:
+        return None
+
+    try:
+        user.organisation = organisation
+        user.save(update_fields=['organisation'])
+    except Exception:
+        pass
+    return organisation
+
+
 class OrgScopedMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
     Restricts view access to OrganisationAdmin and PlatformAdmin roles.
@@ -41,10 +90,7 @@ class OrgScopedMixin(LoginRequiredMixin, UserPassesTestMixin):
 
     def get_org(self):
         """Return the user's organisation, or None for platform-level users."""
-        user = self.request.user
-        if is_platform_level(user):
-            return None
-        return getattr(user, 'organisation', None)
+        return get_user_organisation(self.request.user)
 
     def scope_qs(self, qs):
         """Filter queryset to the user's organisation if applicable."""
