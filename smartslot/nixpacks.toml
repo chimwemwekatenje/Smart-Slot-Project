@@ -1,7 +1,7 @@
 [phases.build]
 cmds = [
   "pip install -r requirements.txt",
-  "python manage.py collectstatic --noinput"
+  "DJANGO_SETTINGS_MODULE=config.settings.production python manage.py collectstatic --noinput"
 ]
 
 [start]

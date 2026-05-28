@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from datetime import timedelta
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -13,7 +14,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 # =============================================================================
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
 DEBUG = env.bool('DEBUG', default=False)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost', '*'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -25,6 +26,10 @@ INSTALLED_APPS = [
     # Third-party
     'crispy_forms',
     'crispy_tailwind',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    
     # Local apps - core MUST be first (BaseModel / Organisation FK dependency)
     'apps.core.apps.CoreConfig',
     'apps.accounts.apps.AccountsConfig',
@@ -40,6 +45,7 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = 'tailwind'
 CRISPY_TEMPLATE_PACK = 'tailwind'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -80,19 +86,18 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
-
 DATABASES['default']['CONN_MAX_AGE'] = 60
-
-
 DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 
-# Required for Supabase / any hosted Postgres — enforce SSL.
-DATABASES['default'].setdefault('OPTIONS', {})
-DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+# Required for Supabase / any hosted Postgres: enforce SSL.
+if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
 
 # Supabase Storage — for persistent image uploads
 SUPABASE_URL = env('SUPABASE_URL', default='')
 SUPABASE_KEY = env('SUPABASE_KEY', default='')
+
 # =============================================================================
 # Auth & Password
 # =============================================================================
@@ -128,8 +133,6 @@ LOGIN_REDIRECT_URL = '/resources/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Site URL — used for QR codes, emails, and any absolute URLs.
-# Set SITE_URL in your .env for local dev (e.g. http://192.168.x.x:8000)
-# and in production env vars (e.g. https://smartslot-bh9c.onrender.com).
 SITE_URL = env('SITE_URL', default='https://smartslot-bh9c.onrender.com')
 
 # PayChangu
@@ -137,3 +140,37 @@ SITE_URL = env('SITE_URL', default='https://smartslot-bh9c.onrender.com')
 PAYCHANGU_SECRET_KEY = env('PAYCHANGU_SECRET_KEY', default='')
 PAYCHANGU_CALLBACK_URL = env('PAYCHANGU_CALLBACK_URL', default='http://127.0.0.1:8000/payments/callback/')
 PAYCHANGU_RETURN_URL = env('PAYCHANGU_RETURN_URL', default='http://127.0.0.1:8000/payments/return/')
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# Email
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    # Real SMTP — sends actual emails
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+else:
+    # No credentials set — print emails to console for development
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+

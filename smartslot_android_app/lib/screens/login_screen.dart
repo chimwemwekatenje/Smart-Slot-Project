@@ -63,8 +63,7 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _error = null);
     final auth = context.read<AuthProvider>();
-    final err =
-        await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
+    final err = await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
     if (!mounted) return;
     if (err != null) {
       setState(() => _error = err);
@@ -76,6 +75,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Stack(
@@ -90,23 +90,22 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-          // Dark teal overlay — matches the web's #0f172a with opacity
+          // Gradient overlay adapted to light/dark themes
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xCC0F172A), // ~80% dark navy top
-                  Color(0xF00F172A), // ~94% dark navy bottom
-                ],
+                colors: isDark
+                    ? [const Color(0xCC0F172A), const Color(0xF00F172A)]
+                    : [const Color(0xAAFFFFFF), const Color(0xEEFFFFFF)],
               ),
             ),
           ),
 
-          // Teal tint layer
+          // Subtle teal wash
           Container(
-            color: const Color(0x1A14B8A6), // subtle teal wash
+            color: const Color(0x1A14B8A6),
           ),
 
           // Content
@@ -116,7 +115,6 @@ class _LoginScreenState extends State<LoginScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 28),
                 child: Column(
                   children: [
-                    // Logo / branding
                     const SizedBox(height: 24),
                     const Text(
                       'SmartSlot',
@@ -130,8 +128,7 @@ class _LoginScreenState extends State<LoginScreen>
                     const SizedBox(height: 6),
                     const Text(
                       'Resource Booking System',
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 14),
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 14),
                     ),
                     const SizedBox(height: 48),
 
@@ -139,19 +136,26 @@ class _LoginScreenState extends State<LoginScreen>
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.92),
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          )
+                        ],
                       ),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
+                            Text(
                               'Sign In',
                               style: TextStyle(
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -159,25 +163,21 @@ class _LoginScreenState extends State<LoginScreen>
                             const SizedBox(height: 4),
                             const Text(
                               'Welcome back',
-                              style: TextStyle(
-                                  color: AppColors.textMuted, fontSize: 13),
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                             ),
                             const SizedBox(height: 24),
                             if (_error != null) ...[
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppColors.error
-                                      .withValues(alpha: 0.15),
+                                  color: AppColors.error.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: AppColors.error
-                                          .withValues(alpha: 0.4)),
+                                  border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
                                 ),
-                                child: Text(_error!,
-                                    style: const TextStyle(
-                                        color: AppColors.error,
-                                        fontSize: 13)),
+                                child: Text(
+                                  _error!,
+                                  style: const TextStyle(color: AppColors.error, fontSize: 13),
+                                ),
                               ),
                               const SizedBox(height: 16),
                             ],
@@ -186,8 +186,7 @@ class _LoginScreenState extends State<LoginScreen>
                               keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
                                 labelText: 'Email',
-                                prefixIcon: Icon(Icons.email_outlined,
-                                    color: AppColors.textMuted),
+                                prefixIcon: Icon(Icons.email_outlined, color: AppColors.textMuted),
                               ),
                               validator: (v) =>
                                   v!.isEmpty || !v.contains('@') ? 'Valid email required' : null,
@@ -198,21 +197,16 @@ class _LoginScreenState extends State<LoginScreen>
                               obscureText: _obscure,
                               decoration: InputDecoration(
                                 labelText: 'Password',
-                                prefixIcon: const Icon(Icons.lock_outline,
-                                    color: AppColors.textMuted),
+                                prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    _obscure
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
+                                    _obscure ? Icons.visibility_off : Icons.visibility,
                                     color: AppColors.textMuted,
                                   ),
-                                  onPressed: () =>
-                                      setState(() => _obscure = !_obscure),
+                                  onPressed: () => setState(() => _obscure = !_obscure),
                                 ),
                               ),
-                              validator: (v) =>
-                                  v!.isEmpty ? 'Required' : null,
+                              validator: (v) => v!.isEmpty ? 'Required' : null,
                             ),
                             const SizedBox(height: 24),
                             ElevatedButton(
@@ -221,9 +215,8 @@ class _LoginScreenState extends State<LoginScreen>
                                   ? const SizedBox(
                                       height: 20,
                                       width: 20,
-                                      child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2))
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
                                   : const Text('Sign In'),
                             ),
                           ],
@@ -235,17 +228,20 @@ class _LoginScreenState extends State<LoginScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Don't have an account? ",
-                            style: TextStyle(
-                                color: AppColors.textMuted, fontSize: 14)),
+                        const Text(
+                          "Don't have an account? ",
+                          style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                        ),
                         GestureDetector(
-                          onTap: () =>
-                              Navigator.pushNamed(context, '/register'),
-                          child: const Text('Register',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14)),
+                          onTap: () => Navigator.pushNamed(context, '/register'),
+                          child: const Text(
+                            'Register',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ],
                     ),

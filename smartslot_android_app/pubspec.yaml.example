@@ -1,0 +1,39 @@
+name: smartslot_android_app
+description: Smart Slot booking application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # HTTP & API
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+  
+  # UI Components
+  intl: ^0.18.1
+  
+  # QR Code
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.0.0  # For QR code scanning (NEW)
+  
+  # PDF Generation
+  pdf: ^3.10.7
+  printing: ^5.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # If you have assets, uncomment and configure:
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/

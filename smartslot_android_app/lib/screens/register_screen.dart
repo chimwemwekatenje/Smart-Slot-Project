@@ -21,12 +21,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
 
-  // Employee-specific
-  dynamic _selectedOrgId;
+  int? _selectedOrgId;
   List<Map<String, dynamic>> _organisations = [];
-
   bool _obscure = true;
-  // 'external' or 'employee'
   String _accountType = 'external';
   String? _error;
 
@@ -43,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           .select('id, name');
       
       setState(() => _organisations =
-          data.map((o) => {'id': o['id'], 'name': o['name']}).toList());
+          data.map((o) => {'id': o['id'] as int, 'name': o['name'] as String}).toList());
     } catch (_) {}
   }
 
@@ -104,7 +101,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Account type selector
               _AccountTypeSelector(
                 selected: _accountType,
                 onChanged: (v) => setState(() {
@@ -178,46 +174,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 validator: (v) => v!.length < 8 ? 'Minimum 8 characters' : null,
               ),
-              // Employee: pick organisation
               if (_accountType == 'employee') ...[
                 const SizedBox(height: 20),
                 _organisations.isEmpty
                     ? Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
-                          border: const Border.fromBorderSide(
-                              BorderSide(color: AppColors.border)),
+                          border: Border.all(color: Theme.of(context).dividerColor),
                         ),
                         child: const Row(children: [
                           SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: AppColors.primary)),
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          ),
                           SizedBox(width: 12),
                           Text('Loading organisations...',
                               style: TextStyle(color: AppColors.textMuted)),
                         ]),
                       )
-                    : DropdownButtonFormField<String>(
-                        value: _selectedOrgId?.toString(),
-                        dropdownColor: AppColors.surface,
+                    : DropdownButtonFormField<int>(
+                        value: _selectedOrgId,
+                        dropdownColor: Theme.of(context).colorScheme.surface,
                         decoration: const InputDecoration(
                           labelText: 'Select Your Organisation',
-                          prefixIcon: Icon(Icons.business_outlined,
-                              color: AppColors.textMuted),
+                          prefixIcon: Icon(Icons.business_outlined, color: AppColors.textMuted),
                         ),
                         items: _organisations
-                            .map((o) => DropdownMenuItem<String>(
-                                  value: o['id'].toString(),
-                                  child: Text(o['name']),
+                            .map((o) => DropdownMenuItem<int>(
+                                  value: o['id'] as int,
+                                  child: Text(o['name'] as String),
                                 ))
                             .toList(),
                         onChanged: (v) => setState(() => _selectedOrgId = v),
-                        validator: (_) => _accountType == 'employee' &&
-                                _selectedOrgId == null
+                        validator: (_) => _accountType == 'employee' && _selectedOrgId == null
                             ? 'Select your organisation'
                             : null,
                       ),
@@ -230,7 +225,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : const Text('Create Account'),
               ),
               const SizedBox(height: 16),
@@ -259,16 +257,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 class _AccountTypeSelector extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
-  const _AccountTypeSelector(
-      {required this.selected, required this.onChanged});
+  const _AccountTypeSelector({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('I am signing up as...',
-            style: Theme.of(context).textTheme.titleLarge),
+        Text('I am signing up as...', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
@@ -298,17 +294,10 @@ class _AccountTypeSelector extends StatelessWidget {
 
 class _TypeCard extends StatelessWidget {
   final IconData icon;
-  final String title;
-  final String subtitle;
+  final String title, subtitle;
   final bool selected;
   final VoidCallback onTap;
-  const _TypeCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-  });
+  const _TypeCard({required this.icon, required this.title, required this.subtitle, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -318,34 +307,24 @@ class _TypeCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.12)
-              : AppColors.surface,
+          color: selected ? AppColors.primary.withValues(alpha: 0.12) : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-            width: selected ? 2 : 1,
-          ),
+          border: Border.all(color: selected ? AppColors.primary : Theme.of(context).dividerColor, width: selected ? 2 : 1),
         ),
         child: Column(
           children: [
-            Icon(icon,
-                color: selected ? AppColors.primary : AppColors.textMuted,
-                size: 28),
+            Icon(icon, color: selected ? AppColors.primary : AppColors.textMuted, size: 28),
             const SizedBox(height: 8),
             Text(title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.textPrimary,
+                    color: selected ? AppColors.primary : Theme.of(context).textTheme.bodyLarge?.color,
                     fontWeight: FontWeight.w600,
                     fontSize: 13)),
             const SizedBox(height: 4),
             Text(subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 11)),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
           ],
         ),
       ),

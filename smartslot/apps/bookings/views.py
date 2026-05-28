@@ -14,18 +14,29 @@ class BookingListView(LoginRequiredMixin, ListView):
     template_name = 'bookings/booking_list.html'
     context_object_name = 'bookings'
 
-    STATUSES = ['All', 'Booked', 'Cancelled']
+    STATUSES = ['All', 'Booked', 'Cancelled', 'Pending']
 
     def get_queryset(self):
-        # Only show confirmed (Booked) and Cancelled — never show Pending
-        qs = Booking.objects.filter(
-            user=self.request.user,
-            status__in=['Booked', 'Cancelled'],
-        ).order_by('-start_time')
+        user = self.request.user
+        if not user.is_authenticated:
+            return Booking.objects.none()
+            
+        if user.role == 'PlatformAdmin':
+            qs = Booking.objects.all().select_related('resource', 'user')
+        elif user.role in ['OrganisationAdmin', 'Receptionist'] and user.organisation:
+            qs = Booking.objects.filter(
+                resource__organisation=user.organisation
+            ).select_related('resource', 'user')
+        else:
+            qs = Booking.objects.filter(user=user).select_related('resource')
+
         status = self.request.GET.get('status', 'All')
         if status and status != 'All':
             qs = qs.filter(status=status)
-        return qs
+        else:
+            if user.role not in ['PlatformAdmin', 'OrganisationAdmin', 'Receptionist']:
+                qs = qs.filter(status__in=['Booked', 'Cancelled'])
+        return qs.order_by('-start_time')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -293,3 +304,4 @@ def cancel_booking_view(request, booking_pk):
         return redirect('booking_list')
 
     return redirect('booking_list')
+
