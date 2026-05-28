@@ -15,6 +15,13 @@ environ.Env.read_env(BASE_DIR / '.env')
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost', '*'])
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=[
+        'https://smartslot-bh9c.onrender.com',
+        'https://*.onrender.com',
+    ],
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -160,6 +167,10 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False
 
 # Email
 EMAIL_HOST_USER     = env('EMAIL_HOST_USER', default='')
