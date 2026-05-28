@@ -25,6 +25,10 @@ def is_organisation_admin(user):
     )
 
 
+def _normalise_org_key(value):
+    return ''.join(ch for ch in (value or '').lower() if ch.isalnum())
+
+
 def get_user_organisation(user):
     """
     Return an organisation admin's organisation.
@@ -42,7 +46,7 @@ def get_user_organisation(user):
     if not email:
         return None
 
-    from apps.core.models import OrganisationApplication
+    from apps.core.models import Organisation, OrganisationApplication
 
     application = (
         OrganisationApplication.objects
@@ -51,18 +55,29 @@ def get_user_organisation(user):
         .order_by('-updated_at')
         .first()
     )
-    if not application:
-        return None
-
-    organisation = application.created_organisation
-    if organisation is None:
-        from apps.core.models import Organisation
+    organisation = application.created_organisation if application else None
+    if organisation is None and application is not None:
         organisation = (
             Organisation.objects
             .filter(name__iexact=application.organisation_name)
             .order_by('-is_approved', '-updated_at')
             .first()
         )
+    if organisation is None:
+        email_local, _, email_domain = email.partition('@')
+        domain_name = email_domain.split('.')[0] if email_domain else ''
+        lookup_keys = {
+            _normalise_org_key(getattr(user, 'username', '')),
+            _normalise_org_key(email_local),
+            _normalise_org_key(domain_name),
+        }
+        lookup_keys.discard('')
+        lookup_keys.discard('admin')
+        for org in Organisation.objects.all().order_by('name'):
+            org_key = _normalise_org_key(org.name)
+            if any(key in org_key or org_key in key for key in lookup_keys):
+                organisation = org
+                break
     if organisation is None:
         return None
 
