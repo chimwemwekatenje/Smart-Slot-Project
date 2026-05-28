@@ -1,6 +1,7 @@
 """PayChangu payment views for SmartSlot."""
 import json
 import logging
+from django.urls import reverse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
@@ -31,12 +32,31 @@ def _is_failed_status(status):
     return _normalise_status(status) in FAILED_STATUSES
 
 
+def _mark_booking_cancelled(booking, cancellation_reason, payment_status='cancelled'):
+    custom_data = {
+        **(booking.custom_data or {}),
+        'booking_status': 'cancelled',
+        'cancellation_reason': cancellation_reason,
+        'payment_status': payment_status,
+    }
+    Booking.objects.filter(pk=booking.pk).update(
+        status=Booking.StatusChoices.CANCELLED,
+        custom_data=custom_data,
+    )
+    booking.status = Booking.StatusChoices.CANCELLED
+    booking.custom_data = custom_data
+
+
 def _render_booking_receipt(request, booking):
     from apps.bookings.views import _receipt_rows
     return render(request, 'bookings/booking_receipt.html', {
         'booking':      booking,
         'receipt_rows': _receipt_rows(booking),
     })
+
+
+def _booking_receipt_url(booking):
+    return reverse('booking_receipt', kwargs={'booking_id': booking.id})
 
 
 def _confirm_booking(booking, tx_ref):
@@ -225,7 +245,7 @@ def mobile_money_status(request, booking_id):
         return JsonResponse({'status': 'error', 'message': 'Booking not found.'}, status=404)
 
     if booking.status == Booking.StatusChoices.BOOKED:
-        return JsonResponse({'status': 'success', 'redirect': f'/bookings/'})
+        return JsonResponse({'status': 'success', 'redirect': _booking_receipt_url(booking)})
 
     custom_data = booking.custom_data or {}
     charge_id = custom_data.get('charge_id', '')
@@ -242,12 +262,10 @@ def mobile_money_status(request, booking_id):
         if _is_successful_status(charge_status):
             _confirm_booking(booking, tx_ref)
             booking.refresh_from_db()
-            return JsonResponse({'status': 'success', 'redirect': f'/payments/momo/pay/{booking.id}/'})
+            return JsonResponse({'status': 'success', 'redirect': _booking_receipt_url(booking)})
         elif _is_failed_status(charge_status):
             # Cancel the pending booking so the slot is freed
-            Booking.objects.filter(pk=booking.pk).update(
-                status=Booking.StatusChoices.CANCELLED
-            )
+            _mark_booking_cancelled(booking, 'mobile_money_failed', 'failed')
             return JsonResponse({'status': 'failed', 'message': 'Payment was not completed. Your booking has been cancelled.'})
         else:
             return JsonResponse({'status': 'pending', 'message': 'Waiting for payment confirmation...'})
@@ -426,5 +444,5 @@ def cancel_pending_booking(request, booking_id):
     from apps.bookings.models import Booking as B
     booking = B.objects.filter(id=booking_id, user=request.user).first()
     if booking and booking.status not in (B.StatusChoices.BOOKED,):
-        B.objects.filter(pk=booking.pk).update(status=B.StatusChoices.CANCELLED)
+        _mark_booking_cancelled(booking, 'mobile_money_cancelled_or_timed_out')
     return JsonResponse({'status': 'cancelled'})

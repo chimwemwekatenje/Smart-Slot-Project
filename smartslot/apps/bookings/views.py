@@ -267,6 +267,19 @@ def external_booking_view(request, resource_pk):
 # ── PDF Receipt download ──────────────────────────────────────────────────────
 
 @login_required
+def booking_receipt_view(request, booking_id):
+    booking = get_object_or_404(
+        Booking.objects.select_related('resource', 'organisation'),
+        pk=booking_id,
+        user=request.user,
+    )
+    return render(request, 'bookings/booking_receipt.html', {
+        'booking': booking,
+        'receipt_rows': _receipt_rows(booking),
+    })
+
+
+@login_required
 def booking_pdf_view(request, booking_id):
     from django.http import HttpResponse, Http404
     from django.core.exceptions import PermissionDenied

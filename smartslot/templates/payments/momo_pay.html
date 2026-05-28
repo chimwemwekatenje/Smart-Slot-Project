@@ -68,9 +68,10 @@
 
         <!-- Actions -->
         <div style="display:flex; gap:0.75rem;">
-            <a href="/bookings/" class="btn btn-ghost" style="padding:13px 20px;" id="cancel-btn">
+            <button type="button" class="btn btn-ghost" style="padding:13px 20px;" id="cancel-btn"
+                    onclick="cancelPendingBooking()">
                 Cancel
-            </a>
+            </button>
             <button type="button" id="pay-btn" onclick="startPayment()"
                     class="btn btn-primary" style="flex:1; padding:13px; font-size:1rem;">
                 <i class="fa-solid fa-mobile-screen-button"></i>
@@ -202,6 +203,21 @@ async function startPayment() {
         showStatus('<i class="fa-solid fa-ban"></i>&nbsp; Network error. Please try again.', 'error');
         resetButtons();
     }
+}
+
+async function cancelPendingBooking() {
+    const cancelBtn = document.getElementById('cancel-btn');
+    cancelBtn.disabled = true;
+    showStatus('<i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Cancelling booking...', 'info');
+
+    try {
+        await fetch(`/payments/momo/cancel/${BOOKING_ID}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrf() },
+        });
+    } catch(e) {}
+
+    window.location.href = '/bookings/?status=Cancelled';
 }
 
 function startPolling() {

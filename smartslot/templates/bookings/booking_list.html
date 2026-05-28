@@ -73,7 +73,11 @@
 
             <!-- Cancel button — only for Booked bookings -->
             {% if status == 'Booked' %}
-            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="{% url 'booking_receipt' booking.pk %}" class="btn btn-primary"
+                   style="padding:7px 16px; font-size:0.82rem;">
+                    <i class="fa-solid fa-receipt"></i> View Receipt
+                </a>
                 <form method="post" action="{% url 'booking_cancel' booking.pk %}"
                       onsubmit="return confirm('Cancel this booking? The slot will be freed immediately.')">
                     {% csrf_token %}

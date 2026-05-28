@@ -7,6 +7,23 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+
+def _cancel_booking_record(booking, cancellation_reason, payment_status):
+    custom_data = {
+        **(booking.custom_data or {}),
+        'booking_status': 'cancelled',
+        'cancelled_at': timezone.now().isoformat(),
+        'cancellation_reason': cancellation_reason,
+        'payment_status': payment_status,
+    }
+    Booking.objects.filter(pk=booking.pk).update(
+        status=Booking.StatusChoices.CANCELLED,
+        custom_data=custom_data,
+    )
+    booking.status = Booking.StatusChoices.CANCELLED
+    booking.custom_data = custom_data
+
+
 def cancel_booking(booking, user, action_source='user'):
     """
     Cancels a booking according to the SmartSlot refund policy rules.
@@ -25,11 +42,10 @@ def cancel_booking(booking, user, action_source='user'):
 
     # Rule 4: Booking has a resource price of 0 (Free booking)
     if price == 0:
-        booking.status = Booking.StatusChoices.CANCELLED
-        booking.save(update_fields=['status'])
+        _cancel_booking_record(booking, 'free_booking_cancelled', 'cancelled')
         return {
             'success': True,
-            'message': 'Your booking has been cancelled successfully.'
+            'message': 'Your booking has been cancelled successfully. The slot is now available.'
         }
 
     if action_source == 'user':
@@ -39,8 +55,7 @@ def cancel_booking(booking, user, action_source='user'):
 
         if hours_before > 24:
             # Rule 1: User cancels more than 24 hours before start time. Full refund.
-            booking.status = Booking.StatusChoices.CANCELLED
-            booking.save(update_fields=['status'])
+            _cancel_booking_record(booking, 'user_cancelled_refund_due', 'refunded')
             
             if payment:
                 payment.status = Payment.StatusChoices.REFUNDED
@@ -48,21 +63,19 @@ def cancel_booking(booking, user, action_source='user'):
                 
             return {
                 'success': True,
-                'message': 'Your booking has been cancelled and a full refund will be processed within 3-5 business days.'
+                'message': 'Your booking has been cancelled, the slot is now available, and a full refund will be processed within 3-5 business days.'
             }
         else:
             # Rule 2: User cancels within 24 hours of start time. No refund.
-            booking.status = Booking.StatusChoices.CANCELLED
-            booking.save(update_fields=['status'])
+            _cancel_booking_record(booking, 'user_cancelled_no_refund', 'no_refund')
             return {
                 'success': True,
-                'message': 'Your booking has been cancelled. No refund is applicable for cancellations within 24 hours of the booking start time.'
+                'message': 'Your booking has been cancelled and the slot is now available. No refund is applicable for cancellations within 24 hours of the booking start time.'
             }
 
     elif action_source == 'admin':
         # Rule 3: Admin cancels the booking or marks resource as unavailable after payment confirmation.
-        booking.status = Booking.StatusChoices.CANCELLED
-        booking.save(update_fields=['status'])
+        _cancel_booking_record(booking, 'admin_cancelled_refund_due', 'refunded')
 
         if payment:
             payment.status = Payment.StatusChoices.REFUNDED
@@ -89,7 +102,7 @@ def cancel_booking(booking, user, action_source='user'):
 
         return {
             'success': True,
-            'message': 'This booking was cancelled by the organisation. A full refund has been issued.'
+            'message': 'This booking was cancelled by the organisation. The slot is now available and a full refund has been issued.'
         }
 
     elif action_source == 'no_show':
