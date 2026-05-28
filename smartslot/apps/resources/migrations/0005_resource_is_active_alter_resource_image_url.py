@@ -3,6 +3,22 @@
 from django.db import migrations, models
 
 
+def add_resource_is_active(apps, schema_editor):
+    Resource = apps.get_model('resources', 'Resource')
+    table = Resource._meta.db_table
+    existing_columns = {
+        column.name for column in schema_editor.connection.introspection.get_table_description(
+            schema_editor.connection.cursor(),
+            table,
+        )
+    }
+
+    if 'is_active' not in existing_columns:
+        field = models.BooleanField(default=False)
+        field.set_attributes_from_name('is_active')
+        schema_editor.add_field(Resource, field)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,10 +26,20 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='resource',
-            name='is_active',
-            field=models.BooleanField(default=False),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(
+                    add_resource_is_active,
+                    migrations.RunPython.noop,
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='resource',
+                    name='is_active',
+                    field=models.BooleanField(default=False),
+                ),
+            ],
         ),
         migrations.AlterField(
             model_name='resource',

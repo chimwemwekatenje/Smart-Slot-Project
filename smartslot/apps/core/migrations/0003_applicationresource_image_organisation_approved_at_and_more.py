@@ -15,14 +15,4 @@ class Migration(migrations.Migration):
             name='image',
             field=models.ImageField(blank=True, help_text='Photo of the resource (JPEG, PNG, WebP — max 5 MB)', null=True, upload_to='application_resources/'),
         ),
-        migrations.AddField(
-            model_name='organisation',
-            name='approved_at',
-            field=models.DateTimeField(blank=True, null=True),
-        ),
-        migrations.AddField(
-            model_name='organisation',
-            name='is_approved',
-            field=models.BooleanField(default=False),
-        ),
     ]
