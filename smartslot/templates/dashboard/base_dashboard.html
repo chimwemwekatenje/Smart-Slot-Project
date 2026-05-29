@@ -390,6 +390,10 @@
                    {% if request.resolver_match.url_name == 'dashboard_org_resources' %}class="active"{% endif %}>
                     <i class="fa-solid fa-cubes"></i> Manage Resources
                 </a>
+                <a href="{% url 'super_admin_analysis' %}"
+                   {% if request.resolver_match.url_name == 'super_admin_analysis' %}class="active"{% endif %}>
+                    <i class="fa-solid fa-chart-line"></i> Analysis
+                </a>
                 {% endif %}
                 {% if user.role == 'PlatformAdmin' or user.is_superuser %}
                 <a href="{% url 'dashboard_organisations' %}"

@@ -15,7 +15,7 @@ from django import forms as dj_forms
 from apps.resources.models import Resource
 from apps.bookings.models import Booking
 from apps.core.models import ApplicationResource, Organisation, OrganisationApplication
-from apps.core.mixins import OrgScopedMixin
+from apps.core.mixins import OrgScopedMixin, is_platform_level
 import json
 
 
@@ -124,7 +124,7 @@ class DashboardOrgListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     raise_exception = False
 
     def test_func(self):
-        return self.request.user.role == 'PlatformAdmin' or self.request.user.is_superuser
+        return is_platform_level(self.request.user)
 
     def handle_no_permission(self):
         return redirect('org_admin_dashboard')
@@ -143,7 +143,7 @@ class DashboardOrgCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView
     raise_exception = False
 
     def test_func(self):
-        return self.request.user.role == 'PlatformAdmin' or self.request.user.is_superuser
+        return is_platform_level(self.request.user)
 
     def handle_no_permission(self):
         return redirect('org_admin_dashboard')
@@ -171,7 +171,7 @@ class DashboardOrgEditView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     raise_exception = False
 
     def test_func(self):
-        return self.request.user.role == 'PlatformAdmin' or self.request.user.is_superuser
+        return is_platform_level(self.request.user)
 
     def handle_no_permission(self):
         return redirect('org_admin_dashboard')
@@ -201,7 +201,7 @@ def dashboard_users_view(request):
     from django.contrib import messages
     User = get_user_model()
 
-    if not (request.user.is_superuser or request.user.role == 'PlatformAdmin'):
+    if not is_platform_level(request.user):
         return redirect('org_admin_dashboard')
 
     error = None
@@ -294,22 +294,32 @@ class _EchoBuffer:
         return value
 
 
-def _build_analysis_qs(request):
+def _build_analysis_qs(request, org_scope=None):
     """
     Return a filtered Booking queryset based on GET params.
     Shared by both the page view and the CSV export so they always agree.
+
+    org_scope — if set, locks the queryset to that organisation regardless
+                of the ?organisation= GET param (used for OrgAdmin users).
     """
     qs = (
         Booking.objects
         .select_related('resource', 'user', 'organisation')
         .order_by('-start_time')
     )
-    org_id    = request.GET.get('organisation')
+
+    # Org admins are always locked to their own org; super admins can filter freely
+    if org_scope is not None:
+        qs = qs.filter(organisation=org_scope)
+    else:
+        org_id = request.GET.get('organisation')
+        if org_id:
+            qs = qs.filter(organisation_id=org_id)
+
     category  = request.GET.get('category')
     date_from = request.GET.get('date_from')
     date_to   = request.GET.get('date_to')
 
-    if org_id:    qs = qs.filter(organisation_id=org_id)
     if category:  qs = qs.filter(resource__category=category)
     if date_from: qs = qs.filter(start_time__date__gte=date_from)
     if date_to:   qs = qs.filter(start_time__date__lte=date_to)
@@ -357,13 +367,23 @@ def _csv_rows(qs):
 
 class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboard/super_admin_analysis.html'
+    login_url     = '/dashboard/login/'
     raise_exception = False
 
     def test_func(self):
-        return self.request.user.is_superuser or self.request.user.role == 'PlatformAdmin'
+        # Both super/platform admins AND organisation admins can access this page.
+        # Org admins see only their own organisation's data (scoped in get_context_data).
+        return is_platform_level(self.request.user) or self.request.user.role == 'OrganisationAdmin'
 
     def handle_no_permission(self):
         return redirect('org_admin_dashboard')
+
+    def _org_scope(self):
+        """Return the organisation to lock queries to, or None for super/platform admins."""
+        user = self.request.user
+        if user.role == 'OrganisationAdmin' and not user.is_superuser:
+            return user.organisation
+        return None
 
     # ------------------------------------------------------------------
     # CSV export — intercept before TemplateView.get() renders HTML
@@ -374,7 +394,7 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return super().get(request, *args, **kwargs)
 
     def _csv_response(self, request):
-        qs        = _build_analysis_qs(request)
+        qs        = _build_analysis_qs(request, org_scope=self._org_scope())
         echo      = _EchoBuffer()
         writer    = csv.writer(echo)
         rows      = (writer.writerow(row) for row in _csv_rows(qs))
@@ -392,52 +412,65 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     # Normal page render
     # ------------------------------------------------------------------
     def get_context_data(self, **kwargs):
-        ctx   = super().get_context_data(**kwargs)
-        today = timezone.now().date()
+        ctx      = super().get_context_data(**kwargs)
+        today    = timezone.now().date()
+        user     = self.request.user
+        org_scope = self._org_scope()          # None = super/platform admin
+        is_org_admin = org_scope is not None   # True = org admin, scoped view
 
-        org_id    = self.request.GET.get('organisation')
         category  = self.request.GET.get('category')
         date_from = self.request.GET.get('date_from')
         date_to   = self.request.GET.get('date_to')
+        # org_id filter only meaningful for super admins
+        org_id    = None if is_org_admin else self.request.GET.get('organisation')
 
-        qs = _build_analysis_qs(self.request)
+        qs = _build_analysis_qs(self.request, org_scope=org_scope)
 
-        ctx['total_bookings']      = qs.filter(status__in=['Booked', 'Cancelled']).count()
-        ctx['active_bookings']     = qs.filter(status='Booked').count()
-        ctx['completed_bookings']  = qs.filter(status='Booked').count()
-        ctx['cancelled_bookings']  = qs.filter(status='Cancelled').count()
-        ctx['total_revenue']       = qs.filter(status='Booked').aggregate(
+        # ── KPI counts ────────────────────────────────────────────────
+        ctx['total_bookings']     = qs.filter(status__in=['Booked', 'Cancelled']).count()
+        ctx['active_bookings']    = qs.filter(status='Booked').count()
+        ctx['completed_bookings'] = qs.filter(status='Booked').count()
+        ctx['cancelled_bookings'] = qs.filter(status='Cancelled').count()
+        ctx['total_revenue']      = qs.filter(status='Booked').aggregate(
             rev=Sum('resource__price'))['rev'] or 0
-        ctx['total_organisations'] = Organisation.objects.count()
-        ctx['total_resources']     = Resource.objects.count()
 
+        if is_org_admin:
+            # Org admin: counts scoped to their organisation
+            ctx['total_organisations'] = 1
+            ctx['total_resources']     = Resource.objects.filter(
+                organisation=org_scope).count()
+        else:
+            ctx['total_organisations'] = Organisation.objects.count()
+            ctx['total_resources']     = Resource.objects.count()
+
+        # ── Top resources ─────────────────────────────────────────────
         ctx['top_resources'] = (
             qs.values('resource__name', 'resource__category')
             .annotate(count=Count('id')).order_by('-count')[:8]
         )
 
-        # Only show Booked and Cancelled in the status chart
+        # ── Status chart ──────────────────────────────────────────────
         CHART_STATUSES = ['Booked', 'Cancelled']
         status_data = (
             qs.filter(status__in=CHART_STATUSES)
             .values('status')
             .annotate(count=Count('id'))
-            .order_by('status')  # consistent order: Booked, Cancelled
+            .order_by('status')
         )
         status_map = {s['status']: s['count'] for s in status_data}
         ctx['status_labels'] = json.dumps(CHART_STATUSES)
         ctx['status_counts'] = json.dumps([status_map.get(s, 0) for s in CHART_STATUSES])
 
+        # ── Booking trend (last 30 days) ──────────────────────────────
         thirty_days_ago = today - timezone.timedelta(days=29)
-        trend = (
-            Booking.objects
-            .filter(start_time__date__gte=thirty_days_ago)
+        trend_qs = (
+            qs.filter(start_time__date__gte=thirty_days_ago)
             .annotate(day=TruncDate('start_time'))
             .values('day')
             .annotate(count=Count('id'))
             .order_by('day')
         )
-        trend_map = {str(t['day']): t['count'] for t in trend}
+        trend_map = {str(t['day']): t['count'] for t in trend_qs}
         trend_labels, trend_values = [], []
         for i in range(30):
             d = str(thirty_days_ago + timezone.timedelta(days=i))
@@ -446,6 +479,7 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['trend_labels'] = json.dumps(trend_labels)
         ctx['trend_values'] = json.dumps(trend_values)
 
+        # ── Peak hours ────────────────────────────────────────────────
         peak = (
             qs.annotate(hour=TruncHour('start_time'))
             .values('hour')
@@ -460,29 +494,50 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx['peak_labels'] = json.dumps([f"{h:02d}:00" for h in range(24)])
         ctx['peak_values'] = json.dumps([hour_map.get(h, 0) for h in range(24)])
 
-        rev_by_org = (
-            Booking.objects.filter(status='Booked')
-            .values('organisation__name')
-            .annotate(rev=Sum('resource__price'))
-            .order_by('-rev')[:8]
-        )
-        ctx['rev_org_labels'] = json.dumps([r['organisation__name'] or 'Unknown' for r in rev_by_org])
-        ctx['rev_org_values'] = json.dumps([float(r['rev'] or 0) for r in rev_by_org])
+        # ── Revenue by organisation (super admin only) ────────────────
+        if not is_org_admin:
+            rev_by_org = (
+                Booking.objects.filter(status='Booked')
+                .values('organisation__name')
+                .annotate(rev=Sum('resource__price'))
+                .order_by('-rev')[:8]
+            )
+            ctx['rev_org_labels'] = json.dumps(
+                [r['organisation__name'] or 'Unknown' for r in rev_by_org])
+            ctx['rev_org_values'] = json.dumps(
+                [float(r['rev'] or 0) for r in rev_by_org])
+        else:
+            ctx['rev_org_labels'] = json.dumps([])
+            ctx['rev_org_values'] = json.dumps([])
 
+        # ── Category chart ────────────────────────────────────────────
         cat_data = qs.values('resource__category').annotate(count=Count('id')).order_by('-count')
         ctx['cat_labels'] = json.dumps([c['resource__category'] or 'Other' for c in cat_data])
         ctx['cat_values'] = json.dumps([c['count'] for c in cat_data])
 
-        ctx['organisations']      = Organisation.objects.all()
-        # Use the model's choices list — same source of truth as the Resources page.
-        # This guarantees clean, deduplicated, consistently-cased options.
-        ctx['categories']         = [value for value, _ in Resource.CategoryChoices.choices]
+        # ── Filter sidebar context ────────────────────────────────────
+        # Category filter: for org admins show only categories used by their resources;
+        # for super admins show the full canonical choices list.
+        if is_org_admin:
+            used_cats = (
+                Resource.objects.filter(organisation=org_scope)
+                .values_list('category', flat=True)
+                .distinct()
+            )
+            # Preserve canonical order from choices, but only include used ones
+            all_choices = [v for v, _ in Resource.CategoryChoices.choices]
+            ctx['categories'] = [c for c in all_choices if c in used_cats]
+        else:
+            ctx['categories'] = [value for value, _ in Resource.CategoryChoices.choices]
+
+        ctx['organisations']      = Organisation.objects.all() if not is_org_admin else []
         ctx['selected_org']       = org_id
         ctx['selected_category']  = category
         ctx['selected_date_from'] = date_from
         ctx['selected_date_to']   = date_to
         ctx['recent_bookings']    = qs.order_by('-created_at')[:10]
-        ctx['organisation']       = None
+        ctx['organisation']       = org_scope   # drives sidebar brand name
+        ctx['is_org_admin']       = is_org_admin
         return ctx
 
 
@@ -511,7 +566,7 @@ class DashboardOrganisationApplicationListView(LoginRequiredMixin, UserPassesTes
 
 @login_required(login_url='/dashboard/login/')
 def dashboard_organisation_application_detail_view(request, pk):
-    if not (request.user.is_superuser or request.user.role == 'PlatformAdmin'):
+    if not is_platform_level(request.user):
         return redirect('org_admin_dashboard')
 
     application = get_object_or_404(
@@ -954,7 +1009,7 @@ def dashboard_org_resources_view(request):
 @login_required(login_url='/dashboard/login/')
 def dashboard_org_delete_view(request, pk):
     from django.contrib import messages
-    if not (request.user.is_superuser or request.user.role == 'PlatformAdmin'):
+    if not is_platform_level(request.user):
         return redirect('org_admin_dashboard')
 
     org = get_object_or_404(Organisation, pk=pk)
