@@ -6,6 +6,7 @@ from .views import (
     MyBookingListView, BookingCreateView, BookingUpdateView, BookingDeleteView,
     OrgResourceListView, OrgBookingListView,
     ResourceScheduleView,
+    PaymentInitiateView, PaymentVerifyView,
 )
 
 urlpatterns = [
@@ -20,4 +21,8 @@ urlpatterns = [
     path('bookings/<int:pk>/delete/', BookingDeleteView.as_view(), name='api-booking-delete'),
     path('org/resources/', OrgResourceListView.as_view(), name='api-org-resources'),
     path('org/bookings/', OrgBookingListView.as_view(), name='api-org-bookings'),
+    
+    # Payment endpoints
+    path('payments/initiate/', PaymentInitiateView.as_view(), name='api-payment-initiate'),
+    path('payments/verify/', PaymentVerifyView.as_view(), name='api-payment-verify'),
 ]

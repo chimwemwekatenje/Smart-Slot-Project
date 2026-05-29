@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       const Text('Sign In', style: TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      const Text('Welcome back', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      const Text('Plan Better. Book Faster. Work Smarter.', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                       const SizedBox(height: 24),
                       if (_error != null) ...[
                         Container(
@@ -106,7 +106,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
                           ),
-                          child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                              if (_error!.toLowerCase().contains('connection')) ...[
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  onTap: () => Navigator.pushNamed(context, '/connection-diagnostics'),
+                                  child: const Text(
+                                    'Open Network Configuration →',
+                                    style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -135,6 +150,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: auth.loading
                             ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                             : const Text('Sign In'),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton(
+                        onPressed: auth.loading ? null : () async {
+                          _usernameCtrl.text = 'mary_external';
+                          _passwordCtrl.text = 'pass1234';
+                          await _submit();
+                        },
+                        child: const Text('Use Demo Account'),
                       ),
                     ]),
                   ),

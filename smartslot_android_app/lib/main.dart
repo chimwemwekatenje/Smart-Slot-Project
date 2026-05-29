@@ -7,8 +7,14 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/edit_profile_screen.dart';
+import 'screens/connection_diagnostics_screen.dart';
+import 'services/api_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.init();
   runApp(
     MultiProvider(
       providers: [
@@ -58,6 +64,9 @@ class SmartSlotApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
+        '/settings': (_) => const SettingsScreen(),
+        '/edit-profile': (_) => const EditProfileScreen(),
+        '/connection-diagnostics': (_) => const ConnectionDiagnosticsScreen(),
       },
     );
   }

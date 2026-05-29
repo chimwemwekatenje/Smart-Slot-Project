@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
 export "FLUTTER_ROOT=C:\Users\HP\Flutter\flutter"
-export "FLUTTER_APPLICATION_PATH=C:\Users\HP\Desktop\Android App\smartslot_android_app"
+export "FLUTTER_APPLICATION_PATH=C:\Users\HP\Desktop\Smart Slots\Smart-Slot-Project\smartslot_android_app"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.0.0"

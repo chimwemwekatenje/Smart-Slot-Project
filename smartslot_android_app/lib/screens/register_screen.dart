@@ -92,7 +92,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   color: AppColors.error.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
                 ),
-                child: Text(_error!, style: const TextStyle(color: AppColors.error)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                    if (_error!.toLowerCase().contains('connection')) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/connection-diagnostics'),
+                        child: const Text(
+                          'Open Network Configuration →',
+                          style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
             Row(children: [

@@ -146,3 +146,20 @@ if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
 else:
     # No credentials set — print emails to console for development
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# ─── SUPABASE ────────────────────────────────────────────────────────────────
+# Configuration for Supabase (PostgreSQL database + object storage)
+SUPABASE_URL = env('SUPABASE_URL', default='')
+SUPABASE_KEY = env('SUPABASE_KEY', default='')
+SUPABASE_STORAGE_BUCKET = 'resources-photos'  # Bucket name for resource images
+
+# ─── PAYCHANGU ───────────────────────────────────────────────────────────────
+# Configuration for PayChangu payment gateway
+PAYCHANGU_PUBLIC_KEY = env('PAYCHANGU_PUBLIC_KEY', default='')
+PAYCHANGU_SECRET_KEY = env('PAYCHANGU_SECRET_KEY', default='')
+PAYCHANGU_CALLBACK_URL = env('PAYCHANGU_CALLBACK_URL', default='')
+PAYCHANGU_RETURN_URL = env('PAYCHANGU_RETURN_URL', default='')
+
+# ─── SITE CONFIGURATION ──────────────────────────────────────────────────────
+# Site URL for generating absolute URLs in emails, QR codes, etc.
+SITE_URL = env('SITE_URL', default='http://localhost:8000')

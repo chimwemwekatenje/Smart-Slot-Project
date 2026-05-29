@@ -13,6 +13,7 @@ dependencies:
   # HTTP & API
   http: ^1.1.0
   shared_preferences: ^2.2.2
+  url_launcher: ^6.2.0
   
   # State Management
   provider: ^6.1.1
@@ -41,7 +42,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  # If you have assets, uncomment and configure:
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - assets/images/

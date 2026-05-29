@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/email_service.dart';
 import '../theme.dart';
@@ -30,11 +31,6 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
   DateTime? _selectedStart, _selectedEnd;
   final _dateFmt = DateFormat('EEE d MMM');
   final _timeFmt = DateFormat('HH:mm');
-  final _payKey = GlobalKey<FormState>();
-  final _cardNameCtrl = TextEditingController();
-  final _cardNumCtrl = TextEditingController();
-  final _expiryCtrl = TextEditingController();
-  final _cvvCtrl = TextEditingController();
   bool _submitting = false;
   String? _error;
 
@@ -50,7 +46,6 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose(); _phoneCtrl.dispose(); _emailCtrl.dispose(); _reasonCtrl.dispose();
-    _cardNameCtrl.dispose(); _cardNumCtrl.dispose(); _expiryCtrl.dispose(); _cvvCtrl.dispose();
     super.dispose();
   }
 
@@ -90,8 +85,7 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
     });
   }
 
-  Future<void> _submitPayment() async {
-    if (!_payKey.currentState!.validate()) return;
+  Future<void> _submitBooking() async {
     setState(() { _submitting = true; _error = null; });
     try {
       final res = await ApiService.post('/api/bookings/', {
@@ -99,37 +93,71 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
         'start_time': _selectedStart!.toUtc().toIso8601String(),
         'end_time': _selectedEnd!.toUtc().toIso8601String(),
         'custom_data': {
-          'full_name': _nameCtrl.text.trim(), 'phone': _phoneCtrl.text.trim(),
-          'email': _emailCtrl.text.trim(), 'reason': _reasonCtrl.text.trim(),
-          'payment_method': 'Card',
-          'card_last4': _cardNumCtrl.text.trim().replaceAll(' ', '').length >= 4
-              ? _cardNumCtrl.text.trim().replaceAll(' ', '').substring(_cardNumCtrl.text.trim().replaceAll(' ', '').length - 4) : '****',
+          'full_name': _nameCtrl.text.trim(),
+          'phone': _phoneCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'reason': _reasonCtrl.text.trim(),
+          'payment_method': widget.resource['price'] != null && widget.resource['price'].toString() != '0' ? 'PayChangu' : 'Free',
         },
       });
       if (!mounted) return;
       if (res.statusCode == 201) {
         final booking = jsonDecode(res.body);
-        EmailService.sendBookingReceipt(booking: booking, resource: widget.resource,
-            guestName: _nameCtrl.text.trim(), guestPhone: _phoneCtrl.text.trim(),
-            guestEmail: _emailCtrl.text.trim(), reason: _reasonCtrl.text.trim());
-        Navigator.pushReplacement(context, ConfirmRoute(page: ExternalReceiptScreen(
-          booking: booking, resource: widget.resource,
-          fullName: _nameCtrl.text.trim(), phone: _phoneCtrl.text.trim(),
-          email: _emailCtrl.text.trim(), reason: _reasonCtrl.text.trim(),
-        )));
+        EmailService.sendBookingReceipt(
+          booking: booking,
+          resource: widget.resource,
+          guestName: _nameCtrl.text.trim(),
+          guestPhone: _phoneCtrl.text.trim(),
+          guestEmail: _emailCtrl.text.trim(),
+          reason: _reasonCtrl.text.trim(),
+        );
+        
+        // Check if payment is needed
+        final paymentUrl = booking['payment_url'];
+        final price = double.tryParse(widget.resource['price']?.toString() ?? '0') ?? 0;
+        
+        if (price > 0 && paymentUrl != null && paymentUrl.toString().isNotEmpty) {
+          // Redirect to PayChangu payment
+          try {
+            if (await canLaunchUrl(Uri.parse(paymentUrl))) {
+              await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Could not open payment page: $e'), backgroundColor: AppColors.error)
+              );
+            }
+          }
+        }
+        
+        // Show receipt
+        if (mounted) {
+          Navigator.pushReplacement(context, ConfirmRoute(page: ExternalReceiptScreen(
+            booking: booking,
+            resource: widget.resource,
+            fullName: _nameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim(),
+            email: _emailCtrl.text.trim(),
+            reason: _reasonCtrl.text.trim(),
+          )));
+        }
       } else {
         final err = jsonDecode(res.body);
         final msg = err is Map ? err.values.first : err.toString();
         setState(() => _error = msg is List ? msg.first : msg.toString());
       }
-    } catch (e) { setState(() => _error = 'Connection error. Check your network.'); }
-    finally { if (mounted) setState(() => _submitting = false); }
+    } catch (_) {
+      setState(() => _error = 'Connection error. Check your network.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_step == 0 ? 'Your Details' : _step == 1 ? 'Select Time' : 'Payment')),
+      appBar: AppBar(title: Text(_step == 0 ? 'Your Details' : _step == 1 ? 'Select Time' : 'Confirm')),
       body: Column(children: [
         _StepIndicator(current: _step),
         Expanded(
@@ -144,9 +172,7 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
                       onPrevWeek: () { setState(() { _weekStart = _weekStart.subtract(const Duration(days: 7)); _selectedStart = null; _selectedEnd = null; }); _loadSchedule(); },
                       onNextWeek: () { setState(() { _weekStart = _weekStart.add(const Duration(days: 7)); _selectedStart = null; _selectedEnd = null; }); _loadSchedule(); },
                     )
-                  : _PaymentStep(formKey: _payKey, cardNameCtrl: _cardNameCtrl, cardNumCtrl: _cardNumCtrl,
-                      expiryCtrl: _expiryCtrl, cvvCtrl: _cvvCtrl, resource: widget.resource,
-                      selectedStart: _selectedStart, selectedEnd: _selectedEnd, error: _error),
+                  : _ConfirmStep(resource: widget.resource, selectedStart: _selectedStart, selectedEnd: _selectedEnd, error: _error),
         ),
         Container(
           padding: const EdgeInsets.all(16),
@@ -158,18 +184,21 @@ class _ExternalBookingScreenState extends State<ExternalBookingScreen> {
             ],
             Expanded(flex: 2, child: ElevatedButton(
               onPressed: _submitting ? null : () {
-                if (_step == 0) { if (_detailsKey.currentState!.validate()) setState(() => _step = 1); }
-                else if (_step == 1) {
+                if (_step == 0) {
+                  if (_detailsKey.currentState!.validate()) setState(() => _step = 1);
+                } else if (_step == 1) {
                   if (_selectedStart == null) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a time slot')));
                   } else {
                     setState(() => _step = 2);
                   }
-                } else { _submitPayment(); }
+                } else {
+                  _submitBooking();
+                }
               },
               child: _submitting
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(_step == 2 ? 'Pay & Confirm' : 'Next'),
+                  : Text(_step == 2 ? 'Confirm Booking' : 'Next'),
             )),
           ]),
         ),
@@ -329,17 +358,17 @@ class _TimetableGrid extends StatelessWidget {
   }
 }
 
-class _PaymentStep extends StatelessWidget {
-  final GlobalKey<FormState> formKey;
-  final TextEditingController cardNameCtrl, cardNumCtrl, expiryCtrl, cvvCtrl;
-  final Map<String, dynamic> resource; final DateTime? selectedStart, selectedEnd; final String? error;
-  const _PaymentStep({required this.formKey, required this.cardNameCtrl, required this.cardNumCtrl, required this.expiryCtrl, required this.cvvCtrl, required this.resource, required this.selectedStart, required this.selectedEnd, required this.error});
+class _ConfirmStep extends StatelessWidget {
+  final Map<String, dynamic> resource;
+  final DateTime? selectedStart, selectedEnd;
+  final String? error;
+  const _ConfirmStep({required this.resource, required this.selectedStart, required this.selectedEnd, required this.error});
 
   @override
   Widget build(BuildContext context) {
     final price = double.tryParse(resource['price']?.toString() ?? '0') ?? 0;
     final fmt = DateFormat('EEE d MMM, HH:mm');
-    return SingleChildScrollView(padding: const EdgeInsets.all(20), child: Form(key: formKey, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    return SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Container(padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.primary.withValues(alpha: 0.3))),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -349,38 +378,28 @@ class _PaymentStep extends StatelessWidget {
             _SummaryRow(label: 'Organisation', value: resource['organisation_name'] ?? ''),
             if (selectedStart != null) _SummaryRow(label: 'From', value: fmt.format(selectedStart!)),
             if (selectedEnd != null) _SummaryRow(label: 'To', value: DateFormat('HH:mm').format(selectedEnd!)),
-            Divider(height: 16, color: Theme.of(context).dividerColor),
+            const SizedBox(height: 12),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text('Total', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold)),
               Text(price == 0 ? 'Free' : 'MWK ${price.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
             ]),
           ])),
       const SizedBox(height: 24),
-      Text('Card Details', style: Theme.of(context).textTheme.titleLarge),
+      Text(price > 0 ? 'Pay With PayChangu' : 'Confirm Booking', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 4),
-      Text('Your payment is secured and encrypted.', style: Theme.of(context).textTheme.bodyMedium),
+      Text(price > 0
+          ? 'A PayChangu checkout will be initiated once your booking is confirmed.'
+          : 'This resource is free. Your booking will be confirmed immediately.',
+          style: Theme.of(context).textTheme.bodyMedium),
       const SizedBox(height: 16),
       if (error != null) Container(padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.error.withValues(alpha: 0.4))),
           child: Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 13))),
-      TextFormField(controller: cardNameCtrl, decoration: const InputDecoration(labelText: 'Name on Card', prefixIcon: Icon(Icons.person_outline, color: AppColors.textMuted)), validator: (v) => v!.trim().isEmpty ? 'Required' : null),
-      const SizedBox(height: 14),
-      TextFormField(controller: cardNumCtrl, keyboardType: TextInputType.number, maxLength: 19,
-          decoration: const InputDecoration(labelText: 'Card Number', hintText: '1234 5678 9012 3456', prefixIcon: Icon(Icons.credit_card_outlined, color: AppColors.textMuted), counterText: ''),
-          validator: (v) { final d = v!.replaceAll(' ', ''); return d.length < 16 ? 'Enter a valid 16-digit card number' : null; }),
-      const SizedBox(height: 14),
-      Row(children: [
-        Expanded(child: TextFormField(controller: expiryCtrl, keyboardType: TextInputType.number, maxLength: 5,
-            decoration: const InputDecoration(labelText: 'Expiry (MM/YY)', hintText: '12/27', prefixIcon: Icon(Icons.calendar_today_outlined, color: AppColors.textMuted), counterText: ''),
-            validator: (v) => v!.trim().length < 5 ? 'Invalid' : null)),
-        const SizedBox(width: 14),
-        Expanded(child: TextFormField(controller: cvvCtrl, keyboardType: TextInputType.number, maxLength: 3, obscureText: true,
-            decoration: const InputDecoration(labelText: 'CVV', hintText: '123', prefixIcon: Icon(Icons.lock_outline, color: AppColors.textMuted), counterText: ''),
-            validator: (v) => v!.trim().length < 3 ? 'Invalid' : null)),
-      ]),
-      const SizedBox(height: 16),
-      const Row(children: [Icon(Icons.lock_outline, color: AppColors.textMuted, size: 14), SizedBox(width: 6), Text('Payments processed securely via PayChangu', style: TextStyle(color: AppColors.textMuted, fontSize: 12))]),
-    ])));
+      Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: Theme.of(context).dividerColor)),
+          child: Row(children: [const Icon(Icons.info_outline, color: AppColors.primary, size: 18), const SizedBox(width: 10), Expanded(child: Text(price > 0
+            ? 'Payment will be handled through PayChangu after the booking is created.'
+            : 'No payment is required for this booking.', style: Theme.of(context).textTheme.bodyMedium))])),
+    ]));
   }
 }
 

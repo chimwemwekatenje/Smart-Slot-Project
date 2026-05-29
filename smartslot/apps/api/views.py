@@ -216,3 +216,119 @@ class ResourceScheduleView(APIView):
         ).values('id', 'start_time', 'end_time', 'status')
 
         return Response(list(bookings))
+
+
+# ─── PAYMENT ENDPOINTS ───────────────────────────────────────────────────────
+
+class PaymentInitiateView(APIView):
+    """Initiate a payment for a booking via PayChangu"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from apps.payments.services import PayChanguService, create_payment
+        
+        booking_id = request.data.get('booking_id')
+        try:
+            booking = Booking.objects.get(id=booking_id, user=request.user)
+        except Booking.DoesNotExist:
+            return Response(
+                {'detail': 'Booking not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get customer details
+        email = request.data.get('email') or request.user.email
+        phone = request.data.get('phone') or request.user.phone
+        
+        if not email or not phone:
+            return Response(
+                {'detail': 'Email and phone number required for payment.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get booking amount
+        amount = booking.resource.price
+        
+        try:
+            # Create payment record
+            payment = create_payment(booking, amount)
+            
+            # Initiate payment with PayChangu
+            result = PayChanguService.initiate_payment(
+                booking=booking,
+                amount=amount,
+                email=email,
+                phone=phone
+            )
+            
+            if result['success']:
+                payment.paychangu_reference = result.get('reference')
+                payment.save()
+                return Response({
+                    'payment_id': payment.id,
+                    'redirect_url': result['redirect_url'],
+                }, status=status.HTTP_200_OK)
+            else:
+                payment.status = 'Failed'
+                payment.save()
+                return Response(
+                    {'detail': result.get('error', 'Payment initiation failed')},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response(
+                {'detail': f'Error: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PaymentVerifyView(APIView):
+    """Verify payment status"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from apps.payments.services import PayChanguService
+        from apps.payments.models import Payment
+        
+        payment_id = request.data.get('payment_id')
+        try:
+            payment = Payment.objects.get(id=payment_id, booking__user=request.user)
+        except Payment.DoesNotExist:
+            return Response(
+                {'detail': 'Payment not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if not payment.paychangu_reference:
+            return Response(
+                {'detail': 'No PayChangu reference found.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            result = PayChanguService.verify_payment(payment.paychangu_reference)
+            
+            if result['success']:
+                # Update payment status
+                if result['status'].lower() == 'completed':
+                    payment.status = Payment.StatusChoices.SUCCESS
+                    payment.save()
+                    # Mark booking as issued
+                    payment.booking.status = 'Issued'
+                    payment.booking.save()
+                
+                return Response({
+                    'status': result['status'],
+                    'payment_status': payment.status,
+                    'booking_status': payment.booking.status,
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {'detail': result.get('error', 'Verification failed')},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response(
+                {'detail': f'Error: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

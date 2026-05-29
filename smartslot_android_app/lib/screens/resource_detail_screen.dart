@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../services/api_service.dart';
 import '../theme.dart';
 import '../transitions.dart';
 import 'booking_form_screen.dart';
@@ -18,7 +19,10 @@ class ResourceDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price = double.tryParse(resource['price']?.toString() ?? '0') ?? 0;
-    final photoUrl = resource['photo_url'] as String?;
+    final rawPhoto = resource['photo_url'] as String?
+        ?? resource['image_url'] as String?
+        ?? resource['image'] as String?;
+    final photoUrl = rawPhoto != null && rawPhoto.isNotEmpty ? ApiService.mediaUrl(rawPhoto) : null;
     final orgName = resource['organisation_name'] ?? 'Unknown Organisation';
 
     return Scaffold(
@@ -68,7 +72,7 @@ class ResourceDetailScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.payment_outlined),
-                        label: const Text('Book & Pay'),
+                        label: const Text('Book This Resource'),
                         onPressed: () => Navigator.push(context,
                             SlideUpRoute(page: ExternalBookingScreen(resource: resource))),
                       ),
