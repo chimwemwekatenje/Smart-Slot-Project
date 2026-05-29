@@ -286,6 +286,9 @@ def dashboard_users_view(request):
 
 import csv
 from django.http import StreamingHttpResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class _EchoBuffer:
@@ -578,7 +581,14 @@ def dashboard_organisation_application_detail_view(request, pk):
         action = request.POST.get('action')
 
         if action == 'verify_resource':
-            resource = get_object_or_404(ApplicationResource, pk=request.POST.get('resource_id'), application=application)
+            resource_id = request.POST.get('resource_id')
+            try:
+                resource_pk = int(resource_id)
+            except (TypeError, ValueError):
+                messages.error(request, 'Choose a valid resource before verifying.')
+                return redirect('dashboard_org_application_detail', pk=application.pk)
+
+            resource = get_object_or_404(ApplicationResource, pk=resource_pk, application=application)
             resource.status = ApplicationResource.StatusChoices.VERIFIED
             resource.admin_notes = request.POST.get('admin_notes', '').strip()
             resource.verified_at = timezone.now()
@@ -590,7 +600,14 @@ def dashboard_organisation_application_detail_view(request, pk):
             return redirect('dashboard_org_application_detail', pk=application.pk)
 
         if action == 'unverify_resource':
-            resource = get_object_or_404(ApplicationResource, pk=request.POST.get('resource_id'), application=application)
+            resource_id = request.POST.get('resource_id')
+            try:
+                resource_pk = int(resource_id)
+            except (TypeError, ValueError):
+                messages.error(request, 'Choose a valid resource before moving it back to pending.')
+                return redirect('dashboard_org_application_detail', pk=application.pk)
+
+            resource = get_object_or_404(ApplicationResource, pk=resource_pk, application=application)
             resource.status = ApplicationResource.StatusChoices.PENDING
             resource.verified_at = None
             resource.save(update_fields=['status', 'verified_at', 'updated_at'])
@@ -760,13 +777,17 @@ def _create_org_payment_link(application):
         '/payments/return/',
     )
 
+    contact_name_parts = application.contact_name.split()
+    first_name = contact_name_parts[0] if contact_name_parts else application.organisation_name
+    last_name = ' '.join(contact_name_parts[1:]) or first_name
+
     payload = {
         'amount':      '200000',
         'currency':    'MWK',
         'secret_key':  secret_key,
         'email':       application.contact_email,
-        'first_name':  application.contact_name.split()[0],
-        'last_name':   ' '.join(application.contact_name.split()[1:]) or application.contact_name,
+        'first_name':  first_name,
+        'last_name':   last_name,
         'callback_url': callback_url,
         'return_url':   return_url,
         'tx_ref':       tx_ref,
