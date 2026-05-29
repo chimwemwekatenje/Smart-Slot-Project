@@ -3,8 +3,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 
 def is_platform_level(user):
-    """Returns True if the user is a super admin (platform-level access)."""
-    return user.is_authenticated and user.is_superuser
+    """
+    Returns True for users with full platform-level (unscoped) access.
+    Both Django superusers and users with the PlatformAdmin role are treated
+    identically — they see all organisations with no data restrictions.
+    """
+    return user.is_authenticated and (user.is_superuser or user.role == 'PlatformAdmin')
 
 
 class OrgScopedMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -18,12 +22,13 @@ class OrgScopedMixin(LoginRequiredMixin, UserPassesTestMixin):
     login_url = '/dashboard/login/'
 
     def test_func(self):
-        return self.request.user.role in ('OrganisationAdmin', 'PlatformAdmin')
+        user = self.request.user
+        return is_platform_level(user) or user.role == 'OrganisationAdmin'
 
     def get_org(self):
-        """Return the user's organisation, or None for PlatformAdmin."""
+        """Return the user's organisation, or None for platform-level users."""
         user = self.request.user
-        if user.role == 'PlatformAdmin' or user.is_superuser:
+        if is_platform_level(user):
             return None
         return user.organisation
 

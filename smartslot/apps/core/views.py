@@ -382,9 +382,9 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return redirect('org_admin_dashboard')
 
     def _org_scope(self):
-        """Return the organisation to lock queries to, or None for super/platform admins."""
+        """Return the organisation to lock queries to, or None for platform-level users."""
         user = self.request.user
-        if user.role == 'OrganisationAdmin' and not user.is_superuser:
+        if user.role == 'OrganisationAdmin' and not is_platform_level(user):
             return user.organisation
         return None
 
