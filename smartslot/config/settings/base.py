@@ -162,17 +162,19 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # Email
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_USER     = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER or 'noreply@smartslot.local'
 
 if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
-    # Real SMTP — sends actual emails
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
+    # Real SMTP via Gmail — requires an App Password (not your account password).
+    # Generate one at: https://myaccount.google.com/apppasswords
+    EMAIL_BACKEND  = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST     = 'smtp.gmail.com'
+    EMAIL_PORT     = 587
+    EMAIL_USE_TLS  = True
 else:
-    # No credentials set — print emails to console for development
+    # No credentials set — print emails to the console (development only).
+    # Set EMAIL_HOST_USER + EMAIL_HOST_PASSWORD in .env to switch to real SMTP.
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 

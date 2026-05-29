@@ -547,19 +547,23 @@ def dashboard_organisation_application_detail_view(request, pk):
             application.status = OrganisationApplication.StatusChoices.APPROVED_FOR_PAYMENT
             application.reviewed_at = timezone.now()
             application.save(update_fields=['status', 'reviewed_at', 'updated_at'])
-            _send_application_email(
-                application,
-                subject='SmartSlot organisation verification approved',
-                message=(
-                    f'Hello {application.contact_name},\n\n'
-                    f'{application.organisation_name} has been approved for SmartSlot verification. '
-                    'The next step is payment of the MWK 200,000 registration fee. '
-                    'A payment link will be sent once payment onboarding is enabled.\n\n'
-                    'After successful payment, the organisation will be activated and the SmartSlot super admin '
-                    'will create your organisation admin account.'
-                ),
-            )
-            messages.success(request, 'Application approved for payment and notification email queued.')
+
+            # ── Generate a real PayChangu payment link ─────────────────
+            payment_link = _create_org_payment_link(application)
+
+            _send_approval_email(application, payment_link)
+
+            if payment_link:
+                messages.success(
+                    request,
+                    f'Application approved. Payment link generated and email sent to {application.contact_email}.'
+                )
+            else:
+                messages.warning(
+                    request,
+                    'Application approved but the payment link could not be generated. '
+                    'Check PAYCHANGU_SECRET_KEY in settings. Email was still sent without the link.'
+                )
             return redirect('dashboard_org_application_detail', pk=application.pk)
 
         if action == 'activate':
@@ -660,16 +664,142 @@ def dashboard_organisation_application_detail_view(request, pk):
     })
 
 
+def _create_org_payment_link(application):
+    """
+    Creates a PayChangu checkout URL for the MWK 200,000 organisation registration fee.
+    Returns the checkout URL string, or None if PayChangu is not configured / call fails.
+    """
+    import uuid
+    import logging
+    import requests
+    logger = logging.getLogger(__name__)
+
+    secret_key = getattr(settings, 'PAYCHANGU_SECRET_KEY', '')
+    if not secret_key:
+        logger.warning('PAYCHANGU_SECRET_KEY is not set — cannot generate payment link.')
+        return None
+
+    tx_ref       = f"ORGAPP-{application.pk}-{uuid.uuid4().hex[:8].upper()}"
+    site_url     = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
+    callback_url = getattr(settings, 'PAYCHANGU_CALLBACK_URL', f'{site_url}/payments/callback/')
+    return_url   = getattr(settings, 'PAYCHANGU_RETURN_URL',   f'{site_url}/payments/return/')
+
+    payload = {
+        'amount':      '200000',
+        'currency':    'MWK',
+        'email':       application.contact_email,
+        'first_name':  application.contact_name.split()[0],
+        'last_name':   ' '.join(application.contact_name.split()[1:]) or application.contact_name,
+        'callback_url': callback_url,
+        'return_url':   return_url,
+        'tx_ref':       tx_ref,
+        'customization': {
+            'title':       'SmartSlot Registration Fee',
+            'description': f'Organisation registration fee for {application.organisation_name}',
+        },
+        'meta': {'application_id': str(application.pk)},
+    }
+
+    try:
+        response = requests.post(
+            'https://api.paychangu.com/payment',
+            json=payload,
+            headers={
+                'Accept':        'application/json',
+                'Authorization': f'Bearer {secret_key}',
+            },
+            timeout=30,
+        )
+        data = response.json()
+        logger.info(f'PayChangu org payment link response for app {application.pk}: {data}')
+
+        if response.status_code == 200 and data.get('status') == 'success':
+            return data['data']['checkout_url']
+
+        logger.error(
+            f'PayChangu payment link failed for app {application.pk}: '
+            f'status={response.status_code} body={data}'
+        )
+    except Exception as exc:
+        logger.error(f'PayChangu payment link exception for app {application.pk}: {exc}')
+
+    return None
+
+
+def _send_approval_email(application, payment_link):
+    """
+    Sends the 'approved for payment' email to the organisation contact.
+    Includes the PayChangu payment link if one was generated.
+    Logs errors instead of silently swallowing them.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    if not application.contact_email:
+        logger.warning(f'No contact email for application {application.pk} — skipping approval email.')
+        return
+
+    if payment_link:
+        payment_section = (
+            f'To complete your registration, please pay the MWK 200,000 registration fee '
+            f'using the secure link below:\n\n'
+            f'  {payment_link}\n\n'
+            f'This link is unique to your application. Once payment is confirmed, '
+            f'your organisation will be activated automatically and you will receive '
+            f'your admin account credentials.'
+        )
+    else:
+        payment_section = (
+            f'The next step is payment of the MWK 200,000 registration fee. '
+            f'Our team will send you a payment link shortly.'
+        )
+
+    message = (
+        f'Hello {application.contact_name},\n\n'
+        f'Great news! Your organisation "{application.organisation_name}" has been '
+        f'verified and approved on SmartSlot.\n\n'
+        f'{payment_section}\n\n'
+        f'If you have any questions, reply to this email or contact our support team.\n\n'
+        f'Thank you,\n'
+        f'The SmartSlot Team'
+    )
+
+    try:
+        from django.core.mail import send_mail
+        send_mail(
+            subject='SmartSlot — Your organisation has been approved',
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[application.contact_email],
+            fail_silently=False,   # raise on error so we can log it
+        )
+        logger.info(f'Approval email sent to {application.contact_email} for app {application.pk}.')
+    except Exception as exc:
+        logger.error(
+            f'Failed to send approval email to {application.contact_email} '
+            f'for app {application.pk}: {exc}'
+        )
+
+
 def _send_application_email(application, subject, message):
+    """Generic email helper used for rejection and activation notifications."""
+    import logging
+    logger = logging.getLogger(__name__)
+
     if not application.contact_email:
         return
-    send_mail(
-        subject,
-        message,
-        getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@smartslot.local'),
-        [application.contact_email],
-        fail_silently=True,
-    )
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [application.contact_email],
+            fail_silently=False,
+        )
+    except Exception as exc:
+        logger.error(
+            f'Failed to send "{subject}" email to {application.contact_email}: {exc}'
+        )
 
 
 # ── Org Admin — manage their org's users ─────────────────────────────────────
