@@ -61,12 +61,17 @@ class ResourceSerializer(serializers.ModelSerializer):
         if not obj.photo:
             return None
         request = self.context.get('request')
+        # obj.photo.url returns e.g. /media/resources_photos/img.jpg
+        url = obj.photo.url
+        # Ensure it starts with / so build_absolute_uri works correctly
+        if not url.startswith('/'):
+            url = '/' + url
         if request:
-            # Build absolute URL using the request's host so the app can fetch it
-            url = obj.photo.url
             return request.build_absolute_uri(url)
-        # Fallback: return the relative media path
-        return obj.photo.url
+        # Fallback: use SITE_URL from settings
+        from django.conf import settings
+        site = getattr(settings, 'SITE_URL', 'http://localhost:8000').rstrip('/')
+        return f"{site}{url}"
 
     class Meta:
         model = Resource
@@ -80,22 +85,57 @@ class BookingSerializer(serializers.ModelSerializer):
     resource_category = serializers.CharField(source='resource.category', read_only=True)
     resource_price = serializers.DecimalField(
         source='resource.price', max_digits=10, decimal_places=2, read_only=True)
+    resource_type = serializers.CharField(source='resource.category', read_only=True)
     organisation_name = serializers.CharField(source='organisation.name', read_only=True)
     booked_by = serializers.SerializerMethodField()
+    payment_url = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
+
+    def get_photo_url(self, obj):
+        if not obj.resource.photo:
+            return None
+        request = self.context.get('request')
+        url = obj.resource.photo.url
+        if not url.startswith('/'):
+            url = '/' + url
+        if request:
+            return request.build_absolute_uri(url)
+        from django.conf import settings
+        site = getattr(settings, 'SITE_URL', 'http://localhost:8000').rstrip('/')
+        return f"{site}{url}"
 
     def get_booked_by(self, obj):
         u = obj.user
         full = f"{u.first_name} {u.last_name}".strip()
         return full if full else u.username
 
+    def get_payment_url(self, obj):
+        """Generate PayChangu payment URL if this is a paid booking."""
+        if obj.resource.price <= 0:
+            return None
+        try:
+            from apps.payments.services import initiate_payment
+            checkout_url, _ = initiate_payment(
+                booking=obj,
+                customer_email=obj.user.email or '',
+                customer_first_name=obj.user.first_name or obj.user.username,
+                customer_last_name=obj.user.last_name or '',
+            )
+            return checkout_url
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'Failed to generate PayChangu URL for booking {obj.id}: {e}')
+            return None
+
     class Meta:
         model = Booking
         fields = ('id', 'resource', 'resource_name', 'resource_category',
-                  'resource_price', 'organisation_name', 'booked_by',
+                  'resource_type', 'resource_price', 'photo_url',
+                  'organisation_name', 'booked_by',
                   'start_time', 'end_time', 'status',
-                  'qr_token', 'custom_data', 'issued_at', 'verified_at',
+                  'qr_token', 'custom_data', 'payment_url', 'issued_at', 'verified_at',
                   'created_at', 'updated_at')
-        read_only_fields = ('id', 'status', 'qr_token', 'issued_at',
+        read_only_fields = ('id', 'status', 'qr_token', 'payment_url', 'issued_at',
                             'verified_at', 'created_at', 'updated_at')
 
 
