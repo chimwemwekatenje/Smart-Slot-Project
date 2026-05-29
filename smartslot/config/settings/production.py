@@ -7,12 +7,14 @@ DEBUG = False
 # Hardcoded so this never falls back to base defaults regardless of env vars
 ALLOWED_HOSTS = [
     'smartslot-bh9c.onrender.com',
+    '.onrender.com',
     'localhost',
     '127.0.0.1',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://smartslot-bh9c.onrender.com',
+    'https://*.onrender.com',
 ]
 
 # Absolute site URL — used for QR codes and any absolute links in emails/PDFs
