@@ -44,6 +44,60 @@ def _booking_from_tx_ref(tx_ref):
     return None
 
 
+def _application_id_from_tx_ref(tx_ref):
+    """Extract application id from ORGAPP-{id}-{random} references."""
+    if not tx_ref or not tx_ref.startswith('ORGAPP-'):
+        return None
+    try:
+        return int(tx_ref.split('-')[1])
+    except (ValueError, IndexError):
+        return None
+
+
+def _confirm_organisation_application_payment(tx_ref):
+    """
+    Verify an organisation registration payment and onboard the organisation.
+    Returns (success, message).
+    """
+    app_id = _application_id_from_tx_ref(tx_ref)
+    if not app_id:
+        return False, 'Invalid organisation payment reference.'
+
+    try:
+        transaction = verify_payment(tx_ref)
+    except Exception as exc:
+        logger.error(f'Organisation payment verification failed for {tx_ref}: {exc}')
+        return False, 'Payment could not be verified yet.'
+
+    payment_status = str(transaction.get('status', '')).lower()
+    if payment_status not in ('success', 'successful'):
+        return False, f'Payment is not successful yet. Current status: {payment_status or "unknown"}.'
+
+    from apps.core.models import OrganisationApplication
+    from apps.accounts.services import onboard_organisation
+
+    app = OrganisationApplication.objects.filter(id=app_id).first()
+    if not app:
+        return False, 'Organisation application was not found.'
+
+    if app.status == OrganisationApplication.StatusChoices.COMPLETED:
+        return True, 'Organisation is already active.'
+
+    app.status = OrganisationApplication.StatusChoices.PAID
+    app.save(update_fields=['status', 'updated_at'])
+    admin_user, setup_url, email_sent = onboard_organisation(app)
+    if email_sent:
+        return True, 'Payment confirmed. Organisation activated and admin setup email sent.'
+
+    logger.error(
+        'Organisation %s activated after payment, but setup email to %s failed. Setup URL: %s',
+        app.organisation_name,
+        app.contact_email,
+        setup_url,
+    )
+    return True, 'Payment confirmed and organisation activated, but the admin setup email could not be sent.'
+
+
 # ── Mobile Money operators (JSON) ─────────────────────────────────────────────
 
 @require_GET
@@ -211,28 +265,15 @@ def payment_webhook(request):
 
     try:
         # Check if this is an Organisation Application payment
-        is_org_app = False
-        app_id = None
-        
         if tx_ref and tx_ref.startswith('ORGAPP-'):
-            is_org_app = True
-            try:
-                app_id = int(tx_ref.split('-')[1])
-            except (ValueError, IndexError):
-                pass
+            ok, message = _confirm_organisation_application_payment(tx_ref)
+            if ok:
+                logger.info(message)
+            else:
+                logger.warning(message)
+            return HttpResponse('OK', status=200)
 
         if event_status in ('successful', 'success'):
-            if is_org_app and app_id:
-                from apps.core.models import OrganisationApplication
-                from apps.accounts.services import onboard_organisation
-                app = OrganisationApplication.objects.filter(id=app_id).first()
-                if app and app.status == OrganisationApplication.StatusChoices.APPROVED_FOR_PAYMENT:
-                    app.status = OrganisationApplication.StatusChoices.PAID
-                    app.save(update_fields=['status'])
-                    onboard_organisation(app)
-                    logger.info(f'Organisation Application {app_id} onboarded successfully via webhook.')
-                return HttpResponse('OK', status=200)
-
             booking = None
             if tx_ref:
                 booking = _booking_from_tx_ref(tx_ref)
@@ -250,17 +291,6 @@ def payment_webhook(request):
             if tx_ref:
                 transaction = verify_payment(tx_ref)
                 if transaction.get('status') == 'successful':
-                    if is_org_app and app_id:
-                        from apps.core.models import OrganisationApplication
-                        from apps.accounts.services import onboard_organisation
-                        app = OrganisationApplication.objects.filter(id=app_id).first()
-                        if app and app.status == OrganisationApplication.StatusChoices.APPROVED_FOR_PAYMENT:
-                            app.status = OrganisationApplication.StatusChoices.PAID
-                            app.save(update_fields=['status'])
-                            onboard_organisation(app)
-                            logger.info(f'Organisation Application {app_id} onboarded successfully via webhook verification.')
-                        return HttpResponse('OK', status=200)
-
                     booking = _booking_from_tx_ref(tx_ref)
                     if booking:
                         _confirm_booking(booking, tx_ref)
@@ -279,6 +309,11 @@ def payment_callback(request):
     tx_ref = request.GET.get('tx_ref') or request.POST.get('tx_ref')
     if not tx_ref:
         return HttpResponse('Missing tx_ref', status=400)
+
+    if tx_ref.startswith('ORGAPP-'):
+        ok, message = _confirm_organisation_application_payment(tx_ref)
+        return HttpResponse(message, status=200 if ok else 400)
+
     try:
         transaction = verify_payment(tx_ref)
         if transaction.get('status') == 'successful':
@@ -299,6 +334,10 @@ def payment_return(request):
 
     if status == 'failed' or not tx_ref:
         return render(request, 'payments/payment_failed.html')
+
+    if tx_ref.startswith('ORGAPP-'):
+        ok, message = _confirm_organisation_application_payment(tx_ref)
+        return HttpResponse(message, status=200 if ok else 400)
 
     try:
         transaction = verify_payment(tx_ref)
