@@ -2,6 +2,11 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 
+def is_platform_level(user):
+    """Returns True if the user is a super admin (platform-level access)."""
+    return user.is_authenticated and user.is_superuser
+
+
 class OrgScopedMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
     Restricts view access to OrganisationAdmin and PlatformAdmin roles.
