@@ -297,13 +297,14 @@ class _EchoBuffer:
         return value
 
 
-def _build_analysis_qs(request, org_scope=None):
+def _build_analysis_qs(request, org_scope=None, is_org_admin=False):
     """
     Return a filtered Booking queryset based on GET params.
-    Shared by both the page view and the CSV export so they always agree.
 
-    org_scope — if set, locks the queryset to that organisation regardless
-                of the ?organisation= GET param (used for OrgAdmin users).
+    org_scope    — Organisation instance to lock to (org admin path).
+    is_org_admin — True when the caller is an OrganisationAdmin.
+                   If True and org_scope is None, returns qs.none() so no
+                   data leaks to an org admin with no linked organisation.
     """
     qs = (
         Booking.objects
@@ -311,9 +312,11 @@ def _build_analysis_qs(request, org_scope=None):
         .order_by('-start_time')
     )
 
-    # Org admins are always locked to their own org; super admins can filter freely
-    if org_scope is not None:
-        qs = qs.filter(organisation=org_scope)
+    if is_org_admin:
+        if org_scope is not None:
+            qs = qs.filter(organisation=org_scope)
+        else:
+            return qs.none()
     else:
         org_id = request.GET.get('organisation')
         if org_id:
@@ -382,11 +385,22 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return redirect('org_admin_dashboard')
 
     def _org_scope(self):
-        """Return the organisation to lock queries to, or None for platform-level users."""
+        """
+        Return the organisation to lock queries to, or None for platform-level users.
+        For an OrganisationAdmin with no linked organisation, returns a sentinel
+        that will produce an empty queryset rather than leaking all data.
+        """
         user = self.request.user
-        if user.role == 'OrganisationAdmin' and not is_platform_level(user):
+        if not is_platform_level(user) and user.role == 'OrganisationAdmin':
+            # Return the organisation (may be None if misconfigured, but we
+            # handle that in get_context_data via is_org_admin flag)
             return user.organisation
-        return None
+        return None  # platform-level: no restriction
+
+    def _is_org_admin(self):
+        """True for OrganisationAdmin users regardless of whether they have an org linked."""
+        user = self.request.user
+        return not is_platform_level(user) and user.role == 'OrganisationAdmin'
 
     # ------------------------------------------------------------------
     # CSV export — intercept before TemplateView.get() renders HTML
@@ -397,7 +411,8 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return super().get(request, *args, **kwargs)
 
     def _csv_response(self, request):
-        qs        = _build_analysis_qs(request, org_scope=self._org_scope())
+        is_org_admin = self._is_org_admin()
+        qs        = _build_analysis_qs(request, org_scope=self._org_scope(), is_org_admin=is_org_admin)
         echo      = _EchoBuffer()
         writer    = csv.writer(echo)
         rows      = (writer.writerow(row) for row in _csv_rows(qs))
@@ -418,16 +433,16 @@ class SuperAdminAnalysisView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         ctx      = super().get_context_data(**kwargs)
         today    = timezone.now().date()
         user     = self.request.user
-        org_scope = self._org_scope()          # None = super/platform admin
-        is_org_admin = org_scope is not None   # True = org admin, scoped view
+        is_org_admin = self._is_org_admin()   # role-based, not org-presence-based
+        org_scope    = self._org_scope()      # the actual org object (may be None)
 
         category  = self.request.GET.get('category')
         date_from = self.request.GET.get('date_from')
         date_to   = self.request.GET.get('date_to')
-        # org_id filter only meaningful for super admins
+        # org_id filter only meaningful for platform-level users
         org_id    = None if is_org_admin else self.request.GET.get('organisation')
 
-        qs = _build_analysis_qs(self.request, org_scope=org_scope)
+        qs = _build_analysis_qs(self.request, org_scope=org_scope, is_org_admin=is_org_admin)
 
         # ── KPI counts ────────────────────────────────────────────────
         ctx['total_bookings']     = qs.filter(status__in=['Booked', 'Cancelled']).count()
