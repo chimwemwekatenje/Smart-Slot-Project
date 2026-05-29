@@ -919,7 +919,7 @@ def dashboard_org_resources_view(request):
     return render(request, 'dashboard/org_resources.html', {
         'resources':    qs,
         'organisation': org,
-        'categories':   ['Boardroom', 'Vehicle', 'Equipment', 'Other'],
+        'categories':   [value for value, _ in Resource.CategoryChoices.choices],
     })
 
 
